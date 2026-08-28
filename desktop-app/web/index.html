@@ -33,13 +33,24 @@ body {
 }
 input, textarea { user-select: text; }
 .mono { font-family: 'IBM Plex Mono', monospace; }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 20px 80px; }
 .hidden { display: none !important; }
 
-/* Titlebar drag region for frameless feel (Tauri default has native chrome, this is just top padding) */
+/* ——— Liquid Glass 场景与背景光井（T3 真实折射需要背景有可模糊内容） ——— */
+#lgScene { position: relative; min-height: 100vh; isolation: isolate; }
+.bg-wells { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 1; }
+.bg-wells::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(700px 500px at 18% 12%, rgba(36,49,63,0.09), transparent 68%),
+    radial-gradient(800px 600px at 88% 18%, rgba(46,111,168,0.07), transparent 70%),
+    radial-gradient(900px 700px at 52% 88%, rgba(180,67,47,0.05), transparent 72%);
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 20px 80px; position: relative; z-index: 1; }
+
+/* Titlebar drag region */
 .titlebar-spacer { height: 4px; }
 
-/* Onboarding / settings screen */
+/* Onboarding / settings screen — 保留但不再作为启动拦截，仅作兜底 */
 .connect-screen { max-width: 520px; margin: 70px auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px 28px; box-shadow: var(--shadow); }
 .connect-screen h2 { font-family: 'Space Grotesk', sans-serif; font-size: 21px; margin: 0 0 8px; text-align: center; }
 .connect-screen p.lead { color: var(--ink-soft); font-size: 14px; line-height: 1.6; margin: 0 0 22px; text-align: center; }
@@ -62,14 +73,21 @@ input, textarea { user-select: text; }
 .btn-danger { background: var(--danger); border-color: var(--danger); }
 .btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 8px; }
 
-/* Sync bar */
-.connect-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 18px; font-size: 13px; }
+/* Sync bar — T3 液态玻璃功能层（保留现配色，仅叠玻璃材质） */
+.connect-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: rgba(255,255,255,0.72); border: 1px solid rgba(219,224,216,0.9); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 18px; font-size: 13px;
+  position: relative; /* for liquid glass host */
+}
+.connect-bar.apx-lg-host { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.18) !important; }
 .connect-status { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot.ok { background: var(--live); }
 .dot.warn { background: var(--warn); }
 .dot.off { background: var(--danger); }
 .dot.busy { background: var(--building); animation: pulse 1s infinite ease-in-out; }
+.dot.idle { background: var(--ink-faint); }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 .connect-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -112,7 +130,8 @@ input, textarea { user-select: text; }
 
 .overlay { position: fixed; inset: 0; background: rgba(20,22,20,0.4); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; }
 .overlay.show { display: flex; }
-.drawer { width: min(560px, 100%); background: var(--paper); height: 100%; overflow-y: auto; padding: 26px 26px 60px; box-shadow: -12px 0 32px rgba(0,0,0,0.15); }
+.drawer { width: min(560px, 100%); background: var(--paper); height: 100%; overflow-y: auto; padding: 26px 26px 60px; box-shadow: -12px 0 32px rgba(0,0,0,0.15); position: relative; }
+.drawer.apx-lg-host { background: rgba(238,240,234,0.78) !important; backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); }
 .drawer-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
 .drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
 .field-row { display: flex; gap: 10px; }
@@ -132,6 +151,13 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; 
 .form-inline { background: var(--surface); border: 1px dashed var(--ink-faint); border-radius: 8px; padding: 14px; margin-bottom: 14px; }
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+/* Settings specific */
+.settings-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+.settings-tab { font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+.settings-tab.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.settings-foot { display: flex; gap: 8px; margin-top: 18px; }
+.sync-preview { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 10px; line-height: 1.6; }
 @media (max-width: 560px) {
   .header { align-items: flex-start; }
   .drawer { width: 100%; padding: 20px 16px 50px; }
@@ -141,58 +167,65 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; 
 </head>
 <body>
 
-<div class="wrap">
-  <div class="titlebar-spacer"></div>
+<div id="lgScene" data-lg-scene>
+  <div class="bg-wells" aria-hidden="true"></div>
 
-  <!-- Onboarding: first run, ask for Worker URL + token -->
-  <div class="connect-screen hidden" id="onboardScreen">
-    <h2>连接同步服务</h2>
-    <p class="lead">填入你部署的 Cloudflare Worker 地址和密钥，三台设备填同一组即可自动同步。</p>
-    <div class="error-box hidden" id="onboardError"></div>
-    <div class="field">
-      <label>Worker 地址</label>
-      <input type="text" class="mono" id="ob-url" placeholder="https://agent-workbench-sync.xxx.workers.dev">
-    </div>
-    <div class="field">
-      <label>同步密钥（X-Sync-Token）</label>
-      <input type="password" class="mono" id="ob-token" placeholder="部署时设置的密钥">
-      <div class="hint">密钥只会保存在这台设备本地，不会发送到除你自己的 Worker 以外的任何地方。</div>
-    </div>
-    <button class="btn" id="ob-connect" style="width:100%;margin-top:6px;">连接并同步</button>
-  </div>
+  <div class="wrap">
+    <div class="titlebar-spacer"></div>
 
-  <!-- Main app -->
-  <div id="appRoot" class="hidden">
-    <div class="connect-bar">
-      <div class="connect-status"><span class="dot" id="connDot"></span><span id="connText" class="mono"></span></div>
-      <div class="connect-actions">
-        <button class="btn-ghost btn btn-sm" id="syncNowBtn">立即同步</button>
-        <button class="btn-ghost btn btn-sm" id="settingsBtn">连接设置</button>
+    <!-- 保留原 onboarding 结构但永不作为启动拦截，仅供旧逻辑兼容 -->
+    <div class="connect-screen hidden" id="onboardScreen">
+      <h2>连接同步服务</h2>
+      <p class="lead">填入你部署的 Cloudflare Worker 地址和密钥，三台设备填同一组即可自动同步。</p>
+      <div class="error-box hidden" id="onboardError"></div>
+      <div class="field">
+        <label>Worker 地址</label>
+        <input type="text" class="mono" id="ob-url" placeholder="https://agent-workbench-sync.xxx.workers.dev">
       </div>
-    </div>
-
-    <div class="header">
-      <div class="header-left">
-        <div class="eyebrow">Cross-Device · Cloudflare Sync</div>
-        <h1>Agent Workbench</h1>
-        <p>项目与 Prompt 版本管理，三端自动同步。</p>
+      <div class="field">
+        <label>同步密钥（X-Sync-Token）</label>
+        <input type="password" class="mono" id="ob-token" placeholder="部署时设置的密钥">
+        <div class="hint">密钥只会保存在这台设备本地，不会发送到除你自己的 Worker 以外的任何地方。</div>
       </div>
-      <div class="stats" id="stats"></div>
+      <button class="btn" id="ob-connect" style="width:100%;margin-top:6px;">连接并同步</button>
     </div>
 
-    <div class="toolbar">
-      <div class="search-box"><input type="text" id="searchInput" placeholder="搜索项目名称 / 标签…"></div>
-      <div class="chips" id="filterChips"></div>
-      <button class="btn" id="addProjectBtn">+ 新建项目</button>
-    </div>
+    <!-- Main app — 本机完整可用，同步仅设置 -->
+    <div id="appRoot" class="hidden">
+      <!-- T3 功能层：connect-bar -->
+      <div class="connect-bar" id="connectBar" data-liquid-glass data-lg-preset="regular" style="border-radius:10px;">
+        <div class="connect-status"><span class="dot idle" id="connDot"></span><span id="connText" class="mono">本地模式 · 未设置同步</span></div>
+        <div class="connect-actions">
+          <button class="btn-ghost btn btn-sm" id="syncNowBtn">立即同步</button>
+          <button class="btn-ghost btn btn-sm" id="settingsBtn">设置</button>
+        </div>
+      </div>
 
-    <div id="gridArea"></div>
+      <div class="header">
+        <div class="header-left">
+          <div class="eyebrow">Local-First · Sync Optional</div>
+          <h1>Agent Workbench</h1>
+          <p>项目与 Prompt 版本管理，本机完整可用，同步为可选项。</p>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box"><input type="text" id="searchInput" placeholder="搜索项目名称 / 标签…"></div>
+        <div class="chips" id="filterChips"></div>
+        <button class="btn" id="addProjectBtn">+ 新建项目</button>
+      </div>
+
+      <div id="gridArea"></div>
+    </div>
   </div>
 </div>
 
-<div class="overlay" id="overlay"><div class="drawer" id="drawer"></div></div>
+<div class="overlay" id="overlay"><div class="drawer" id="drawer" data-liquid-glass data-lg-preset="regular" style="border-radius:0;"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="./assets/liquid-glass.js"></script>
+<script src="./assets/liquid-glass-svg.js"></script>
 <script>
 const STAGES = [
   { key: 'idea',     label: '构思中', color: 'var(--idea)',     bg: 'var(--idea-bg)' },
@@ -207,12 +240,15 @@ let state = { projects: [], filterStage: 'all', search: '', loaded: false };
 let settings = null; // { url, token }
 let syncStatus = 'idle'; // idle | syncing | ok | offline | error
 let pushTimer = null;
+let settingsTab = 'general'; // general | sync
 
 // ---------- settings ----------
 function loadSettings() {
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch (e) { return null; }
 }
 function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+function hasSyncSettings() { return !!(settings && settings.url && settings.token); }
+function clearSyncSettings() { settings = null; localStorage.removeItem(SETTINGS_KEY); setSyncStatus('idle'); }
 
 // ---------- local cache (offline fallback) ----------
 function cacheLocally(projects) {
@@ -225,11 +261,13 @@ function readCache() {
 // ---------- API ----------
 function apiUrl(path) { return settings.url.replace(/\/+$/, '') + path; }
 async function apiGet() {
+  if (!hasSyncSettings()) throw new Error('no sync settings');
   const res = await fetch(apiUrl('/api/state'), { headers: { 'X-Sync-Token': settings.token } });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 async function apiPut(projects) {
+  if (!hasSyncSettings()) throw new Error('no sync settings');
   const res = await fetch(apiUrl('/api/state'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-Sync-Token': settings.token },
@@ -241,6 +279,7 @@ async function apiPut(projects) {
 
 // ---------- sync orchestration ----------
 async function pullFromServer(showToastOnSuccess) {
+  if (!hasSyncSettings()) { setSyncStatus('idle'); return; }
   setSyncStatus('syncing');
   try {
     const data = await apiGet();
@@ -266,6 +305,7 @@ function scheduleAutoPush() {
 
 async function pushToServer() {
   cacheLocally(state.projects); // 本地缓存立刻更新，保证界面响应快、离线也不丢
+  if (!hasSyncSettings()) { setSyncStatus('idle'); return; }
   setSyncStatus('syncing');
   try {
     const res = await apiPut(state.projects);
@@ -288,42 +328,137 @@ function setSyncStatus(status, updatedAt) {
   if (status === 'syncing') { dot.className = 'dot busy'; text.textContent = '同步中…'; }
   else if (status === 'ok') { dot.className = 'dot ok'; text.textContent = '已同步' + (updatedAt ? '（' + relTime(updatedAt) + '）' : ''); }
   else if (status === 'offline') { dot.className = 'dot warn'; text.textContent = '离线 · 显示本地缓存，联网后会自动重试'; }
+  else if (status === 'idle') { dot.className = 'dot idle'; text.textContent = hasSyncSettings() ? '未连接' : '本地模式 · 未设置同步，可在设置中启用'; }
   else { dot.className = 'dot off'; text.textContent = '未连接'; }
 }
 
-// ---------- onboarding ----------
+// ---------- onboarding 保留兼容，但不再拦截 ----------
 function showOnboarding(prefillError) {
-  document.getElementById('appRoot').classList.add('hidden');
-  document.getElementById('onboardScreen').classList.remove('hidden');
-  if (settings) {
-    document.getElementById('ob-url').value = settings.url || '';
-    document.getElementById('ob-token').value = settings.token || '';
-  }
-  const errBox = document.getElementById('onboardError');
-  if (prefillError) { errBox.textContent = prefillError; errBox.classList.remove('hidden'); }
-  else { errBox.classList.add('hidden'); }
+  openSyncSettings(prefillError);
 }
 
 async function connectAndEnter() {
-  const url = document.getElementById('ob-url').value.trim();
-  const token = document.getElementById('ob-token').value.trim();
-  const errBox = document.getElementById('onboardError');
-  if (!url || !token) { errBox.textContent = '请填写完整的 Worker 地址和密钥'; errBox.classList.remove('hidden'); return; }
+  // 兼容旧按钮，直接转到设置保存
+  const url = document.getElementById('ob-url')?.value.trim() || document.getElementById('st-url')?.value.trim();
+  const token = document.getElementById('ob-token')?.value.trim() || document.getElementById('st-token')?.value.trim();
+  if (!url || !token) { showToast('请填写完整的 Worker 地址和密钥'); return; }
   settings = { url, token };
-  const btn = document.getElementById('ob-connect');
-  btn.disabled = true; btn.textContent = '连接中…';
   try {
-    await apiGet(); // 验证一下能不能连通、密钥对不对
+    await apiGet();
     saveSettings(settings);
-    document.getElementById('onboardScreen').classList.add('hidden');
-    document.getElementById('appRoot').classList.remove('hidden');
+    showToast('已连接并同步');
     await pullFromServer(false);
-    render();
   } catch (e) {
-    errBox.textContent = '连接失败：请检查地址是否正确、密钥是否匹配，以及网络是否正常。（' + e.message + '）';
-    errBox.classList.remove('hidden');
-  } finally {
-    btn.disabled = false; btn.textContent = '连接并同步';
+    const errBox = document.getElementById('st-error') || document.getElementById('onboardError');
+    if (errBox) { errBox.textContent = '连接失败：' + e.message; errBox.classList.remove('hidden'); }
+  }
+}
+
+// ---------- Settings Drawer (本机完整 + 同步可选) ----------
+function openSyncSettings(prefillError) {
+  settingsTab = hasSyncSettings() ? 'sync' : 'general';
+  renderSettingsDrawer(prefillError);
+  openOverlay();
+  setTimeout(() => { if (window.ApxLiquidGlass) ApxLiquidGlass.instances.forEach(inst => inst.markChanged(document.getElementById('drawer'))); }, 80);
+}
+function renderSettingsDrawer(prefillError) {
+  const drawer = document.getElementById('drawer');
+  const hasSync = hasSyncSettings();
+  const cache = readCache();
+  const localCount = (cache?.projects || state.projects || []).length;
+  drawer.innerHTML = `
+    <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">设置</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
+    <div class="settings-tabs">
+      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general">通用</button>
+      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync">同步</button>
+    </div>
+    <div id="settingsBody"></div>
+  `;
+  document.getElementById('closeBtn').addEventListener('click', closeOverlay);
+  drawer.querySelectorAll('.settings-tab').forEach(btn => btn.addEventListener('click', () => { settingsTab = btn.dataset.tab; renderSettingsDrawer(); }));
+
+  const body = document.getElementById('settingsBody');
+  if (settingsTab === 'general') {
+    body.innerHTML = `
+      <div class="field"><label>本机存储</label>
+        <div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，数据仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div>
+      </div>
+      <div class="field"><label>关于</label>
+        <div class="hint">Agent Workbench · Tauri 三端 + Cloudflare 可选同步。同步开启后：打开/切回窗口/每 60 秒自动拉取，后台推送防抖 500ms。</div>
+      </div>
+      <div class="settings-foot">
+        <button class="btn btn-ghost" id="goSyncBtn" style="flex:1;">去设置同步 →</button>
+      </div>
+    `;
+    document.getElementById('goSyncBtn').addEventListener('click', () => { settingsTab='sync'; renderSettingsDrawer(); });
+  } else {
+    body.innerHTML = `
+      <div class="error-box hidden" id="st-error">${prefillError ? prefillError : ''}</div>
+      <div class="field">
+        <label>Worker 地址</label>
+        <input type="text" class="mono" id="st-url" placeholder="https://agent-workbench-sync.xxx.workers.dev" value="${hasSync ? esc(settings.url) : ''}">
+      </div>
+      <div class="field">
+        <label>同步密钥（X-Sync-Token）</label>
+        <input type="password" class="mono" id="st-token" placeholder="部署时设置的密钥" value="${hasSync ? esc(settings.token) : ''}">
+        <div class="hint">密钥仅存本机，不会发往除 Worker 外的任何地方。留空即视为关闭同步。</div>
+      </div>
+      <div class="sync-preview">
+        状态：${hasSync ? (syncStatus==='ok'?'已同步':'已配置，未连接') : '未设置（本地模式）'}<br>
+        本机缓存：${localCount} 个项目 · 同步策略：整体覆盖（后保存覆盖先保存，单用户场景已足够）
+      </div>
+      <div class="settings-foot">
+        <button class="btn" id="st-save" style="flex:1;">${hasSync ? '保存并同步' : '启用同步'}</button>
+        <button class="btn btn-ghost" id="st-test">测试连接</button>
+      </div>
+      ${hasSync ? `<button class="btn btn-ghost" id="st-disable" style="width:100%;margin-top:10px;">断开同步（保留本地数据）</button>` : ``}
+      <div style="margin-top:18px;" class="hint">提示：三台设备填同一组地址+密钥即可互相同步；断网时正常用，联网后自动补推。</div>
+    `;
+    if (prefillError) document.getElementById('st-error').classList.remove('hidden');
+    document.getElementById('st-save').addEventListener('click', async () => {
+      const url = document.getElementById('st-url').value.trim();
+      const token = document.getElementById('st-token').value.trim();
+      const errBox = document.getElementById('st-error');
+      if (!url && !token) { clearSyncSettings(); closeOverlay(); showToast('已切换为本地模式'); return; }
+      if (!url || !token) { errBox.textContent = '请同时填写地址和密钥，或同时留空以关闭同步'; errBox.classList.remove('hidden'); return; }
+      settings = { url, token };
+      const btn = document.getElementById('st-save'); btn.disabled = true; btn.textContent = '连接中…';
+      try {
+        await apiGet();
+        saveSettings(settings);
+        errBox.classList.add('hidden');
+        showToast('同步已启用');
+        await pullFromServer(false);
+        render();
+        closeOverlay();
+      } catch (e) {
+        errBox.textContent = '连接失败：' + e.message; errBox.classList.remove('hidden');
+      } finally { btn.disabled = false; btn.textContent = hasSyncSettings() ? '保存并同步' : '启用同步'; }
+    });
+    document.getElementById('st-test').addEventListener('click', async () => {
+      const url = document.getElementById('st-url').value.trim();
+      const token = document.getElementById('st-token').value.trim();
+      const errBox = document.getElementById('st-error');
+      if (!url || !token) { errBox.textContent = '请先填写地址和密钥'; errBox.classList.remove('hidden'); return; }
+      const prev = settings; settings = { url, token };
+      try { await apiGet(); errBox.textContent = '连接成功 ✓'; errBox.style.color = 'var(--live)'; errBox.classList.remove('hidden'); }
+      catch (e) { errBox.textContent = '测试失败：' + e.message; errBox.style.color = 'var(--danger)'; errBox.classList.remove('hidden'); }
+      finally { settings = prev; if (!hasSyncSettings()) settings = null; setTimeout(()=>{ errBox.classList.add('hidden'); errBox.style.color=''; }, 2200); }
+    });
+    const dis = document.getElementById('st-disable');
+    if (dis) dis.addEventListener('click', () => {
+      if (!confirm('确定断开同步？本地数据会保留，仅清除地址和密钥。')) return;
+      clearSyncSettings(); renderSettingsDrawer(); showToast('已断开同步，保留本地数据');
+    });
+    // 兼容旧 onboarding 按钮
+    const obBtn = document.getElementById('ob-connect');
+    if (obBtn) obBtn.onclick = () => {
+      const url = document.getElementById('ob-url').value.trim();
+      const token = document.getElementById('ob-token').value.trim();
+      document.getElementById('st-url').value = url;
+      document.getElementById('st-token').value = token;
+      document.getElementById('st-save').click();
+    };
   }
 }
 
@@ -420,6 +555,8 @@ function render() { if (!state.loaded) return; renderStats(); renderChips(); ren
 // ---------- create project ----------
 function openCreateModal() {
   const drawer = document.getElementById('drawer');
+  // 保留同步抽屉的 T3 标记
+  drawer.setAttribute('data-liquid-glass',''); drawer.setAttribute('data-lg-preset','regular');
   drawer.innerHTML = `
     <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">新建项目</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
     <div class="field"><label>项目名称</label><input type="text" id="f-name" placeholder="例如：客服自动回复 Agent"></div>
@@ -451,6 +588,7 @@ function openDetail(id) { const p = state.projects.find(x => x.id === id); if (!
 
 function renderDetail(p) {
   const drawer = document.getElementById('drawer');
+  drawer.setAttribute('data-liquid-glass',''); drawer.setAttribute('data-lg-preset','regular');
   drawer.innerHTML = `
     <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">项目详情</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
     <div class="field"><label>项目名称</label><input type="text" id="d-name" value="${esc(p.name)}"></div>
@@ -584,7 +722,7 @@ function deleteProject(id) {
 }
 
 // ---------- overlay ----------
-function openOverlay() { document.getElementById('overlay').classList.add('show'); }
+function openOverlay() { document.getElementById('overlay').classList.add('show'); setTimeout(()=>{ if (window.ApxLiquidGlass) window.ApxLiquidGlass.instances.forEach(i=>i.markChanged(document.getElementById('drawer')))},80); }
 function closeOverlay() { document.getElementById('overlay').classList.remove('show'); }
 document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeOverlay(); });
 
@@ -592,21 +730,48 @@ document.getElementById('overlay').addEventListener('click', (e) => { if (e.targ
 document.getElementById('ob-connect').addEventListener('click', connectAndEnter);
 document.getElementById('addProjectBtn').addEventListener('click', () => openCreateModal());
 document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; render(); });
-document.getElementById('syncNowBtn').addEventListener('click', () => pullFromServer(true));
-document.getElementById('settingsBtn').addEventListener('click', () => showOnboarding());
+document.getElementById('syncNowBtn').addEventListener('click', () => {
+  if (!hasSyncSettings()) { openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; }
+  pullFromServer(true);
+});
+document.getElementById('settingsBtn').addEventListener('click', () => openSyncSettings());
 
-// 窗口重新获得焦点时自动拉取一次（比如从另一台设备切回来）
-window.addEventListener('focus', () => { if (settings && state.loaded) pullFromServer(false); });
-// 每 60 秒轮询一次，保证放着不动也能看到别的设备的更新
-setInterval(() => { if (settings && state.loaded) pullFromServer(false); }, 60000);
+// 窗口重新获得焦点时自动拉取一次（仅当已启用同步）
+window.addEventListener('focus', () => { if (hasSyncSettings() && state.loaded) pullFromServer(false); });
+// 每 60 秒轮询一次（仅当已启用同步）
+setInterval(() => { if (hasSyncSettings() && state.loaded) pullFromServer(false); }, 60000);
 
-// ---------- boot ----------
+// ---------- boot — 本机完整可用，同步仅后台可选 ----------
 (async function boot() {
   settings = loadSettings();
-  if (!settings || !settings.url || !settings.token) { showOnboarding(); return; }
+  // 本机优先：无论是否配置同步，立即展示本机数据
+  const cache = readCache();
+  if (cache && Array.isArray(cache.projects)) {
+    state.projects = cache.projects;
+  } else {
+    state.projects = [];
+  }
+  state.loaded = true;
   document.getElementById('appRoot').classList.remove('hidden');
-  await pullFromServer(false);
+  document.getElementById('onboardScreen').classList.add('hidden');
   render();
+  if (hasSyncSettings()) {
+    setSyncStatus('syncing');
+    await pullFromServer(false);
+  } else {
+    setSyncStatus('idle');
+  }
+  // T3 液态玻璃初始化（保留现配色，仅功能层）
+  if (window.ApxLiquidGlass && document.getElementById('lgScene')) {
+    try {
+      await window.ApxLiquidGlass.applyAll();
+      // 轻度调优：本机纸纹背景需要稍强折射以可见
+      const bar = document.getElementById('connectBar');
+      const drawer = document.getElementById('drawer');
+      if (bar && bar._lg) window.ApxLiquidGlass.instances[0]?.updateConfig(bar, { blur: 0.22, refraction: 0.95, chroma: 0.08 });
+      if (drawer && drawer._lg) window.ApxLiquidGlass.instances[0]?.updateConfig(drawer, { blur: 0.26, refraction: 0.9, chroma: 0.06 });
+    } catch (e) { console.warn('[glass] T3 init fail, fallback to CSS', e); }
+  }
 })();
 </script>
 </body>
