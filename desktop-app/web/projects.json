@@ -1,0 +1,377 @@
+{
+  "projects": [
+    {
+      "id": "p_be780f",
+      "name": "node_docx",
+      "description": "文档工具 · TypeScript/JavaScript Unknown 项目，位于 /Users/jungod/Documents/node_docx",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "文档工具",
+        "JavaScript",
+        "DocTool"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.101251+00:00",
+      "updatedAt": "2026-08-28T12:39:24.101481+00:00"
+    },
+    {
+      "id": "p_20b8b9",
+      "name": "academic-research-skills",
+      "description": "学术研究 Skills 集合 · 181+ 学术写作与研究工具，支持论文写作与文献管理",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.101987+00:00",
+      "updatedAt": "2026-08-28T12:39:24.101989+00:00"
+    },
+    {
+      "id": "p_040ef6",
+      "name": "nature-skills",
+      "description": "Nature 子刊投稿 Skills · 学术期刊写作辅助",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.102323+00:00",
+      "updatedAt": "2026-08-28T12:39:24.102325+00:00"
+    },
+    {
+      "id": "p_dcad26",
+      "name": "qinyan-academic-skills",
+      "description": "秦言学术 Skills · 中文论文写作与评审辅助",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.102603+00:00",
+      "updatedAt": "2026-08-28T12:39:24.102604+00:00"
+    },
+    {
+      "id": "p_c4a895",
+      "name": "04_笔记与网页草稿",
+      "description": "笔记与网页草稿 · 收集的研究笔记与网页存档",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "机器人",
+        "Robotics"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.103188+00:00",
+      "updatedAt": "2026-08-28T12:39:24.103189+00:00"
+    },
+    {
+      "id": "p_7e0034",
+      "name": "val_cn_export",
+      "description": "本机全自动分析师：扫码拉排位 → 本地引擎出处方 → 浏览器看板。不上传、不调大模型、不用手填打卡/VOD。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "通用工具"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.103444+00:00",
+      "updatedAt": "2026-08-28T12:39:24.103445+00:00"
+    },
+    {
+      "id": "p_e56480",
+      "name": "Win-Fonts-For-Mac-main",
+      "description": "*Windows中的中文常用字体打包，便于Mac下的网页浏览与文档编辑*。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.103701+00:00",
+      "updatedAt": "2026-08-28T12:39:24.103702+00:00"
+    },
+    {
+      "id": "p_3226e4",
+      "name": "FamilyLedger_Agent_Pack",
+      "description": "Local-first family accounting for Android and Windows. This repository now includes the Phase 0–1 Flutter monorepo scaffold plus read-only legacy Excel parsing.",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "Dart",
+        "Flutter",
+        "家庭记账",
+        "FinTech"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.103916+00:00",
+      "updatedAt": "2026-08-28T12:39:24.103917+00:00"
+    },
+    {
+      "id": "p_bb1dca",
+      "name": "FamilyLedger_Android_Build",
+      "description": "家庭记账/财务 · Unknown Unknown 项目，位于 /Users/jungod/Projects/FamilyLedger_Android_Build",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "家庭记账",
+        "FinTech"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.103989+00:00",
+      "updatedAt": "2026-08-28T12:39:24.103990+00:00"
+    },
+    {
+      "id": "p_cf1118",
+      "name": "TradingAgents",
+      "description": "Tauri · TradingAgents 项目（Python, Tauri, 量化交易），位于 TradingAgents",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "Python",
+        "Tauri",
+        "量化交易",
+        "Quant"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.104380+00:00",
+      "updatedAt": "2026-08-28T12:39:24.104381+00:00"
+    },
+    {
+      "id": "p_0920eb",
+      "name": "agent-workbench-app",
+      "description": "管理 AI Agent 项目和 Prompt 版本的个人工具，三端（Windows / macOS / Ubuntu）桌面 App + Cloudflare 自动同步。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "Tauri",
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.104592+00:00",
+      "updatedAt": "2026-08-28T12:39:24.104593+00:00"
+    },
+    {
+      "id": "p_dc8639",
+      "name": "ai_income_lab",
+      "description": "> 目标：用 AI agent 做生产力，抓住信息差，实现半自动/全自动化收入。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "量化交易",
+        "Quant"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.104969+00:00",
+      "updatedAt": "2026-08-28T12:39:24.104970+00:00"
+    },
+    {
+      "id": "p_244382",
+      "name": "ai_quant_lab_phase1",
+      "description": "这是\"个人AI量化研究系统\"的第一阶段：**先不碰 AI，把最基础的量化研究框架和诚实的对照组建立起来**。原因很简单——如果连最简单的价量因子策略都没法诚实、可复现地评估，那后面接入 ML/LLM 只会让\"看起来有效\"和\"真的有效\"之间的差距更难分辨。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "Python",
+        "量化交易",
+        "Quant"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.105518+00:00",
+      "updatedAt": "2026-08-28T12:39:24.105520+00:00"
+    },
+    {
+      "id": "p_a34315",
+      "name": "cc-switch",
+      "description": "React · cc-switch 项目（TypeScript, React, AI Agent 工具），位于 cc-switch",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "React",
+        "AI Agent 工具",
+        "JavaScript"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.105922+00:00",
+      "updatedAt": "2026-08-28T12:39:24.105923+00:00"
+    },
+    {
+      "id": "p_52f1b4",
+      "name": "grok-build-demo",
+      "description": "A tiny Python demo for practicing Grok Build: read the repo, change a file, run tests.",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "AI Agent 工具",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.106210+00:00",
+      "updatedAt": "2026-08-28T12:39:24.106211+00:00"
+    },
+    {
+      "id": "p_568b7a",
+      "name": "hold-still",
+      "description": "一只怕生的动物，只在你完全静止的时候靠近你。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "摄影",
+        "JavaScript",
+        "Photography"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.106678+00:00",
+      "updatedAt": "2026-08-28T12:39:24.106679+00:00"
+    },
+    {
+      "id": "p_29063f",
+      "name": "indoor-slam-drone",
+      "description": "室内 SLAM 涵道四轴无人机。当前方案 **slam3**：3 英寸桨、AIO 25.5mm 飞控、机载 RK3588S 跑 SLAM + 自主规划、全涵道防撞。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "机器人",
+        "Robotics"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.106894+00:00",
+      "updatedAt": "2026-08-28T12:39:24.106895+00:00"
+    },
+    {
+      "id": "p_290c06",
+      "name": "sun-print",
+      "description": "> 把物件摆在感光纸上，晒一段太阳，冲洗出它的影子。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "摄影",
+        "JavaScript",
+        "Photography"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.107467+00:00",
+      "updatedAt": "2026-08-28T12:39:24.107468+00:00"
+    },
+    {
+      "id": "p_307e5b",
+      "name": "tick-stock-panel",
+      "description": "量化交易 · tick-stock-panel 项目（React, 量化交易, Quant），位于 tick-stock-panel",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "React",
+        "量化交易",
+        "Quant"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.107720+00:00",
+      "updatedAt": "2026-08-28T12:39:24.107721+00:00"
+    },
+    {
+      "id": "p_ed038f",
+      "name": "xiaoxiao-steward",
+      "description": "手机端心理成长 PWA：本地记录每日身心状态与心情想法，通过你自备的大模型 API 做深度分析与成长建议。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "React",
+        "AI Agent 工具",
+        "JavaScript"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.108158+00:00",
+      "updatedAt": "2026-08-28T12:39:24.108160+00:00"
+    },
+    {
+      "id": "p_97f140",
+      "name": "claude-wechat-channel",
+      "description": "微信 Channel for [Claude Code](https://docs.anthropic.com/en/docs/claude-code)。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "AI Agent 工具",
+        "JavaScript",
+        "AI"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.108583+00:00",
+      "updatedAt": "2026-08-28T12:39:24.108584+00:00"
+    },
+    {
+      "id": "p_74602f",
+      "name": "digital-craft",
+      "description": "Interactive Digital Craft — 把传统工艺变成可交互的数字材料。",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "学术研究",
+        "Research"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.108769+00:00",
+      "updatedAt": "2026-08-28T12:39:24.108770+00:00"
+    },
+    {
+      "id": "p_130588",
+      "name": "jungod-photo",
+      "description": "编辑杂志风（Editorial，StyleKit `editorial` 风格）个人摄影网站：**风光 / 人文** 两个方向，照片按**国家/城市**分类，",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "摄影",
+        "JavaScript",
+        "Photography"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.109243+00:00",
+      "updatedAt": "2026-08-28T12:39:24.109246+00:00"
+    },
+    {
+      "id": "p_3f09f8",
+      "name": "pyslam",
+      "description": "机器人 · pyslam 项目（Python, 机器人, Robotics），位于 pyslam",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "Python",
+        "机器人",
+        "Robotics"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.109529+00:00",
+      "updatedAt": "2026-08-28T12:39:24.109530+00:00"
+    },
+    {
+      "id": "p_dcb975",
+      "name": "token-monitor",
+      "description": "<strong>EN</strong> | <a href=\"./README.zh-CN.md\">简</a> | <a href=\"./README.zh-TW.md\">繁</a> | <a href=\"./README.ko.md\">KO</a> | <a href=\"./README.ja.md\">JA</a>",
+      "stage": "idea",
+      "paused": false,
+      "tags": [
+        "TypeScript",
+        "Electron",
+        "AI Agent 工具",
+        "JavaScript"
+      ],
+      "prompts": [],
+      "createdAt": "2026-08-28T12:39:24.110007+00:00",
+      "updatedAt": "2026-08-28T12:39:24.110010+00:00"
+    }
+  ]
+}

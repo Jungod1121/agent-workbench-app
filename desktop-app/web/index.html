@@ -45,6 +45,7 @@ button,input,select,textarea{font-family:var(--apx-font)}
 }
 .drag-bar{position:fixed; top:0; left:0; right:0; height:28px; z-index:1000; -webkit-app-region:drag; pointer-events:auto}
 .app-shell{position:relative; z-index:1; display:flex; min-height:100vh; padding:44px 16px 16px; gap:16px}
+.sidebar{display:none !important}
 
 /* 侧栏 T0 */
 .sidebar{
@@ -170,7 +171,7 @@ button,input,select,textarea{font-family:var(--apx-font)}
 .content-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px}
 .content-title{font-size:28px; font-weight:600; letter-spacing:-0.02em; line-height:1.1; color:var(--apx-ink); margin:0}
 .content-sub{font-size:13px; color:var(--apx-muted); margin:6px 0 0}
-.bento-overview{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px}
+.bento-overview{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px}
 .bento-cell{border-radius:18px; padding:16px 16px 14px; background:var(--apx-parchment); border:1px solid var(--apx-hairline); min-height:96px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition: transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s, background .22s}
 .bento-cell:hover{border-color:rgba(0,0,0,0.14)}
 .bento-cell:active{transform:scale(0.97)}
@@ -192,13 +193,15 @@ button,input,select,textarea{font-family:var(--apx-font)}
 .toolbar-count{font-size:12px; color:var(--apx-muted)}
 
 /* 网格卡 18 无影 hairline 0.97 */
-.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px}
+.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:8px}
 .card{
-  background:#fff; border:1px solid var(--apx-hairline); border-radius:18px;
-  padding:18px 18px 16px; cursor:pointer; position:relative; overflow:hidden;
-  transition: transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s, background-color .22s;
+  background: linear-gradient(135deg, rgba(0,102,204,0.05) 0%, transparent 58%), #fff;
+  border:1px solid var(--apx-hairline); border-radius:18px;
+  padding:16px 16px 14px; cursor:pointer; position:relative; overflow:hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s, box-shadow .22s, background-color .22s;
 }
-.card:hover{transform:translateY(-1px); border-color:rgba(0,0,0,0.14)}
+.card:hover{transform:translateY(-2px); border-color:rgba(0,0,0,0.10); box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);}
 .card:active{transform:scale(0.97)}
 .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px}
 .card-name{font-size:15px; font-weight:600; letter-spacing:-0.01em; line-height:1.35; color:var(--apx-ink)}
@@ -262,7 +265,7 @@ button,input,select,textarea{font-family:var(--apx-font)}
 .prompt-card{background:#fff; border:1px solid var(--apx-hairline); border-radius:12px; padding:14px; margin-bottom:10px}
 .prompt-card pre{background:var(--apx-parchment); border:1px solid var(--apx-hairline); border-radius:8px; padding:10px; font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:160px; overflow:auto; margin:0 0 8px}
 
-@media (max-width: 1100px){ .topbar-center{display:none} }
+@media (max-width: 860px){ .topbar-center{display:none} }
 @media (max-width: 980px){ .bento-overview{grid-template-columns:repeat(2,1fr)} }
 @media (max-width: 860px){
   .app-shell{padding:0; gap:0}
@@ -339,6 +342,7 @@ button,input,select,textarea{font-family:var(--apx-font)}
           </div>
           <div class="content-actions">
             <span class="toolbar-count" id="toolbarCount"></span>
+            <button class="apx-btn apx-btn-secondary" id="importJsonBtn" style="min-height:36px; font-size:12px; padding:6px 12px;">导入本机项目</button>
           </div>
         </div>
         <div class="bento-overview" id="bentoOverview"></div>
@@ -859,12 +863,69 @@ document.addEventListener('keydown',(e)=>{
 });
 document.getElementById('syncNowBtn').addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 document.getElementById('settingsBtn').addEventListener('click',()=>openSyncSettings());
+document.getElementById('importJsonBtn').addEventListener('click', async()=>{
+  try{
+    const r=await fetch('./projects.json', {cache:'no-store'});
+    if(!r.ok) throw new Error('no file');
+    const d=await r.json();
+    if(!Array.isArray(d.projects)) throw new Error('bad format');
+    if(!confirm(`导入扫描到的 ${d.projects.length} 个项目？这将覆盖本地当前 ${state.projects.length} 个项目（可在设置中同步前先备份）。`)) return;
+    state.projects=d.projects;
+    cacheLocally(state.projects);
+    state.loaded=true;
+    render();
+    showToast(`已导入 ${d.projects.length} 个项目`);
+    // 若已配同步，询问是否立即推送
+    if(hasSyncSettings() && confirm('是否立即推送到云端同步？')) pushToServer();
+  }catch(e){ showToast('导入失败: '+e.message); }
+});
+// 托盘/DeepLink（Tauri）：stage-switch 与 agentworkbench://import
+(function initTauriEvents(){
+  try{
+    const tauriEvent = window.__TAURI__ && window.__TAURI__.event;
+    if(tauriEvent && tauriEvent.listen){
+      tauriEvent.listen('stage-switch', (e)=>{ const s=e.payload; if(typeof s==='string'){ state.filterStage=s; render(); showToast('已切换到 '+ (stageInfo(s).label||s)); }});
+      tauriEvent.listen('deeplink-import', (e)=>{
+        const raw=typeof e.payload==='string'?e.payload:e.payload;
+        try{
+          const url=new URL(raw);
+          const q=url.searchParams;
+          const syncUrl=q.get('url')||q.get('worker')||'';
+          const token=q.get('token')||'';
+          if(syncUrl && token){
+            settings={url:syncUrl, token: token};
+            saveSettings(settings);
+            showToast('已通过 DeepLink 导入同步配置');
+            pullFromServer(true);
+          } else {
+            showToast('DeepLink: '+raw);
+          }
+        }catch(err){ showToast('DeepLink 导入失败: '+raw); }
+      });
+    }
+  }catch(e){}
+})();
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
 (async function boot(){
   settings=loadSettings();
   const cache=readCache();
-  if(cache&&Array.isArray(cache.projects)){ state.projects=cache.projects; } else { state.projects=[]; }
+  if(cache&&Array.isArray(cache.projects) && cache.projects.length>0){ state.projects=cache.projects; }
+  else {
+    // 首份 JSON 自动导入：若本地缓存为空，尝试拉取同目录 projects.json（扫描本机项目生成）
+    try{
+      const r=await fetch('./projects.json', {cache:'no-store'});
+      if(r.ok){
+        const d=await r.json();
+        if(Array.isArray(d.projects) && d.projects.length){
+          state.projects=d.projects;
+          cacheLocally(state.projects);
+          console.info('[boot] loaded projects.json', state.projects.length);
+        } else { state.projects=[]; }
+      } else { state.projects=[]; }
+    }catch(e){ state.projects=[]; }
+    if(!state.projects.length && cache&&Array.isArray(cache.projects)) state.projects=cache.projects;
+  }
   state.loaded=true;
   document.getElementById('lgScene').classList.remove('hidden');
   render();

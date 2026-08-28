@@ -142,13 +142,23 @@ pub fn run() {
                 }
             }
 
-            // 托盘
+            // 托盘：Show + 阶段快切（对标 CC Switch 托盘 Provider 快切）+ 退出
             {
                 let menu = {
-                    use tauri::menu::{MenuBuilder, MenuItemBuilder};
+                    use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
                     let show = MenuItemBuilder::with_id("show", "显示主窗口").build(app)?;
+                    let sep1 = PredefinedMenuItem::separator(app)?;
+                    let s_all = MenuItemBuilder::with_id("stage_all", "全部").build(app)?;
+                    let s_idea = MenuItemBuilder::with_id("stage_idea", "构思中").build(app)?;
+                    let s_building = MenuItemBuilder::with_id("stage_building", "开发中").build(app)?;
+                    let s_testing = MenuItemBuilder::with_id("stage_testing", "测试中").build(app)?;
+                    let s_live = MenuItemBuilder::with_id("stage_live", "已上线").build(app)?;
+                    let s_paused = MenuItemBuilder::with_id("stage_paused", "已暂停").build(app)?;
+                    let sep2 = PredefinedMenuItem::separator(app)?;
                     let quit = MenuItemBuilder::with_id("quit", "退出").build(app)?;
-                    MenuBuilder::new(app).items(&[&show, &quit]).build()?
+                    MenuBuilder::new(app)
+                        .items(&[&show, &sep1, &s_all, &s_idea, &s_building, &s_testing, &s_live, &s_paused, &sep2, &quit])
+                        .build()?
                 };
                 let mut tray_builder = TrayIconBuilder::with_id(TRAY_ID)
                     .tooltip("Agent Workbench")
@@ -170,6 +180,12 @@ pub fn run() {
                                 let _ = w.set_focus();
                             }
                         }
+                        "stage_all" => { let _ = app.emit("stage-switch", "all"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
+                        "stage_idea" => { let _ = app.emit("stage-switch", "idea"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
+                        "stage_building" => { let _ = app.emit("stage-switch", "building"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
+                        "stage_testing" => { let _ = app.emit("stage-switch", "testing"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
+                        "stage_live" => { let _ = app.emit("stage-switch", "live"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
+                        "stage_paused" => { let _ = app.emit("stage-switch", "paused"); if let Some(w)=app.get_webview_window("main"){ let _=w.show(); let _=w.set_focus(); } },
                         "quit" => app.exit(0),
                         _ => {}
                     });
