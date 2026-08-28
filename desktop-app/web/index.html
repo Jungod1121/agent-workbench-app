@@ -346,8 +346,51 @@ function loadSettings(){ try{ return JSON.parse(localStorage.getItem(SETTINGS_KE
 function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 function hasSyncSettings(){ return !!(settings && settings.url && settings.token); }
 function clearSyncSettings(){ settings=null; localStorage.removeItem(SETTINGS_KEY); setSyncStatus('idle'); }
-function cacheLocally(projects){ localStorage.setItem(CACHE_KEY, JSON.stringify({projects, cachedAt:new Date().toISOString()})); }
+function cacheLocally(projects){ localStorage.setItem(CACHE_KEY, JSON.stringify({projects, cachedAt:new Date().toISOString()})); try{ dbSaveProjects(projects).catch(()=>{}); }catch(e){} }
 function readCache(){ try{ return JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){ return null; } }
+// ---- W1: Tauri DB bridge（对标 CC Switch Database::* 写透 + WAL） ----
+const SYNC_STATE_KEY='workbench-sync-state';
+function loadSyncState(){ try{ return JSON.parse(localStorage.getItem(SYNC_STATE_KEY)||'null')||{}; }catch(e){ return {}; } }
+function saveSyncState(s){ localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(s)); }
+let syncState=loadSyncState();
+function tauriInvoke(cmd, args){ 
+  try{
+    if(window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) return window.__TAURI__.core.invoke(cmd, args);
+    if(window.__TAURI__ && window.__TAURI__.invoke) return window.__TAURI__.invoke(cmd, args);
+  }catch(e){}
+  return Promise.reject(new Error('tauri not available'));
+}
+function dbAvailable(){ return !!(window.__TAURI__ && ( (window.__TAURI__.core && window.__TAURI__.core.invoke) || window.__TAURI__.invoke)); }
+async function dbGetProjects(){ if(!dbAvailable()) return null; try{ return await tauriInvoke('get_projects'); }catch(e){ console.warn('dbGet failed',e); return null; } }
+async function dbSaveProjects(projects){ if(!dbAvailable()) return; try{ await tauriInvoke('save_projects', {projects}); }catch(e){ console.warn('dbSave failed',e); } }
+async function dbBackupNow(note){ if(!dbAvailable()) return null; try{ return await tauriInvoke('backup_now', {note}); }catch(e){ console.warn('backup failed',e); return null; } }
+async function dbListBackups(){ if(!dbAvailable()) return []; try{ return await tauriInvoke('list_backups'); }catch(e){ return []; } }
+async function safetyBackup(note){ try{ const id=await dbBackupNow(note||'auto'); if(id) showToast('已备份 '+id); return id; }catch(e){ return null; } }
+async function showConflictDialog(remoteCount, localCount, remoteAt){
+  return new Promise(resolve=>{
+    const overlay=document.getElementById('overlay');
+    const drawer=document.getElementById('drawer');
+    const prev=drawer.innerHTML;
+    drawer.innerHTML=`
+      <div class="drawer-head"><h2>同步冲突</h2><button class="drawer-close" id="conflictClose">×</button></div>
+      <div class="drawer-body">
+        <div class="sync-preview" style="background:hsl(var(--destructive) / 0.08); border-color:hsl(var(--destructive) / 0.2); color:hsl(var(--destructive));">检测到本地与云端均有未同步的修改（本地 ${localCount} 项 / 云端 ${remoteCount} 项，云端更新于 ${remoteAt?new Date(remoteAt).toLocaleString('zh-CN'):'未知'}）。直接覆盖会导致一端丢失。</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
+          <button class="btn btn-primary" id="conflictUseRemote">使用云端覆盖本地（先备份本地）</button>
+          <button class="btn btn-secondary" id="conflictKeepLocal">保留本地并推送到云端</button>
+          <button class="btn btn-secondary" id="conflictCancel">取消，稍后手动处理</button>
+        </div>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:12px;">提示：任一操作前会自动创建 safety backup（对标 CC Switch backupsApi.createDbBackup + backupRetainCount）。</div>
+      </div>`;
+    openOverlay();
+    const close=(val)=>{ closeOverlay(); setTimeout(()=>{ drawer.innerHTML=prev; },220); resolve(val); };
+    document.getElementById('conflictClose').addEventListener('click',()=>close('cancel'));
+    document.getElementById('conflictUseRemote').addEventListener('click',()=>close('remote'));
+    document.getElementById('conflictKeepLocal').addEventListener('click',()=>close('local'));
+    document.getElementById('conflictCancel').addEventListener('click',()=>close('cancel'));
+    document.getElementById('overlay').addEventListener('click', function handler(e){ if(e.target.id==='overlay'){ document.getElementById('overlay').removeEventListener('click', handler); close('cancel'); } }, {once:true});
+  });
+}
 function apiUrl(path){ return settings.url.replace(/\/+$/,'')+path; }
 async function apiGet(){ if(!hasSyncSettings()) throw new Error('no sync'); const r=await fetch(apiUrl('/api/state'),{headers:{'X-Sync-Token':settings.token}}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function apiPut(projects){ if(!hasSyncSettings()) throw new Error('no sync'); const r=await fetch(apiUrl('/api/state'),{method:'PUT',headers:{'Content-Type':'application/json','X-Sync-Token':settings.token},body:JSON.stringify({projects})}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
@@ -356,22 +399,53 @@ async function pullFromServer(showToastOnSuccess){
   setSyncStatus('syncing');
   try{
     const data=await apiGet();
-    state.projects=data.projects||[]; state.loaded=true; cacheLocally(state.projects);
-    setSyncStatus('ok', data.updatedAt); render(); if(showToastOnSuccess) showToast('已同步最新数据');
+    const remoteProjects=data.projects||[];
+    const remoteAt=data.updatedAt||null;
+    const localDirty=syncState.dirty===true;
+    const lastSyncedAt=syncState.lastSyncedAt||null;
+    const conflict=localDirty && lastSyncedAt && remoteAt && remoteAt!==lastSyncedAt;
+    if(conflict){
+      const choice=await showConflictDialog(remoteProjects.length, state.projects.length, remoteAt);
+      if(choice==='remote'){
+        await safetyBackup('conflict-remote-overwrites-local');
+        state.projects=remoteProjects; state.loaded=true; cacheLocally(state.projects); await dbSaveProjects(state.projects);
+        syncState.lastSyncedAt=remoteAt; syncState.dirty=false; saveSyncState(syncState);
+        setSyncStatus('ok', remoteAt); render(); if(showToastOnSuccess) showToast('已使用云端覆盖本地');
+        return;
+      } else if(choice==='local'){
+        await safetyBackup('conflict-local-pushes');
+        setSyncStatus('syncing');
+        try{ const res=await apiPut(state.projects); syncState.lastSyncedAt=res.updatedAt||new Date().toISOString(); syncState.dirty=false; saveSyncState(syncState); setSyncStatus('ok', syncState.lastSyncedAt); showToast('已将本地推送到云端'); }catch(e){ setSyncStatus('offline'); showToast('推送失败，已保留本地'); }
+        return;
+      } else {
+        setSyncStatus('offline'); showToast('已取消同步，请手动处理'); return;
+      }
+    }
+    // 无冲突：直接覆盖本地，但先备份
+    if(localDirty) await safetyBackup('pull-overwrites-dirty');
+    state.projects=remoteProjects; state.loaded=true; cacheLocally(state.projects); await dbSaveProjects(state.projects);
+    syncState.lastSyncedAt=remoteAt; syncState.dirty=false; saveSyncState(syncState);
+    setSyncStatus('ok', remoteAt); render(); if(showToastOnSuccess) showToast('已同步最新数据');
   }catch(e){
-    const cache=readCache();
-    if(cache) { state.projects=cache.projects; state.loaded=true; }
-    else if(!state.loaded){ state.projects=[]; state.loaded=true; }
+    const dbData=await dbGetProjects();
+    if(dbData && Array.isArray(dbData) && dbData.length){ state.projects=dbData; state.loaded=true; cacheLocally(state.projects); }
+    else {
+      const cache=readCache();
+      if(cache) { state.projects=cache.projects; state.loaded=true; }
+      else if(!state.loaded){ state.projects=[]; state.loaded=true; }
+    }
     setSyncStatus('offline'); render();
   }
 }
 function scheduleAutoPush(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushToServer,500); }
 async function pushToServer(){
   cacheLocally(state.projects);
+  try{ await dbSaveProjects(state.projects); }catch(e){}
+  syncState.dirty=true; syncState.lastLocalAt=new Date().toISOString(); saveSyncState(syncState);
   if(!hasSyncSettings()){ setSyncStatus('idle'); return; }
   setSyncStatus('syncing');
-  try{ const res=await apiPut(state.projects); setSyncStatus('ok', res.updatedAt); }
-  catch(e){ setSyncStatus('offline'); showToast('同步失败，已保存在本地，联网后会自动重试'); }
+  try{ const res=await apiPut(state.projects); syncState.lastSyncedAt=res.updatedAt||new Date().toISOString(); syncState.dirty=false; saveSyncState(syncState); setSyncStatus('ok', res.updatedAt); }
+  catch(e){ setSyncStatus('offline'); showToast('同步失败，已保存在本地（SQLite+WAL），联网后会自动重试'); }
 }
 async function saveData(){ scheduleAutoPush(); }
 function setSyncStatus(status, updatedAt){
@@ -555,10 +629,15 @@ function renderSettingsDrawer(prefillError){
       <div class="sync-preview hidden" id="st-error" style="background:hsl(var(--destructive) / 0.08); color:hsl(var(--destructive)); border-color:hsl(var(--destructive) / 0.2); margin-bottom:12px;">${prefillError?esc(prefillError):''}</div>
       <div class="field"><label>Worker 地址</label><input type="text" id="st-url" placeholder="https://agent-workbench-sync.xxx.workers.dev" value="${hasSync?esc(settings.url):''}"></div>
       <div class="field"><label>同步密钥 · X-Sync-Token</label><input type="password" id="st-token" placeholder="部署时设置的密钥" value="${hasSync?esc(settings.token):''}"><div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:6px;">密钥仅存本机，不发往除 Worker 外的任何地方。两端留空即视为关闭同步。</div></div>
-      <div class="sync-preview">状态：${hasSync?(syncStatus==='ok'?'已同步':'已配置，未连接'):'未设置（本地模式）'}<br>本机缓存：${localCount} 个项目 · 整体覆盖（后保存覆盖先保存）</div>
+      <div class="sync-preview">状态：${hasSync?(syncStatus==='ok'?'已同步':'已配置，未连接'):'未设置（本地模式）'}<br>本机缓存：${localCount} 个项目 · SQLite WAL 持久（${dbAvailable()?'已启用':'浏览器预览'}) · ${syncState.dirty?'本地有未同步修改':'已与云端一致'}</div>
       <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" id="st-save" style="flex:1;">${hasSync?'保存并同步':'启用同步'}</button><button class="btn btn-secondary" id="st-test">测试连接</button></div>
       ${hasSync?`<button class="btn btn-secondary" id="st-disable" style="width:100%;margin-top:10px; color:hsl(var(--destructive));">断开同步（保留本地数据）</button>`:``}
       <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:12px;">提示：三台设备填同一组地址+密钥即可互相同步；断网时正常用，联网后自动补推。DeepLink: agentworkbench://import?url=&token=</div>
+      <div style="margin-top:20px; border-top:1px solid hsl(var(--border)); padding-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;"><label style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:hsl(var(--muted-foreground)); margin:0">本地备份 · SQLite WAL（对标 CC backupRetainCount 30）</label><button class="btn btn-secondary" id="backupNowBtn" style="min-height:28px; font-size:11px; padding:4px 8px;">立即备份</button></div>
+        <div id="backupList" style="margin-top:8px; display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; font-size:12px;">加载中…</div>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px;">说明：任何覆盖操作前自动 safetyBackup；保留 30 份，按时间倒序。路径：app_config_dir/backups/</div>
+      </div>
     `;
     if(prefillError) document.getElementById('st-error').classList.remove('hidden');
     document.getElementById('st-save').addEventListener('click', async()=>{
@@ -584,6 +663,38 @@ function renderSettingsDrawer(prefillError){
     });
     const dis=document.getElementById('st-disable');
     if(dis) dis.addEventListener('click',()=>{ if(!confirm('确定断开同步？本地数据会保留，仅清除地址和密钥。')) return; clearSyncSettings(); renderSettingsDrawer(); showToast('已断开同步，保留本地数据'); });
+    // W1: 备份列表（对标 CC Switch BackupListSection + backupRetainCount）
+    const backupListEl=document.getElementById('backupList');
+    const backupBtn=document.getElementById('backupNowBtn');
+    if(backupBtn) backupBtn.addEventListener('click', async()=>{ const id=await dbBackupNow('manual'); if(id){ showToast('已备份 '+id); loadBackups(); } else showToast('备份失败（仅 Tauri 可用）'); });
+    async function loadBackups(){
+      if(!backupListEl) return;
+      const list=await dbListBackups();
+      if(!list || !list.length){ backupListEl.innerHTML='<div style="color:hsl(var(--muted-foreground)); padding:8px; border:1px dashed hsl(var(--border)); border-radius:8px; text-align:center">暂无备份（首次自动备份在导入/冲突时创建）</div>'; return; }
+      backupListEl.innerHTML=list.map(b=>`
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border:1px solid hsl(var(--border)); border-radius:8px; background:hsl(var(--card));">
+          <div style="min-width:0; flex:1">
+            <div style="font-weight:500; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${esc(b.id)}</div>
+            <div style="font-size:11px; color:hsl(var(--muted-foreground));">${new Date(b.created_at).toLocaleString('zh-CN')} · ${(b.size_bytes/1024).toFixed(1)}KB · ${esc(b.note||'')}</div>
+          </div>
+          <div style="display:flex; gap:4px; flex-shrink:0">
+            <button class="btn btn-secondary" data-restore="${esc(b.id)}" style="min-height:28px; font-size:11px; padding:4px 8px;">恢复</button>
+            <button class="btn btn-secondary" data-delete="${esc(b.id)}" style="min-height:28px; font-size:11px; padding:4px 8px; color:hsl(var(--destructive));">删除</button>
+          </div>
+        </div>`).join('');
+      backupListEl.querySelectorAll('[data-restore]').forEach(btn=>btn.addEventListener('click', async()=>{
+        const id=btn.getAttribute('data-restore');
+        if(!confirm('确定恢复备份 '+id+'？当前数据将被备份后覆盖。')) return;
+        await safetyBackup('pre-restore-'+id);
+        try{ await tauriInvoke('restore_backup', {id}); const data=await dbGetProjects(); if(Array.isArray(data)){ state.projects=data; cacheLocally(state.projects); render(); showToast('已恢复 '+id+'，重启后生效'); } }catch(e){ showToast('恢复失败: '+e.message); }
+      }));
+      backupListEl.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click', async()=>{
+        const id=btn.getAttribute('data-delete');
+        if(!confirm('删除备份 '+id+'？')) return;
+        try{ await tauriInvoke('delete_backup', {id}); showToast('已删除'); loadBackups(); }catch(e){ showToast('删除失败'); }
+      }));
+    }
+    loadBackups();
   }
 }
 
@@ -939,11 +1050,12 @@ document.getElementById('importJsonBtn').addEventListener('click', async()=>{
     const d=await r.json();
     if(!Array.isArray(d.projects)) throw new Error('bad format');
     if(!confirm(`导入扫描到的 ${d.projects.length} 个项目？这将覆盖本地当前 ${state.projects.length} 个项目。`)) return;
+    await safetyBackup('pre-import-projects-json');
     state.projects=d.projects;
-    cacheLocally(state.projects);
+    cacheLocally(state.projects); try{ await dbSaveProjects(state.projects); syncState.dirty=true; syncState.lastLocalAt=new Date().toISOString(); saveSyncState(syncState); }catch(e){}
     state.loaded=true;
     render();
-    showToast(`已导入 ${d.projects.length} 个项目`);
+    showToast(`已导入 ${d.projects.length} 个项目（已备份）`);
     if(hasSyncSettings() && confirm('是否立即推送到云端同步？')) pushToServer();
   }catch(e){ showToast('导入失败: '+e.message); }
 });
@@ -980,20 +1092,31 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
 })();
 (async function boot(){
   settings=loadSettings();
-  const cache=readCache();
-  if(cache&&Array.isArray(cache.projects) && cache.projects.length>0){ state.projects=cache.projects; }
-  else {
-    try{
-      const r=await fetch('./projects.json', {cache:'no-store'});
-      if(r.ok){
-        const d=await r.json();
-        if(Array.isArray(d.projects) && d.projects.length){
-          state.projects=d.projects;
-          cacheLocally(state.projects);
+  // ---- W1: DB 优先（对标 CC Switch Database::init + WAL）+ 断电不丢 ----
+  let dbProjects=null;
+  try{ dbProjects=await dbGetProjects(); }catch(e){}
+  if(Array.isArray(dbProjects) && dbProjects.length){
+    state.projects=dbProjects; cacheLocally(state.projects);
+  } else {
+    const cache=readCache();
+    if(cache&&Array.isArray(cache.projects) && cache.projects.length>0){ state.projects=cache.projects; try{ await dbSaveProjects(state.projects); }catch(e){} }
+    else {
+      try{
+        const r=await fetch('./projects.json', {cache:'no-store'});
+        if(r.ok){
+          const d=await r.json();
+          if(Array.isArray(d.projects) && d.projects.length){
+            state.projects=d.projects;
+            cacheLocally(state.projects); try{ await dbSaveProjects(state.projects); }catch(e){}
+          } else { state.projects=[]; }
         } else { state.projects=[]; }
-      } else { state.projects=[]; }
-    }catch(e){ state.projects=[]; }
-    if(!state.projects.length && cache&&Array.isArray(cache.projects)) state.projects=cache.projects;
+      }catch(e){ state.projects=[]; }
+      if(!state.projects.length && cache&&Array.isArray(cache.projects)) { state.projects=cache.projects; try{ await dbSaveProjects(state.projects); }catch(e){} }
+    }
+    // 若 DB 空但有数据，说明首次由 localStorage 迁移
+    if(Array.isArray(dbProjects) && dbProjects.length===0 && state.projects.length>0){
+      try{ await dbSaveProjects(state.projects); await safetyBackup('migrate-localstorage-to-sqlite'); }catch(e){}
+    }
   }
   state.loaded=true;
   render();

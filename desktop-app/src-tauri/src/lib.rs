@@ -1,4 +1,4 @@
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, State};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_window_state::StateFlags;
@@ -6,14 +6,61 @@ use tauri_plugin_window_state::StateFlags;
 #[cfg(target_os = "macos")]
 use tauri::image::Image;
 
+mod db;
+use db::{BackupInfo, Database, Project};
+
 const TRAY_ID: &str = "main-tray";
+
+struct AppState {
+    db: Database,
+}
+
+// ---- Tauri commands: DB / backup (W1) ----
+#[tauri::command]
+fn get_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
+    state.db.get_all_projects()
+}
+
+#[tauri::command]
+fn save_projects(state: State<'_, AppState>, projects: Vec<Project>) -> Result<(), String> {
+    state.db.save_all_projects(projects)
+}
+
+#[tauri::command]
+fn backup_now(state: State<'_, AppState>, note: String) -> Result<String, String> {
+    state.db.backup_now(&note)
+}
+
+#[tauri::command]
+fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupInfo>, String> {
+    state.db.list_backups()
+}
+
+#[tauri::command]
+fn restore_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    state.db.restore_backup(&id)
+}
+
+#[tauri::command]
+fn delete_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    state.db.delete_backup(&id)
+}
+
+#[tauri::command]
+fn set_window_theme(theme: String) -> Result<(), String> {
+    log::info!("set_window_theme: {}", theme);
+    Ok(())
+}
+
+fn fallback_config_dir() -> std::path::PathBuf {
+    std::env::temp_dir().join("agent-workbench")
+}
 
 fn handle_deeplink_url(app: &tauri::AppHandle, url: &str) -> bool {
     if !url.starts_with("agentworkbench://") {
         return false;
     }
     log::info!("Deep link: {url}");
-    // 解析后发射给前端，前端监听 deeplink-import
     if let Err(e) = app.emit("deeplink-import", url.to_string()) {
         log::error!("emit deeplink-import failed: {e}");
     } else {
@@ -64,13 +111,10 @@ pub fn run() {
         }));
     }
 
-    // 深度链接
     builder = builder.plugin(tauri_plugin_deep_link::init());
 
-    // 窗口关闭 -> 隐藏到托盘（保留后台），与 CC Switch minimize_to_tray 思路一致但简化为总是隐藏
     builder = builder.on_window_event(|window, event| {
         if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-            // 仅主窗口拦截，隐藏到托盘而非退出，用户可托盘 Quit 真正退出
             if window.label() == "main" {
                 api.prevent_close();
                 let _ = window.hide();
@@ -92,12 +136,43 @@ pub fn run() {
                 .with_state_flags(window_state_flags())
                 .build(),
         )
+        .invoke_handler(tauri::generate_handler![
+            get_projects,
+            save_projects,
+            backup_now,
+            list_backups,
+            restore_backup,
+            delete_backup,
+            set_window_theme
+        ])
         .setup(|app| {
-            // Windows AppUserModelID
+            // ---- W1: SQLite 初始化（对标 CC Switch Database::init） ----
+            {
+                let config_dir = app
+                    .path()
+                    .app_config_dir()
+                    .unwrap_or_else(|_| fallback_config_dir());
+                match Database::init(config_dir) {
+                    Ok(db) => {
+                        app.manage(AppState { db });
+                        log::info!("Database managed");
+                    }
+                    Err(e) => {
+                        log::error!("Database init failed: {e}");
+                        let tmp = std::env::temp_dir().join("agent-workbench-fallback.db");
+                        let fallback_dir = tmp.parent().unwrap().to_path_buf();
+                        let _ = std::fs::create_dir_all(&fallback_dir);
+                        // tmp 是文件路径，需要传其父目录
+                        if let Ok(db) = Database::init(fallback_dir) {
+                            app.manage(AppState { db });
+                        }
+                    }
+                }
+            }
+
             #[cfg(target_os = "windows")]
             set_windows_app_user_model_id(app.handle());
 
-            // 日志：落盘到 app_config_dir/logs
             {
                 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
                 let log_dir = app.path().app_config_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).join("logs");
@@ -117,7 +192,6 @@ pub fn run() {
                 log::info!("Agent Workbench v{} started", env!("CARGO_PKG_VERSION"));
             }
 
-            // Updater：桌面端才注册，pubkey 无效时仅 warn 不崩
             #[cfg(desktop)]
             {
                 if let Err(e) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
@@ -125,9 +199,7 @@ pub fn run() {
                 }
             }
 
-            // 深度链接注册 & 回调
             {
-                // 注册 schemes（已在 tauri.conf 声明，此处仅订阅事件）
                 app.deep_link().on_open_url({
                     let handle = app.handle().clone();
                     move |event| {
@@ -136,13 +208,11 @@ pub fn run() {
                         }
                     }
                 });
-                // 处理启动参数中的 deeplink（Windows/Linux）
                 for arg in std::env::args() {
                     handle_deeplink_url(app.handle(), &arg);
                 }
             }
 
-            // 托盘：Show + 阶段快切（对标 CC Switch 托盘 Provider 快切）+ 退出
             {
                 let menu = {
                     use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
@@ -192,7 +262,6 @@ pub fn run() {
 
                 #[cfg(target_os = "macos")]
                 {
-                    // 使用模板图标适配深浅色，若不存在则回退默认图标
                     const ICON: &[u8] = include_bytes!("../icons/icon.png");
                     if let Ok(img) = Image::from_bytes(ICON) {
                         tray_builder = tray_builder.icon(img).icon_as_template(true);
@@ -209,9 +278,7 @@ pub fn run() {
                 let _ = tray_builder.build(app)?;
             }
 
-            // 主窗口：Overlay 需显式 show（visible:false）
             if let Some(w) = app.get_webview_window("main") {
-                // 延迟 show 确保前端已就绪，避免白屏；与 CC Switch 窗口显示时机一致
                 let win = w.clone();
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_millis(120)).await;
