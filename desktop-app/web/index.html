@@ -231,6 +231,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
         <div class="usage-stat"><b id="usageProxy">●</b><br><span>代理</span></div>
       </div>
 
+      <!-- W4 差异化视图：项目 / 模板库 / 试跑 -->
+      <div id="viewSwitcher" style="display:flex; gap:6px; margin-bottom:12px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border)); width:fit-content"></div>
+
       <div class="toolbar">
         <div class="chips" id="filterChips"></div>
         <span class="toolbar-count" id="toolbarCount"></span>
@@ -253,9 +256,20 @@ const STAGES = [
   { key: 'testing',  label: '测试中', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'live',     label: '已上线', color: '#059669', bg: '#d1fae5' },
 ];
+const PROMPT_TEMPLATES=[
+  {id:'ptpl1', name:'客服助手 · 通用', category:'通用', content:'你是专业的客服助手，请用友好、简洁的语言回答用户问题。\n用户输入：{{user_input}}\n请给出准确、有帮助的回答。', tags:['客服','通用'], installs:342},
+  {id:'ptpl2', name:'学术审稿 · 严谨', category:'研究', content:'你是一名严谨的学术审稿人，请对以下论文段落给出结构化审稿意见：\n{{paper}}\n要求：1. 创新性 2. 方法严谨性 3. 写作清晰度', tags:['学术','研究'], installs:210},
+  {id:'ptpl3', name:'周报生成 · 职场', category:'工作', content:'请根据以下工作要点生成一份简洁的周报：\n{{bullets}}\n格式：本周完成/下周计划/风险', tags:['工作','效率'], installs:189},
+  {id:'ptpl4', name:'提示词优化 · 元', category:'通用', content:'请将以下提示词改写得更清晰、更具约束性，并保留原意：\n{{prompt}}\n输出：优化后的提示词', tags:['Prompt','优化'], installs:156},
+];
+const PROJECT_TEMPLATES=[
+  {id:'pjt1', name:'客服 Agent 模板', category:'work', stage:'idea', description:'客服自动回复 Agent 含 3 个 Prompt 版本位', tags:['客服','Agent'], icon:'💬', icon_color:'#0A84FF'},
+  {id:'pjt2', name:'研究助手模板', category:'research', stage:'idea', description:'文献管理 + 审稿 Prompt 组合', tags:['研究','学术'], icon:'📚', icon_color:'#7c3aed'},
+  {id:'pjt3', name:'周报机器人模板', category:'work', stage:'building', description:'对接企业微信群的周报生成器', tags:['工作','自动化'], icon:'📊', icon_color:'#059669'},
+];
 const SETTINGS_KEY = 'workbench-settings';
 const CACHE_KEY = 'workbench-cache';
-let state = { projects: [], filterStage: 'all', search: '', loaded: false, page:1, pageSize:10 };
+let state = { projects: [], filterStage: 'all', search: '', loaded: false, page:1, pageSize:10, view:'projects', tplCategory:'all', diffA:null, diffB:null };
 let settings = null;
 let syncStatus = 'idle';
 let pushTimer = null;
@@ -994,6 +1008,13 @@ function highlight(text, q){
   const after=esc(text.slice(idx+q.length));
   return `${before}<mark style="background:hsl(48 96% 53% / 0.3); padding:0 2px; border-radius:2px">${match}</mark>${after}`;
 }
+function renderViewSwitcher(){
+  const el=document.getElementById('viewSwitcher');
+  if(!el) return;
+  const views=[{key:'projects',label:'项目'},{key:'templates',label:'模板库'},{key:'playground',label:'试跑'}];
+  el.innerHTML=views.map(v=>`<button class="btn ${state.view===v.key?'btn-primary':'btn-secondary'}" data-view="${v.key}" style="min-height:32px; padding:6px 14px; font-size:12px">${v.label}</button>`).join('');
+  el.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.view; state.page=1; render(); }));
+}
 function filteredProjects(){
   return state.projects
     .filter(p=>state.filterStage==='paused'?p.paused:(state.filterStage==='all'?true:p.stage===state.filterStage))
@@ -1008,6 +1029,131 @@ function filteredProjects(){
         || (p.prompts||[]).some(pr=> (pr.title||'').toLowerCase().includes(q) || (pr.content||'').toLowerCase().includes(q));
     })
     .sort((a,b)=> ( (a.sort_index||0)-(b.sort_index||0) ) || (new Date(b.updatedAt)-new Date(a.updatedAt)) );
+}
+function filteredTemplates(){
+  const q=(state.search||'').toLowerCase();
+  return PROMPT_TEMPLATES
+    .filter(t=> state.tplCategory==='all' || t.category===state.tplCategory)
+    .filter(t=> !q || t.name.toLowerCase().includes(q) || t.content.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || t.tags.some(x=>x.toLowerCase().includes(q)))
+    .sort((a,b)=> b.installs - a.installs);
+}
+function simpleLineDiff(a,b){
+  const al=a.split('\n'), bl=b.split('\n');
+  const max=Math.max(al.length, bl.length);
+  let out='';
+  for(let i=0;i<max;i++){
+    const la=al[i]??''; const lb=bl[i]??'';
+    if(la===lb) out+=`<div style="background:hsl(var(--muted)/0.3); padding:2px 6px; font-family:ui-monospace,Menlo,monospace; font-size:11px">${esc(la)||' '}</div>`;
+    else {
+      if(la!==undefined && la!=='') out+=`<div style="background:hsl(0 84% 95%); color:hsl(0 84% 35%); padding:2px 6px; font-family:ui-monospace,Menlo,monospace; font-size:11px; border-left:3px solid hsl(var(--destructive))">- ${esc(la)}</div>`;
+      if(lb!==undefined && lb!=='') out+=`<div style="background:hsl(142 76% 92%); color:#166534; padding:2px 6px; font-family:ui-monospace,Menlo,monospace; font-size:11px; border-left:3px solid #059669">+ ${esc(lb)}</div>`;
+    }
+  }
+  return out||'<div style="padding:8px; color:hsl(var(--muted-foreground)); font-size:12px">无差异</div>';
+}
+function renderTemplates(){
+  const el=document.getElementById('gridArea');
+  const list=filteredTemplates();
+  const toolbarCount=document.getElementById('toolbarCount');
+  const topbarMeta=document.getElementById('topbarMeta');
+  if(topbarMeta) topbarMeta.textContent='模板库 · '+list.length+' 个 · 按安装量排序';
+  if(toolbarCount) toolbarCount.textContent=list.length+' / '+PROMPT_TEMPLATES.length;
+  const tplCats=['all','通用','研究','工作'];
+  const catPills=`<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px">${tplCats.map(c=>`<button class="chip ${state.tplCategory===c?'active':''}" data-tpl-cat="${c}">${c==='all'?'全部':c}</button>`).join('')}</div>`;
+  if(list.length===0){ el.innerHTML=catPills+`<div class="empty"><h3>没有匹配的模板</h3><p>试试换个筛选或搜索词</p></div>`;
+    el.querySelectorAll('[data-tpl-cat]').forEach(b=>b.addEventListener('click',()=>{ state.tplCategory=b.dataset.tplCat; renderTemplates(); }));
+    return;
+  }
+  el.innerHTML=catPills+`<div class="list">${list.map(t=>`
+    <div class="list-row" style="cursor:default">
+      <div class="list-icon" style="background:hsl(var(--primary) / 0.12); color:hsl(var(--primary)); border-color:hsl(var(--primary) / 0.2)">${esc(t.category[0].toUpperCase())}</div>
+      <div class="list-main"><div class="list-name">${highlight(t.name, state.search)} <span class="badge" style="margin-left:6px; background:hsl(var(--secondary))">${esc(t.category)}</span><span class="badge" style="margin-left:4px; background:hsl(142 76% 92%); color:#166534; border-color:hsl(142 76% 85%)">⬇ ${t.installs}</span></div><div class="list-desc" style="font-family:ui-monospace, Menlo, monospace; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${highlight(t.content.slice(0,80), state.search)} · ${t.tags.join(', ')}</div></div>
+      <button class="btn btn-primary" data-tpl="${t.id}" style="min-height:32px; font-size:12px">套用</button>
+    </div>`).join('')}</div>`;
+  el.querySelectorAll('[data-tpl-cat]').forEach(b=>b.addEventListener('click',()=>{ state.tplCategory=b.dataset.tplCat; renderTemplates(); }));
+  el.querySelectorAll('[data-tpl]').forEach(btn=>btn.addEventListener('click',()=>{
+    const tpl=PROMPT_TEMPLATES.find(x=>x.id===btn.dataset.tpl);
+    if(!tpl) return;
+    // 选项目
+    const choices=state.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    const drawer=document.getElementById('drawer');
+    drawer.innerHTML=`
+      <div class="drawer-head"><h2>套用模板 · ${esc(tpl.name)}</h2><button class="drawer-close" id="closeBtn">×</button></div>
+      <div class="drawer-body">
+        <div class="field"><label>选择项目</label><select id="tpl-project">${choices||'<option value="">先创建项目</option>'}</select></div>
+        <div class="field"><label>模板内容预览</label><pre style="background:hsl(var(--muted)/0.5); border:1px solid hsl(var(--border)); border-radius:8px; padding:12px; font-size:12px; white-space:pre-wrap; max-height:240px; overflow:auto">${esc(tpl.content)}</pre></div>
+        <div style="display:flex; gap:8px"><button class="btn btn-primary" id="tpl-apply" style="flex:1">套用到项目</button><button class="btn btn-secondary" id="tpl-cancel">取消</button></div>
+      </div>`;
+    openOverlay();
+    document.getElementById('closeBtn').addEventListener('click', closeOverlay);
+    document.getElementById('tpl-cancel').addEventListener('click', closeOverlay);
+    document.getElementById('tpl-apply').addEventListener('click',()=>{
+      const pid=document.getElementById('tpl-project').value;
+      const proj=state.projects.find(x=>x.id===pid);
+      if(!proj){ showToast('请选择项目'); return; }
+      const now=new Date().toISOString();
+      proj.prompts=proj.prompts||[];
+      proj.prompts.push({id:uid('pr'), title:tpl.name, content:tpl.content, version: (Math.max(0,...proj.prompts.map(p=>p.version))+1), notes:'来自模板 '+tpl.name, isCurrent: proj.prompts.length===0, createdAt:now});
+      proj.updatedAt=now;
+      saveData(); closeOverlay(); render(); showToast('已套用模板到 '+proj.name);
+    });
+  }));
+}
+function interpolatePrompt(content, vars){
+  let out=content;
+  Object.entries(vars).forEach(([k,v])=>{ out=out.replaceAll('{{'+k+'}}', v).replaceAll('{{ '+k+' }}', v); });
+  return out;
+}
+function renderPlayground(){
+  const el=document.getElementById('gridArea');
+  const topbarMeta=document.getElementById('topbarMeta');
+  const toolbarCount=document.getElementById('toolbarCount');
+  if(topbarMeta) topbarMeta.textContent='试跑 · 本地代理 · 变量插值';
+  if(toolbarCount) toolbarCount.textContent='Playground';
+  const allPrompts=state.projects.flatMap(p=>p.prompts.map(pr=>({pr, pName:p.name}))).sort((a,b)=> new Date(b.pr.createdAt)-new Date(a.pr.createdAt));
+  const lastPrompt = allPrompts[0]?.pr;
+  const opts=state.projects.flatMap(p=>p.prompts.map(pr=>`<option value="${pr.id}">${esc(p.name)} · ${esc(pr.title)} v${pr.version}</option>`)).join('');
+  el.innerHTML=`
+    <div style="display:grid; gap:16px; max-width:760px">
+      <div class="field"><label>选择 Prompt</label><select id="pg-prompt" style="width:100%; min-height:36px; border-radius:8px; border:1px solid hsl(var(--border)); padding:8px 10px">${opts || '<option value="">暂无 Prompt，先在项目中创建</option>'}</select><div id="pg-preview" class="sync-preview" style="margin-top:8px; white-space:pre-wrap; font-family:ui-monospace,Menlo,monospace; font-size:11px; max-height:140px; overflow:auto">${lastPrompt?esc(lastPrompt.content):'选择一个 Prompt 预览…'}</div></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div class="field" style="margin:0"><label>user_input</label><textarea id="pg-input" rows="3" placeholder="会替换 {{user_input}}"></textarea></div>
+        <div class="field" style="margin:0"><label>bullets / paper / prompt（按模板需要）</label><textarea id="pg-extra" rows="3" placeholder="会替换 {{bullets}} / {{paper}} / {{prompt}}"></textarea></div>
+      </div>
+      <div class="field"><label>渲染后 Prompt（本地插值，不发远端）</label><pre id="pg-rendered" style="background:hsl(var(--muted)/0.5); border:1px solid hsl(var(--border)); border-radius:8px; padding:10px; font-size:11px; white-space:pre-wrap; min-height:64px; overflow:auto">—</pre></div>
+      <div style="display:flex; gap:8px"><button class="btn btn-primary" id="pg-run" style="flex:1">经由本机代理试跑（回显）</button><button class="btn btn-secondary" id="pg-copy">复制渲染结果</button><button class="btn btn-secondary" id="pg-clear">清空</button></div>
+      <div id="pg-result" class="sync-preview" style="min-height:80px; white-space:pre-wrap; font-family:ui-monospace, Menlo, monospace; font-size:12px">等待试跑... 代理回显仅验证链路，不调大模型。</div>
+      <div style="font-size:11px; color:hsl(var(--muted-foreground))">W4 差异化：支持 {{user_input}}/{{bullets}} 等变量本地插值后再经 axum 代理回显，便于在发模型前确认 Prompt 形态。</div>
+    </div>`;
+  function refreshPreview(){
+    const pid=document.getElementById('pg-prompt').value;
+    const found=allPrompts.find(x=>x.pr.id===pid)?.pr || lastPrompt;
+    const previewEl=document.getElementById('pg-preview');
+    const renderedEl=document.getElementById('pg-rendered');
+    if(!found){ previewEl.textContent='暂无'; renderedEl.textContent='—'; return; }
+    previewEl.textContent=found.content;
+    const vars={ user_input: document.getElementById('pg-input').value, bullets: document.getElementById('pg-extra').value, paper: document.getElementById('pg-extra').value, prompt: document.getElementById('pg-extra').value };
+    renderedEl.textContent=interpolatePrompt(found.content, vars);
+  }
+  document.getElementById('pg-prompt').addEventListener('change', refreshPreview);
+  document.getElementById('pg-input').addEventListener('input', refreshPreview);
+  document.getElementById('pg-extra').addEventListener('input', refreshPreview);
+  refreshPreview();
+  document.getElementById('pg-copy').addEventListener('click', async()=>{ const t=document.getElementById('pg-rendered').textContent; try{ await navigator.clipboard.writeText(t); showToast('已复制渲染结果'); }catch(e){ showToast(t.slice(0,40)); } });
+  document.getElementById('pg-clear').addEventListener('click',()=>{ document.getElementById('pg-input').value=''; document.getElementById('pg-extra').value=''; refreshPreview(); document.getElementById('pg-result').textContent='已清空'; });
+  document.getElementById('pg-run').addEventListener('click', async()=>{
+    const pid=document.getElementById('pg-prompt').value;
+    const rendered=document.getElementById('pg-rendered').textContent;
+    const st=await proxyGetStatus();
+    const resultEl=document.getElementById('pg-result');
+    if(!st.is_running){ resultEl.textContent='代理未运行，请先在 设置→代理 启动'; return; }
+    resultEl.textContent='请求中... http://'+st.address+' ...\n'+rendered.slice(0,200)+'...';
+    try{
+      const r=await fetch('http://'+st.address+'/', {method:'POST', headers:{'Content-Type':'application/json', 'X-Prompt-Id': pid}, body: JSON.stringify({prompt_id: pid, rendered_prompt: rendered, timestamp: new Date().toISOString()})});
+      const txt=await r.text();
+      resultEl.textContent='代理回显 '+r.status+'\n'+txt.slice(0,700)+'\n\n── 渲染后 Prompt ──\n'+rendered.slice(0,800);
+    }catch(e){ resultEl.textContent='试跑失败: '+e.message+'\n'+rendered.slice(0,400); }
+  });
 }
 function renderGrid(){
   const el=document.getElementById('gridArea');
@@ -1181,7 +1327,19 @@ function render(){
   if(addBtn) addBtn.textContent=t('app.addProject');
   const importBtn=document.getElementById('importJsonBtn');
   if(importBtn) importBtn.textContent=t('app.import');
-  renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
+  renderViewSwitcher();
+  const isProj=state.view==='projects';
+  const toolbar=document.querySelector('.toolbar');
+  const stageWrap=document.getElementById('stagePillWrap');
+  const topbarCenter=document.querySelector('.topbar-center');
+  if(toolbar) toolbar.style.display=isProj?'flex':'none';
+  if(stageWrap) stageWrap.style.display=isProj?'flex':'none';
+  if(topbarCenter) topbarCenter.style.display=isProj?'flex':'none';
+  renderStagePill(); renderChips();
+  if(state.view==='templates') renderTemplates();
+  else if(state.view==='playground') renderPlayground();
+  else renderGrid();
+  updateUsage(); updateSearchClear(); 
 }
 
 const CATEGORIES=[{key:'general',label:'通用'},{key:'work',label:'工作'},{key:'personal',label:'个人'},{key:'research',label:'研究'},{key:'product',label:'产品'},{key:'finance',label:'财务'}];
@@ -1195,6 +1353,18 @@ function openCreateModal(){
       <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>阶段</label><select id="f-stage">${STAGES.map(s=>`<option value="${s.key}">${s.label}</option>`).join('')}</select></div><div><label>分类 · category</label><select id="f-category">${CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select></div></div>
       <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>图标 · icon（可选）</label><input type="text" id="f-icon" placeholder="如 zap / star，留空首字母"></div><div><label>图标颜色</label><div style="display:flex; gap:6px"><input type="color" id="f-icon-color" value="#0A84FF" style="width:48px; height:36px; padding:2px; flex-shrink:0"><input type="text" id="f-icon-color-text" placeholder="#0A84FF" style="flex:1"></div></div></div>
       <div class="field"><label>标签 · 逗号分隔</label><input type="text" id="f-tags" placeholder="客服, GPT-4, 内部工具"></div>
+      <div class="field"><label>项目模板 · 点一下直接创建（W4 差异化）</label>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
+          ${PROJECT_TEMPLATES.map(pt=>`
+            <button class="pjt-tpl-card" data-pjt="${pt.id}" style="text-align:left; padding:10px; border-radius:10px; border:1px solid hsl(var(--border)); background:hsl(var(--muted)/0.4); cursor:pointer; display:flex; flex-direction:column; gap:4px">
+              <span style="font-size:18px">${pt.icon}</span>
+              <span style="font-size:12px; font-weight:600; line-height:1.2">${esc(pt.name)}</span>
+              <span style="font-size:10px; color:hsl(var(--muted-foreground)); line-height:1.3">${esc(pt.description)}</span>
+              <span style="font-size:10px; color:hsl(var(--primary)); font-weight:600">+ 使用</span>
+            </button>`).join('')}
+        </div>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px">或手动填表创建；模板含阶段/分类/标签，可二次编辑。</div>
+      </div>
       <button class="btn btn-primary" id="saveNewBtn" style="width:100%;margin-top:6px;">创建项目</button>
     </div>`;
   openOverlay();
@@ -1217,6 +1387,14 @@ function openCreateModal(){
     state.projects.push({id:uid('p'),name,description:document.getElementById('f-desc').value.trim(),stage:document.getElementById('f-stage').value,paused:false,tags,prompts:[],createdAt:now,updatedAt:now,sort_index:maxSort+1,category,icon,icon_color,meta:{}});
     saveData(); closeOverlay(); render(); showToast('项目已创建');
   });
+  drawer.querySelectorAll('.pjt-tpl-card').forEach(btn=>btn.addEventListener('click',()=>{
+    const tpl=PROJECT_TEMPLATES.find(x=>x.id===btn.dataset.pjt);
+    if(!tpl) return;
+    const now=new Date().toISOString();
+    const maxSort=Math.max(0, ...state.projects.map(p=>p.sort_index||0));
+    state.projects.push({id:uid('p'), name: tpl.name+' · 副本', description: tpl.description, stage: tpl.stage, paused:false, tags: tpl.tags.slice(), prompts:[], createdAt:now, updatedAt:now, sort_index:maxSort+1, category: tpl.category, icon: tpl.icon, icon_color: tpl.icon_color, meta:{ fromTemplate: tpl.id }});
+    saveData(); closeOverlay(); render(); showToast('已从模板创建：'+tpl.name);
+  }));
 }
 function openDetail(id){ const p=state.projects.find(x=>x.id===id); if(!p) return; renderDetail(p); openOverlay(); }
 function renderDetail(p){
@@ -1234,6 +1412,7 @@ function renderDetail(p){
       <hr style="border:0;border-top:1px solid hsl(var(--border));margin:20px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:14px;font-weight:600;margin:0;">Prompt 版本 · ${ (p.prompts||[]).length}</h3><button class="btn btn-secondary" id="addPromptBtn" style="min-height:32px; font-size:12px; padding:6px 10px;">+ 添加 Prompt</button></div>
       <div id="promptFormSlot"></div>
+      <div id="diffSlot" style="margin-bottom:12px"></div>
       <div id="promptList">${renderPromptList(p)}</div>
     </div>`;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
@@ -1247,11 +1426,77 @@ function renderDetail(p){
   document.getElementById('saveDetailBtn').addEventListener('click',()=>saveDetailFields(p.id));
   document.getElementById('deleteProjectBtn').addEventListener('click',()=>deleteProject(p.id));
   document.getElementById('addPromptBtn').addEventListener('click',()=>showPromptForm(p.id,null));
+  // diff bar
+  const diffSlot=document.getElementById('diffSlot');
+  if(diffSlot){
+    diffSlot.innerHTML=renderDiffBar(p);
+    const diffA=document.getElementById('diffA');
+    const diffB=document.getElementById('diffB');
+    if(diffA && diffB && p.prompts.length>=2){
+      diffA.value=p.prompts.slice().sort((a,b)=>b.version-a.version)[0].id;
+      diffB.value=p.prompts.slice().sort((a,b)=>b.version-a.version)[1].id;
+    }
+    const diffGo=document.getElementById('diffGo');
+    const diffClear=document.getElementById('diffClear');
+    if(diffGo) diffGo.addEventListener('click',()=>{
+      const aId=document.getElementById('diffA').value;
+      const bId=document.getElementById('diffB').value;
+      if(!aId||!bId||aId===bId){ showToast('请选择两个不同版本'); return; }
+      showPromptDiff(p.id, aId, bId);
+    });
+    if(diffClear) diffClear.addEventListener('click',()=>{
+      const res=document.getElementById('diffResult');
+      if(res) res.remove();
+      else showToast('没有对比结果可清除');
+    });
+  }
   bindPromptListEvents(p.id);
+}
+function showPromptDiff(projectId, aId, bId){
+  const p=state.projects.find(x=>x.id===projectId);
+  const a=(p.prompts||[]).find(x=>x.id===aId);
+  const b=(p.prompts||[]).find(x=>x.id===bId);
+  if(!a||!b) return;
+  let prev=document.getElementById('diffResult');
+  if(prev) prev.remove();
+  const diffSlot=document.getElementById('diffSlot');
+  const html=`<div id="diffResult" style="border:1px solid hsl(var(--border)); border-radius:8px; overflow:hidden; margin-top:8px">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:hsl(var(--muted)); border-bottom:1px solid hsl(var(--border))">
+      <span style="font-size:12px; font-weight:600">v${a.version} ${esc(a.title)} ↔ v${b.version} ${esc(b.title)}</span>
+      <button class="btn btn-secondary" id="diffClose" style="min-height:28px; font-size:11px">关闭</button>
+    </div>
+    <div style="max-height:280px; overflow:auto; border-top:1px solid hsl(var(--border))">${simpleLineDiff(a.content, b.content)}</div>
+    <div style="display:flex; gap:6px; padding:8px; background:hsl(var(--card))">
+      <button class="btn btn-primary" id="rollbackA" style="flex:1; min-height:32px; font-size:12px">将 v${a.version} 回滚为新版</button>
+      <button class="btn btn-secondary" id="rollbackB" style="flex:1; min-height:32px; font-size:12px">将 v${b.version} 回滚为新版</button>
+    </div>
+  </div>`;
+  diffSlot.insertAdjacentHTML('beforeend', html);
+  document.getElementById('diffClose').addEventListener('click',()=> document.getElementById('diffResult').remove());
+  document.getElementById('rollbackA').addEventListener('click',()=> rollbackPrompt(projectId, aId));
+  document.getElementById('rollbackB').addEventListener('click',()=> rollbackPrompt(projectId, bId));
+}
+function rollbackPrompt(projectId, promptId){
+  const p=state.projects.find(x=>x.id===projectId);
+  const src=(p.prompts||[]).find(x=>x.id===promptId);
+  if(!src) return;
+  if(!confirm(`将「${src.title} v${src.version}」复制为新版本？`)) return;
+  const now=new Date().toISOString();
+  const nextVersion=(Math.max(0,...p.prompts.map(pr=>pr.version))+1);
+  p.prompts.push({id:uid('pr'), title: src.title+' (回滚)', content: src.content, version: nextVersion, notes: `回滚自 v${src.version} · ${src.title}`, isCurrent:false, createdAt:now});
+  p.updatedAt=now;
+  saveData();
+  renderDetail(p);
+  showToast('已回滚为 v'+nextVersion);
 }
 function renderPromptList(p){
   const prompts=(p.prompts||[]).slice().sort((a,b)=>b.version-a.version);
   if(prompts.length===0) return `<p style="color:hsl(var(--muted-foreground));font-size:13px; padding:14px; background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:8px;">还没有添加 Prompt。点“添加 Prompt”开始记录第一版。</p>`;
+  if(prompts.length>=2){
+    // diff 选择条
+    const opts=prompts.map(pr=>`<option value="${pr.id}">v${pr.version} · ${esc(pr.title)}</option>`).join('');
+    // 放在首卡前 via extra header? 直接拼在顶部
+  }
   return prompts.map(pr=>`
     <div class="prompt-card" data-prompt-id="${pr.id}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
@@ -1261,11 +1506,27 @@ function renderPromptList(p){
       <pre>${esc(pr.content)}</pre>
       ${pr.notes?`<div style="font-size:12px;color:hsl(var(--muted-foreground));margin-bottom:8px;">备注：${esc(pr.notes)}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${!pr.isCurrent?`<button class="btn btn-secondary" data-act="current" style="min-height:32px; font-size:12px; padding:6px 10px;">设为当前版本</button>`:''}
+        ${!pr.isCurrent?`<button class="btn btn-secondary" data-act="current" style="min-height:32px; font-size:12px; padding:6px 10px;">设为当前</button>`:''}
         <button class="btn btn-secondary" data-act="edit" style="min-height:32px; font-size:12px; padding:6px 10px;">编辑</button>
+        <button class="btn btn-secondary" data-act="diff" style="min-height:32px; font-size:12px; padding:6px 10px;">↔ 对比</button>
+        <button class="btn btn-secondary" data-act="rollback" style="min-height:32px; font-size:12px; padding:6px 10px;">⎌ 回滚为新版</button>
         <button class="btn btn-secondary" data-act="delete" style="min-height:32px; font-size:12px; padding:6px 10px; color:hsl(var(--destructive));">删除</button>
       </div>
     </div>`).join('');
+}
+function renderDiffBar(p){
+  const prompts=(p.prompts||[]).slice().sort((a,b)=>b.version-a.version);
+  if(prompts.length<2) return '';
+  const opts=prompts.map(pr=>`<option value="${pr.id}">${esc('v'+pr.version+' · '+pr.title)}</option>`).join('');
+  return `
+    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:hsl(var(--muted)/0.5); border:1px solid hsl(var(--border)); border-radius:8px; margin-bottom:8px">
+      <span style="font-size:11px; font-weight:600; color:hsl(var(--muted-foreground))">版本对比：</span>
+      <select id="diffA" style="flex:1; min-height:32px; border-radius:8px; border:1px solid hsl(var(--border)); padding:4px 8px; font-size:12px">${opts}</select>
+      <span style="font-size:12px; color:hsl(var(--muted-foreground))">↔</span>
+      <select id="diffB" style="flex:1; min-height:32px; border-radius:8px; border:1px solid hsl(var(--border)); padding:4px 8px; font-size:12px">${opts}</select>
+      <button class="btn btn-primary" id="diffGo" style="min-height:32px; font-size:12px">对比</button>
+      <button class="btn btn-secondary" id="diffClear" style="min-height:32px; font-size:12px">清除</button>
+    </div>`;
 }
 function bindPromptListEvents(projectId){
   const container=document.getElementById('promptList');
@@ -1277,6 +1538,16 @@ function bindPromptListEvents(projectId){
         if(act==='current') setCurrentPrompt(projectId,promptId);
         else if(act==='edit'){ const p=state.projects.find(x=>x.id===projectId); showPromptForm(projectId,p.prompts.find(x=>x.id===promptId)); }
         else if(act==='delete') deletePrompt(projectId,promptId);
+        else if(act==='diff'){ // 选中该版为 A，另一版为当前最新
+          const p=state.projects.find(x=>x.id===projectId);
+          const other=(p.prompts||[]).slice().sort((a,b)=>b.version-a.version).find(x=>x.id!==promptId);
+          if(!other){ showToast('至少需要两版才能对比'); return; }
+          const diffA=document.getElementById('diffA');
+          const diffB=document.getElementById('diffB');
+          if(diffA && diffB){ diffA.value=promptId; diffB.value=other.id; }
+          showPromptDiff(projectId, promptId, other.id);
+        }
+        else if(act==='rollback') rollbackPrompt(projectId, promptId);
       });
     });
   });
