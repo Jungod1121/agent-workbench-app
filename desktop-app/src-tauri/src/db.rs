@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-const SCHEMA_VERSION: i32 = 1;
+const SCHEMA_VERSION: i32 = 2;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +36,17 @@ pub struct Project {
     pub updated_at: String,
     #[serde(default)]
     pub sort_index: i64,
+    #[serde(default = "default_category")]
+    pub category: String,
+    #[serde(default)]
+    pub icon: Option<String>,
+    #[serde(default)]
+    pub icon_color: Option<String>,
+    #[serde(default)]
+    pub meta: Option<serde_json::Value>,
 }
+
+fn default_category() -> String { "general".to_string() }
 
 pub struct Database {
     conn: Mutex<Connection>,
@@ -79,6 +89,10 @@ impl Database {
                 paused INTEGER NOT NULL DEFAULT 0,
                 tags TEXT NOT NULL DEFAULT '[]',
                 sort_index INTEGER NOT NULL DEFAULT 0,
+                category TEXT NOT NULL DEFAULT 'general',
+                icon TEXT,
+                icon_color TEXT,
+                meta TEXT NOT NULL DEFAULT '{}',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
@@ -127,7 +141,26 @@ impl Database {
     }
 
     fn apply_migrations(&self) -> Result<(), String> {
-        // W1 only version 1, future migrations go here
+        let conn = self.conn.lock().map_err(|e| format!("lock failed: {e}"))?;
+        let current: i32 = conn
+            .query_row("SELECT value FROM meta WHERE key='schema_version'", [], |r| r.get::<_, String>(0))
+            .optional()
+            .map_err(|e| format!("read version failed: {e}"))?
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1);
+        if current < 2 {
+            // v1→v2: add category/icon/icon_color/meta
+            let _ = conn.execute("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'general'", []);
+            let _ = conn.execute("ALTER TABLE projects ADD COLUMN icon TEXT", []);
+            let _ = conn.execute("ALTER TABLE projects ADD COLUMN icon_color TEXT", []);
+            let _ = conn.execute("ALTER TABLE projects ADD COLUMN meta TEXT NOT NULL DEFAULT '{}'", []);
+            conn.execute(
+                "UPDATE meta SET value=?1 WHERE key='schema_version'",
+                params!["2"],
+            )
+            .map_err(|e| format!("update version failed: {e}"))?;
+            log::info!("Migrated DB v1→v2 (category/icon/meta)");
+        }
         Ok(())
     }
 
@@ -181,7 +214,7 @@ impl Database {
         let conn = self.conn.lock().map_err(|e| format!("lock failed: {e}"))?;
         let mut stmt = conn
             .prepare(
-                "SELECT id, name, description, stage, paused, tags, sort_index, created_at, updated_at FROM projects ORDER BY sort_index ASC, updated_at DESC",
+                "SELECT id, name, description, stage, paused, tags, sort_index, category, icon, icon_color, meta, created_at, updated_at FROM projects ORDER BY sort_index ASC, updated_at DESC",
             )
             .map_err(|e| format!("prepare failed: {e}"))?;
         let project_rows = stmt
@@ -195,17 +228,22 @@ impl Database {
                     row.get::<_, String>(5)?,
                     row.get::<_, i64>(6)?,
                     row.get::<_, String>(7)?,
-                    row.get::<_, String>(8)?,
+                    row.get::<_, Option<String>>(8)?,
+                    row.get::<_, Option<String>>(9)?,
+                    row.get::<_, String>(10)?,
+                    row.get::<_, String>(11)?,
+                    row.get::<_, String>(12)?,
                 ))
             })
             .map_err(|e| format!("query failed: {e}"))?;
 
         let mut projects: Vec<Project> = Vec::new();
         for r in project_rows {
-            let (id, name, description, stage, paused, tags_json, sort_index, created_at, updated_at) =
+            let (id, name, description, stage, paused, tags_json, sort_index, category, icon, icon_color, meta_json, created_at, updated_at) =
                 r.map_err(|e| format!("row failed: {e}"))?;
             let tags: Vec<String> =
                 serde_json::from_str(&tags_json).unwrap_or_default();
+            let meta: Option<serde_json::Value> = if meta_json.trim().is_empty() || meta_json=="{}" { None } else { serde_json::from_str(&meta_json).ok() };
             // load prompts for this project
             let mut p_stmt = conn
                 .prepare(
@@ -213,7 +251,7 @@ impl Database {
                 )
                 .map_err(|e| format!("prepare prompts failed: {e}"))?;
             let prompt_rows = p_stmt
-                .query_map(params![id], |row| {
+                .query_map(params![id.clone()], |row| {
                     Ok(Prompt {
                         id: row.get(0)?,
                         title: row.get(1)?,
@@ -240,6 +278,10 @@ impl Database {
                 created_at,
                 updated_at,
                 sort_index,
+                category: if category.is_empty() { "general".to_string() } else { category },
+                icon,
+                icon_color,
+                meta,
             });
         }
         Ok(projects)
@@ -257,9 +299,10 @@ impl Database {
             .map_err(|e| format!("delete projects failed: {e}"))?;
         for p in projects {
             let tags_json = serde_json::to_string(&p.tags).unwrap_or_else(|_| "[]".to_string());
+            let meta_json = p.meta.as_ref().map(|v| serde_json::to_string(v).unwrap_or_else(|_| "{}".to_string())).unwrap_or_else(|| "{}".to_string());
             tx.execute(
-                "INSERT INTO projects (id, name, description, stage, paused, tags, sort_index, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
-                params![p.id, p.name, p.description, p.stage, if p.paused {1} else {0}, tags_json, p.sort_index, p.created_at, p.updated_at],
+                "INSERT INTO projects (id, name, description, stage, paused, tags, sort_index, category, icon, icon_color, meta, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
+                params![p.id, p.name, p.description, p.stage, if p.paused {1} else {0}, tags_json, p.sort_index, p.category, p.icon, p.icon_color, meta_json, p.created_at, p.updated_at],
             )
             .map_err(|e| format!("insert project {} failed: {e}", p.id))?;
             for pr in p.prompts {

@@ -7,7 +7,9 @@ use tauri_plugin_window_state::StateFlags;
 use tauri::image::Image;
 
 mod db;
+mod proxy;
 use db::{BackupInfo, Database, Project};
+use proxy::{ProxyState, ProxyStatus};
 
 const TRAY_ID: &str = "main-tray";
 
@@ -50,6 +52,34 @@ fn delete_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
 fn set_window_theme(theme: String) -> Result<(), String> {
     log::info!("set_window_theme: {}", theme);
     Ok(())
+}
+
+// ---- W2: Proxy minimal (对标 CC Switch proxyApi) ----
+#[tauri::command]
+fn get_proxy_status(state: State<'_, ProxyState>) -> Result<ProxyStatus, String> {
+    Ok(state.get_status())
+}
+
+#[tauri::command]
+async fn start_proxy(state: State<'_, ProxyState>, upstream: String) -> Result<ProxyStatus, String> {
+    state.start(upstream).await
+}
+
+#[tauri::command]
+async fn stop_proxy(state: State<'_, ProxyState>) -> Result<(), String> {
+    state.stop().await
+}
+
+#[tauri::command]
+async fn set_proxy_upstream(state: State<'_, ProxyState>, upstream: String) -> Result<ProxyStatus, String> {
+    let st = state.get_status();
+    if st.is_running {
+        state.stop().await.ok();
+        state.start(upstream).await
+    } else {
+        state.set_upstream(upstream.clone());
+        Ok(state.get_status())
+    }
 }
 
 fn fallback_config_dir() -> std::path::PathBuf {
@@ -143,9 +173,15 @@ pub fn run() {
             list_backups,
             restore_backup,
             delete_backup,
-            set_window_theme
+            set_window_theme,
+            get_proxy_status,
+            start_proxy,
+            stop_proxy,
+            set_proxy_upstream
         ])
         .setup(|app| {
+            // W2: Proxy state
+            app.manage(ProxyState::default());
             // ---- W1: SQLite 初始化（对标 CC Switch Database::init） ----
             {
                 let config_dir = app

@@ -116,6 +116,11 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .list-row:last-child{border-bottom:0}
 .list-row:hover{background:hsl(var(--muted) / 0.5)}
 .list-row:active{background:hsl(var(--muted))}
+.list-row.dragging{opacity:0.4; border:1px dashed hsl(var(--primary)); background:hsl(var(--primary) / 0.05)}
+.list-row.drag-over{border-top:2px solid hsl(var(--primary))}
+.drag-handle{width:20px; height:36px; display:grid; place-items:center; cursor:grab; color:hsl(var(--muted-foreground)); flex-shrink:0; border-radius:6px}
+.drag-handle:hover{background:hsl(var(--muted)); color:hsl(var(--foreground))}
+.drag-handle:active{cursor:grabbing}
 .list-icon{width:36px; height:36px; border-radius:8px; background:hsl(var(--muted)); border:1px solid hsl(var(--border)); display:grid; place-items:center; flex-shrink:0; font-size:12px; font-weight:600; color:hsl(var(--muted-foreground))}
 .list-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
 .list-name{font-size:14px; font-weight:500; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -366,6 +371,11 @@ async function dbSaveProjects(projects){ if(!dbAvailable()) return; try{ await t
 async function dbBackupNow(note){ if(!dbAvailable()) return null; try{ return await tauriInvoke('backup_now', {note}); }catch(e){ console.warn('backup failed',e); return null; } }
 async function dbListBackups(){ if(!dbAvailable()) return []; try{ return await tauriInvoke('list_backups'); }catch(e){ return []; } }
 async function safetyBackup(note){ try{ const id=await dbBackupNow(note||'auto'); if(id) showToast('已备份 '+id); return id; }catch(e){ return null; } }
+// ---- W2: Proxy 真服务（对标 CC Switch proxyApi 2s 轮询） ----
+async function proxyGetStatus(){ if(!dbAvailable()) return {is_running:false, address:'', port:0, upstream: localStorage.getItem('proxy-upstream')||''}; try{ return await tauriInvoke('get_proxy_status'); }catch(e){ return {is_running: localStorage.getItem('proxy-enabled')==='1', address: '127.0.0.1:19840', port:19840, upstream: localStorage.getItem('proxy-upstream')||''}; } }
+async function proxyStart(upstream){ if(!dbAvailable()){ localStorage.setItem('proxy-enabled','1'); localStorage.setItem('proxy-upstream', upstream||''); return {is_running:true, upstream}; } try{ return await tauriInvoke('start_proxy', {upstream: upstream||''}); }catch(e){ throw e; } }
+async function proxyStop(){ if(!dbAvailable()){ localStorage.setItem('proxy-enabled','0'); return; } try{ return await tauriInvoke('stop_proxy'); }catch(e){ throw e; } }
+async function proxySetUpstream(upstream){ if(!dbAvailable()){ localStorage.setItem('proxy-upstream', upstream||''); return; } try{ return await tauriInvoke('set_proxy_upstream', {upstream}); }catch(e){ localStorage.setItem('proxy-upstream', upstream); } }
 async function showConflictDialog(remoteCount, localCount, remoteAt){
   return new Promise(resolve=>{
     const overlay=document.getElementById('overlay');
@@ -516,36 +526,83 @@ function renderSettingsDrawer(prefillError){
         </div>
       </div>
       <div class="field"><label>本机存储</label><div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div></div>
-      <div class="field"><label>本机代理（18 轻量）</label><div class="sync-preview">本地代理：<b>${localStorage.getItem('proxy-enabled')==='1'?'已启用':'未启用'}</b> · 端口 19840 · 仅演示，未做真实转发（对标 CC Switch 本地代理）。<br>切换：<button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">${localStorage.getItem('proxy-enabled')==='1'?'关闭代理':'启用代理'}</button></div></div>
-      <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button></div>
+      <div class="field"><label>本机代理 · 真服务（W2）</label><div class="sync-preview" id="proxy-mini-status">加载中…</div><button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">切换代理</button></div>
+      <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button><button class="btn btn-secondary" id="goProxyBtn" style="flex:1;">去代理设置 →</button></div>
     `;
     body.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=> setLanguage(b.dataset.lang)));
     body.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=> { applyTheme(b.dataset.theme); renderSettingsDrawer(); }));
     document.getElementById('goSyncBtn').addEventListener('click',()=>{ settingsTab='sync'; renderSettingsDrawer(); });
-    document.getElementById('proxyToggle').addEventListener('click',()=>{
-      const enabled=localStorage.getItem('proxy-enabled')==='1'?'0':'1';
-      localStorage.setItem('proxy-enabled', enabled);
-      showToast(enabled==='1'?'代理已启用（演示）':'代理已关闭');
-      renderSettingsDrawer();
-      updateUsage();
+    document.getElementById('goProxyBtn').addEventListener('click',()=>{ settingsTab='proxy'; renderSettingsDrawer(); });
+    (async()=>{
+      const st=await proxyGetStatus();
+      const el=document.getElementById('proxy-mini-status');
+      if(el) el.innerHTML=`代理：<b style="color:${st.is_running?'#059669':'hsl(var(--muted-foreground))'}">${st.is_running?'运行中 '+esc(st.address):'未运行'}</b> · 上游 ${esc(st.upstream||'(未设)')} · 切换将启动/停止真服务`;
+      const btn=document.getElementById('proxyToggle');
+      if(btn) btn.textContent=st.is_running?'停止代理':'启动代理';
+    })();
+    document.getElementById('proxyToggle').addEventListener('click', async()=>{
+      const st=await proxyGetStatus();
+      if(st.is_running){ await proxyStop(); localStorage.setItem('proxy-enabled','0'); showToast('代理已停止'); }
+      else { const up=localStorage.getItem('proxy-upstream')||''; const ns=await proxyStart(up); localStorage.setItem('proxy-enabled','1'); showToast('代理已启动 '+ns.address); }
+      renderSettingsDrawer(); updateUsage();
     });
   } else if(settingsTab==='proxy'){
-    const enabled=localStorage.getItem('proxy-enabled')==='1';
     body.innerHTML=`
       <div class="sync-preview hidden" id="st-error" style="background:hsl(var(--destructive) / 0.08); color:hsl(var(--destructive)); border-color:hsl(var(--destructive) / 0.2); margin-bottom:12px;">${prefillError?esc(prefillError):''}</div>
-      <div class="field"><label>代理状态</label><div class="sync-preview">状态：<b>${enabled?'运行中 19840':'未运行'}</b> · 模式：直通（演示）<br>对标 CC Switch 本地代理热切换/故障转移，当前为占位实现。</div></div>
-      <div class="field"><label>上游</label><input type="text" id="proxy-upstream" placeholder="https://api.openai.com" value="${localStorage.getItem('proxy-upstream')||''}"></div>
-      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" id="proxy-save" style="flex:1;">保存</button><button class="btn btn-secondary" id="proxy-test">测试</button></div>
-      <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:12px;">提示：此为 18 的轻量占位，后续可接入 Rust axum/hyper 真代理 + 健康检查。</div>
+      <div class="field"><label>代理状态 · 真服务（对标 CC Switch proxyApi 2s 轮询）</label><div class="sync-preview" id="proxy-status-box">加载中…</div></div>
+      <div class="field"><label>上游 · Upstream</label><input type="text" id="proxy-upstream" placeholder="https://api.openai.com" value="${localStorage.getItem('proxy-upstream')||''}"><div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:6px;">保存后若代理运行中会自动重启以生效；未运行则仅保存。</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" id="proxy-start" style="flex:1;">启动代理</button><button class="btn btn-secondary" id="proxy-stop">停止</button><button class="btn btn-secondary" id="proxy-save-upstream">保存上游</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-secondary" id="proxy-test" style="flex:1;">测试代理（GET /）</button><button class="btn btn-secondary" id="proxy-copy-addr">复制地址</button></div>
+      <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:12px;">Rust axum 动态端口（优先 19840，占用则随机），127.0.0.1 监听，W2 仅回显请求，W3 接 hyper 转发 + 健康检查。</div>
     `;
     if(prefillError) document.getElementById('st-error').classList.remove('hidden');
-    document.getElementById('proxy-save').addEventListener('click',()=>{
-      localStorage.setItem('proxy-upstream', document.getElementById('proxy-upstream').value.trim());
-      localStorage.setItem('proxy-enabled','1');
-      showToast('代理配置已保存');
+    const statusBox=document.getElementById('proxy-status-box');
+    const upstreamInput=document.getElementById('proxy-upstream');
+    let pollTimer=null;
+    async function refreshProxyStatus(){
+      const st=await proxyGetStatus();
+      if(!statusBox) return;
+      const isRunning=!!st.is_running;
+      statusBox.innerHTML=`状态：<b style="color:${isRunning?'#059669':'hsl(var(--muted-foreground))'}">${isRunning?'运行中 '+esc(st.address):'未运行'}</b> · 上游：<code style="font-size:11px; background:hsl(var(--muted)); padding:2px 6px; border-radius:4px;">${esc(st.upstream||'(未设)native')}</code><br>模式：axum 回显（W2）· 端口 ${st.port||'-'} · ${dbAvailable()?'Tauri 真服务':'浏览器预览'}`;
+      const startBtn=document.getElementById('proxy-start');
+      const stopBtn=document.getElementById('proxy-stop');
+      if(startBtn) startBtn.disabled=isRunning;
+      if(stopBtn) stopBtn.disabled=!isRunning;
       updateUsage();
+    }
+    refreshProxyStatus();
+    pollTimer=setInterval(refreshProxyStatus, 2000);
+    // 清理：切换 tab 时停轮询（靠闭包，设置页关闭即丢）
+    const mo=new MutationObserver(()=>{ if(!document.body.contains(statusBox)) clearInterval(pollTimer); });
+    mo.observe(document.body, {childList:true, subtree:true});
+    document.getElementById('proxy-start').addEventListener('click', async()=>{
+      const upstream=upstreamInput.value.trim();
+      try{ const st=await proxyStart(upstream); await proxySetUpstream(upstream); localStorage.setItem('proxy-upstream', upstream); localStorage.setItem('proxy-enabled','1'); showToast('代理已启动 '+st.address); refreshProxyStatus(); }catch(e){ const eb=document.getElementById('st-error'); eb.textContent='启动失败: '+e.message; eb.classList.remove('hidden'); }
     });
-    document.getElementById('proxy-test').addEventListener('click',()=>{ showToast('代理测试：演示通过'); });
+    document.getElementById('proxy-stop').addEventListener('click', async()=>{
+      try{ await proxyStop(); localStorage.setItem('proxy-enabled','0'); showToast('代理已停止'); refreshProxyStatus(); }catch(e){ showToast('停止失败'); }
+    });
+    document.getElementById('proxy-save-upstream').addEventListener('click', async()=>{
+      const upstream=upstreamInput.value.trim();
+      try{ await proxySetUpstream(upstream); localStorage.setItem('proxy-upstream', upstream); showToast('上游已保存'); refreshProxyStatus(); }catch(e){ showToast('保存失败'); }
+    });
+    document.getElementById('proxy-test').addEventListener('click', async()=>{
+      const st=await proxyGetStatus();
+      if(!st.is_running){ showToast('代理未运行'); return; }
+      try{
+        const r=await fetch('http://'+st.address+'/', {method:'GET'});
+        const txt=await r.text();
+        showToast('代理测试 '+r.status+' '+txt.slice(0,60));
+        document.getElementById('st-error').textContent='测试成功 '+r.status+': '+txt.slice(0,120); document.getElementById('st-error').style.color='#059669'; document.getElementById('st-error').classList.remove('hidden');
+      }catch(e){
+        const eb=document.getElementById('st-error'); eb.textContent='测试失败: '+e.message; eb.style.color='hsl(var(--destructive))'; eb.classList.remove('hidden');
+      }
+    });
+    document.getElementById('proxy-copy-addr').addEventListener('click', async()=>{
+      const st=await proxyGetStatus();
+      if(!st.is_running){ showToast('代理未运行'); return; }
+      try{ await navigator.clipboard.writeText('http://'+st.address); showToast('已复制 '+st.address); }catch(e){ showToast(st.address); }
+    });
   } else if(settingsTab==='icons'){
     body.innerHTML=`
       <div class="field"><label>图标库 · 对标 CC Switch</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">CC Switch 使用 lucide-react 0.542.0（UI 图标）+ 100+ 抽取 Provider 图标（src/icons/extracted + metadata + IconPicker），本应用已对标接入 lucide 风格 + 阶段图标。</p></div>
@@ -720,6 +777,9 @@ function showToast(msg){
   clearTimeout(showToast._timer);
   showToast._timer=setTimeout(()=>t.classList.remove('show'),2200);
 }
+let proxyStatusCache=null;
+async function refreshProxyStatusCache(){ try{ proxyStatusCache=await proxyGetStatus(); }catch(e){} }
+setInterval(refreshProxyStatusCache, 2000); refreshProxyStatusCache();
 function updateUsage(){
   const total=state.projects.length;
   const prompts=state.projects.reduce((s,p)=>s+(p.prompts||[]).length,0);
@@ -732,9 +792,12 @@ function updateUsage(){
   if(elP) elP.textContent=prompts;
   if(elL) elL.textContent=live;
   if(elPx){
-    const enabled=localStorage.getItem('proxy-enabled')==='1';
+    const st=proxyStatusCache;
+    const enabled=st? !!st.is_running : localStorage.getItem('proxy-enabled')==='1';
+    const addr=st && st.is_running ? st.address : '';
     elPx.textContent=enabled?'●':'○';
     elPx.style.color=enabled?'#059669':'hsl(var(--muted-foreground))';
+    elPx.title=enabled ? (addr||'代理运行中') : '代理未运行';
   }
 }
 function renderChips(){
@@ -807,9 +870,9 @@ function filteredProjects(){
     .filter(p=>{
       if(!state.search) return true;
       const q=state.search.toLowerCase();
-      return p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q));
+      return p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)) || (p.category||'').toLowerCase().includes(q);
     })
-    .sort((a,b)=> new Date(b.updatedAt)-new Date(a.updatedAt));
+    .sort((a,b)=> ( (a.sort_index||0)-(b.sort_index||0) ) || (new Date(b.updatedAt)-new Date(a.updatedAt)) );
 }
 function renderGrid(){
   const el=document.getElementById('gridArea');
@@ -830,11 +893,65 @@ function renderGrid(){
   }
   // 16 行式 h16 ListItemRow
   el.innerHTML=`<div class="list">${list.map(rowHtml).join('')}</div>`;
+  let dragSrcId=null;
   list.forEach(p=>{
     const row=document.getElementById('row-'+p.id);
     if(row){
-      row.addEventListener('click',()=>openDetail(p.id));
+      row.addEventListener('click',(e)=>{
+        if(row.classList.contains('dragging')) return;
+        // 避免拖拽手柄点击触发详情
+        if(e.target.closest('.drag-handle')) return;
+        openDetail(p.id);
+      });
       row.addEventListener('keydown',(e)=>{ if(e.key==='Enter') openDetail(p.id); });
+      row.addEventListener('dragstart',(e)=>{
+        dragSrcId=p.id;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('text/plain', p.id);
+        setTimeout(()=> row.style.opacity='0.4', 0);
+      });
+      row.addEventListener('dragend',()=>{
+        dragSrcId=null;
+        row.classList.remove('dragging');
+        row.style.opacity='';
+        document.querySelectorAll('.list-row.drag-over').forEach(el=>el.classList.remove('drag-over'));
+      });
+      row.addEventListener('dragover',(e)=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect='move';
+        if(dragSrcId && dragSrcId!==p.id){
+          row.classList.add('drag-over');
+        }
+      });
+      row.addEventListener('dragleave',()=> row.classList.remove('drag-over'));
+      row.addEventListener('drop',(e)=>{
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        const srcId=dragSrcId || e.dataTransfer.getData('text/plain');
+        const dstId=p.id;
+        if(!srcId || srcId===dstId) return;
+        // 重排：以当前过滤后列表为基准，计算新顺序
+        const srcIdx=list.findIndex(x=>x.id===srcId);
+        const dstIdx=list.findIndex(x=>x.id===dstId);
+        if(srcIdx<0 || dstIdx<0) return;
+        const newList=list.slice();
+        const [moved]=newList.splice(srcIdx,1);
+        newList.splice(dstIdx,0,moved);
+        // 将 newList 的顺序写回 state.projects 的 sort_index
+        // 保留未在过滤列表中的项目在后
+        const orderMap=new Map(newList.map((x,i)=>[x.id,i]));
+        state.projects.forEach(proj=>{
+          if(orderMap.has(proj.id)) proj.sort_index=orderMap.get(proj.id);
+          else proj.sort_index=9999;
+          proj.updatedAt=new Date().toISOString();
+        });
+        // 按 sort_index 重排 state.projects 保持稳定
+        state.projects.sort((a,b)=> (a.sort_index||0)-(b.sort_index||0) || new Date(b.updatedAt)-new Date(a.updatedAt));
+        saveData();
+        render();
+        showToast('已更新排序');
+      });
     }
   });
 }
@@ -842,11 +959,16 @@ function rowHtml(p){
   const s=stageInfo(p.stage);
   const promptCount=(p.prompts||[]).length;
   const tags=(p.tags||[]).slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+  const iconBg = p.icon_color || s.bg;
+  const iconFg = p.icon_color ? '#fff' : s.color;
+  const iconLetter = p.icon ? esc(p.icon[0].toUpperCase()) : esc(p.name[0]||'P').toUpperCase();
+  const catBadge = (p.category && p.category!=='general') ? `<span class="badge" style="background:hsl(var(--secondary)); color:hsl(var(--muted-foreground)); border-color:hsl(var(--border)); margin-left:4px; font-size:10px; padding:2px 6px">${esc(p.category)}</span>` : '';
   return `
-  <div class="list-row" id="row-${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}">
-    <div class="list-icon" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}">${esc(p.name[0]||'P').toUpperCase()}</div>
+  <div class="list-row" id="row-${p.id}" draggable="true" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}">
+    <div class="drag-handle" draggable="false" title="拖拽排序" aria-label="拖拽排序" style="font-size:12px; line-height:1">⋮⋮</div>
+    <div class="list-icon" style="background:${iconBg}; color:${iconFg}; border-color:${iconBg}">${iconLetter}</div>
     <div class="list-main">
-      <div class="list-name">${esc(p.name)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span></div>
+      <div class="list-name">${esc(p.name)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span>${catBadge}</div>
       <div class="list-desc">${esc(p.description)||'暂无简介'} · ${tags}</div>
     </div>
     <div style="display:flex; gap:4px; align-items:center">
@@ -877,6 +999,7 @@ function render(){
   renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
 }
 
+const CATEGORIES=[{key:'general',label:'通用'},{key:'work',label:'工作'},{key:'personal',label:'个人'},{key:'research',label:'研究'},{key:'product',label:'产品'},{key:'finance',label:'财务'}];
 function openCreateModal(){
   const drawer=document.getElementById('drawer');
   drawer.innerHTML=`
@@ -884,7 +1007,8 @@ function openCreateModal(){
     <div class="drawer-body">
       <div class="field"><label>项目名称</label><input type="text" id="f-name" placeholder="例如：客服自动回复 Agent"></div>
       <div class="field"><label>简介</label><textarea id="f-desc" rows="3" placeholder="这个 Agent 是做什么的…"></textarea></div>
-      <div class="field"><label>阶段</label><select id="f-stage">${STAGES.map(s=>`<option value="${s.key}">${s.label}</option>`).join('')}</select></div>
+      <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>阶段</label><select id="f-stage">${STAGES.map(s=>`<option value="${s.key}">${s.label}</option>`).join('')}</select></div><div><label>分类 · category</label><select id="f-category">${CATEGORIES.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</select></div></div>
+      <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>图标 · icon（可选）</label><input type="text" id="f-icon" placeholder="如 zap / star，留空首字母"></div><div><label>图标颜色</label><div style="display:flex; gap:6px"><input type="color" id="f-icon-color" value="#0A84FF" style="width:48px; height:36px; padding:2px; flex-shrink:0"><input type="text" id="f-icon-color-text" placeholder="#0A84FF" style="flex:1"></div></div></div>
       <div class="field"><label>标签 · 逗号分隔</label><input type="text" id="f-tags" placeholder="客服, GPT-4, 内部工具"></div>
       <button class="btn btn-primary" id="saveNewBtn" style="width:100%;margin-top:6px;">创建项目</button>
     </div>`;
@@ -892,12 +1016,20 @@ function openCreateModal(){
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
   document.getElementById('modalBack').addEventListener('click', closeOverlay);
   document.getElementById('f-name').focus();
+  const colorPick=document.getElementById('f-icon-color');
+  const colorText=document.getElementById('f-icon-color-text');
+  colorPick.addEventListener('input',()=> colorText.value=colorPick.value);
+  colorText.addEventListener('input',()=>{ if(/^#([0-9a-fA-F]{3}){1,2}$/.test(colorText.value)) colorPick.value=colorText.value; });
   document.getElementById('saveNewBtn').addEventListener('click',()=>{
     const name=document.getElementById('f-name').value.trim();
     if(!name){ showToast('请填写项目名称'); return; }
     const tags=document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+    const icon=document.getElementById('f-icon').value.trim()||null;
+    const icon_color=colorText.value.trim()||colorPick.value||null;
+    const category=document.getElementById('f-category').value||'general';
     const now=new Date().toISOString();
-    state.projects.push({id:uid('p'),name,description:document.getElementById('f-desc').value.trim(),stage:document.getElementById('f-stage').value,paused:false,tags,prompts:[],createdAt:now,updatedAt:now});
+    const maxSort=Math.max(0, ...state.projects.map(p=>p.sort_index||0));
+    state.projects.push({id:uid('p'),name,description:document.getElementById('f-desc').value.trim(),stage:document.getElementById('f-stage').value,paused:false,tags,prompts:[],createdAt:now,updatedAt:now,sort_index:maxSort+1,category,icon,icon_color,meta:{}});
     saveData(); closeOverlay(); render(); showToast('项目已创建');
   });
 }
@@ -909,7 +1041,8 @@ function renderDetail(p){
     <div class="drawer-body">
       <div class="field"><label>项目名称</label><input type="text" id="d-name" value="${esc(p.name)}"></div>
       <div class="field"><label>简介</label><textarea id="d-desc" rows="3">${esc(p.description)}</textarea></div>
-      <div class="field"><label>阶段</label><select id="d-stage">${STAGES.map(s=>`<option value="${s.key}" ${s.key===p.stage?'selected':''}>${s.label}</option>`).join('')}</select></div>
+      <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>阶段</label><select id="d-stage">${STAGES.map(s=>`<option value="${s.key}" ${s.key===p.stage?'selected':''}>${s.label}</option>`).join('')}</select></div><div><label>分类 · category</label><select id="d-category">${CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===(p.category||'general')?'selected':''}>${c.label}</option>`).join('')}</select></div></div>
+      <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><label>图标 · icon</label><input type="text" id="d-icon" value="${esc(p.icon||'')}" placeholder="如 zap，留空首字母"></div><div><label>图标颜色</label><div style="display:flex; gap:6px"><input type="color" id="d-icon-color" value="${p.icon_color||'#0A84FF'}" style="width:48px; height:36px; padding:2px; flex-shrink:0"><input type="text" id="d-icon-color-text" value="${esc(p.icon_color||'')}" placeholder="#0A84FF" style="flex:1"></div></div></div>
       <div class="field"><label>标签 · 逗号分隔</label><input type="text" id="d-tags" value="${esc((p.tags||[]).join(', '))}"></div>
       <div style="display:flex;align-items:center;gap:8px; font-size:13px; color:hsl(var(--muted-foreground)); margin:2px 0 16px;"><input type="checkbox" id="d-paused" ${p.paused?'checked':''} style="width:16px;height:16px"><label for="d-paused" style="margin:0; font-size:12px; text-transform:none;">标记为已暂停</label></div>
       <div style="display:flex;gap:8px;"><button class="btn btn-primary" id="saveDetailBtn" style="flex:1;">保存修改</button><button class="btn btn-secondary" id="deleteProjectBtn" style="color:hsl(var(--destructive));">删除项目</button></div>
@@ -920,6 +1053,12 @@ function renderDetail(p){
     </div>`;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
   document.getElementById('modalBack').addEventListener('click', closeOverlay);
+  const dPick=document.getElementById('d-icon-color');
+  const dText=document.getElementById('d-icon-color-text');
+  if(dPick && dText){
+    dPick.addEventListener('input',()=> dText.value=dPick.value);
+    dText.addEventListener('input',()=>{ if(/^#([0-9a-fA-F]{3}){1,2}$/.test(dText.value)) dPick.value=dText.value; });
+  }
   document.getElementById('saveDetailBtn').addEventListener('click',()=>saveDetailFields(p.id));
   document.getElementById('deleteProjectBtn').addEventListener('click',()=>deleteProject(p.id));
   document.getElementById('addPromptBtn').addEventListener('click',()=>showPromptForm(p.id,null));
@@ -1009,6 +1148,11 @@ function saveDetailFields(id){
   p.name=document.getElementById('d-name').value.trim()||p.name;
   p.description=document.getElementById('d-desc').value.trim();
   p.stage=document.getElementById('d-stage').value;
+  p.category=document.getElementById('d-category').value||'general';
+  p.icon=document.getElementById('d-icon').value.trim()||null;
+  const cText=document.getElementById('d-icon-color-text').value.trim();
+  const cPick=document.getElementById('d-icon-color').value;
+  p.icon_color=cText||cPick||null;
   p.tags=document.getElementById('d-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   p.paused=document.getElementById('d-paused').checked;
   p.updatedAt=new Date().toISOString();
