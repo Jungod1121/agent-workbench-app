@@ -33,3 +33,4 @@ worker-configuration.d.ts
 .env
 .env.local
 .env.*.local
+SYNC_CREDENTIALS.txt
