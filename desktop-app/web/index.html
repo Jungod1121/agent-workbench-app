@@ -17,22 +17,29 @@ body {
 .bg-wells::before {
   content: ""; position: absolute; inset: 0;
   background:
-    radial-gradient(820px 520px at 14% 10%, rgba(0,102,204,0.10), transparent 68%),
-    radial-gradient(760px 500px at 88% 16%, rgba(164,120,199,0.09), transparent 70%),
-    radial-gradient(900px 620px at 50% 92%, rgba(253,159,89,0.06), transparent 74%);
+    radial-gradient(820px 520px at 14% 10%, rgba(0,102,204,0.18), transparent 68%),
+    radial-gradient(760px 500px at 88% 16%, rgba(164,120,199,0.16), transparent 70%),
+    radial-gradient(900px 620px at 50% 92%, rgba(253,159,89,0.14), transparent 74%);
 }
-.app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
-/* 侧栏：T3 thick 深色玻璃拟态（软件范式） */
+.app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; padding: 12px; gap: 16px; }
+/* 侧栏：T3 内收玻璃岛（CC Switch 式，浅色 parchment 单底，不贴边） */
 .sidebar {
   width: 240px; flex-shrink: 0;
-  position: sticky; top: 0; height: 100vh; height: 100dvh;
+  position: sticky; top: 12px; height: calc(100vh - 24px); height: calc(100dvh - 24px);
   display: flex; flex-direction: column;
   padding: 18px 14px 16px;
   gap: 14px;
   overflow: hidden;
-  border-right: 1px solid rgba(0,0,0,0.06);
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.82);
 }
-.sidebar[data-liquid-glass] { border-right: 1px solid rgba(255,255,255,0.08); }
+.sidebar[data-liquid-glass] {
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  border-right: 1px solid rgba(255,255,255,0.22) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+}
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 4px 2px; }
 .sidebar-logo {
   width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
@@ -56,16 +63,16 @@ body {
 .sidebar[data-liquid-glass] .sidebar-foot { border-top-color: rgba(255,255,255,0.12); }
 .sync-pill {
   display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px;
-  background: rgba(255,255,255,0.72); border: 1px solid var(--apx-hairline);
+  background: rgba(255,255,255,0.92); border: 1px solid var(--apx-hairline);
   font-size: 11px; line-height: 1.4; color: var(--apx-muted);
 }
-.sidebar[data-liquid-glass] .sync-pill { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.14); color: #1d1d1f; }
+.sidebar[data-liquid-glass] .sync-pill { background: rgba(255,255,255,0.72); border-color: rgba(255,255,255,0.32); color: var(--apx-ink); }
 .sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot.ok { background: #2F8F5D; } .dot.warn { background: #B4791F; } .dot.idle { background: var(--apx-muted); } .dot.busy { background: var(--apx-blue); animation: pulse 1s infinite ease-in-out; } .dot.off { background: #B4432F; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* 主区 */
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* 主区 — 统一浅色 parchment 单底（不搞黑白对半） */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--apx-parchment); border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.04); }
 /* 顶栏：T0 官网磨砂 52px（apple.com 同款） */
 .topbar {
   position: sticky; top: 0; z-index: 10; height: 52px;
@@ -155,8 +162,8 @@ body {
   <div class="bg-wells" aria-hidden="true"></div>
 
   <div class="app-shell">
-    <!-- 侧栏：240 玻璃导航（T3 thick） -->
-    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="thick" style="border-radius:0;">
+    <!-- 侧栏：240 内收玻璃岛（T3 regular 浅色，不贴边） -->
+    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="regular" style="border-radius:16px;">
       <div class="sidebar-brand">
         <div class="sidebar-logo">A</div>
         <div>
@@ -608,10 +615,10 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
       await window.ApxLiquidGlass.applyAll();
       const bar=document.getElementById('sidebar');
       const drawer=document.getElementById('drawer');
-      const topbar=document.getElementById('topbar');
       const inst=window.ApxLiquidGlass.instances[0];
-      if(inst && bar && bar._lg) inst.updateConfig(bar,{ blur:0.28, refraction:0.95, chroma:0.08 });
-      if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.26, refraction:0.9, chroma:0.06 });
+      // 内收玻璃岛：适度折射可见但不喧宾夺主（ CC Switch 式克制）
+      if(inst && bar && bar._lg) inst.updateConfig(bar,{ blur:0.22, refraction:0.88, chroma:0.10, cornerRadius:16, zRadius:22 });
+      if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.24, refraction:0.86, chroma:0.08, cornerRadius:16 });
     }catch(e){ console.warn('[glass] T3 init fallback',e); }
   }
 })();
