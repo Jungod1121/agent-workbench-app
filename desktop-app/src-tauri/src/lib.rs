@@ -1,6 +1,7 @@
 use tauri::{Emitter, Manager, State};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::StateFlags;
 
 #[cfg(target_os = "macos")]
@@ -52,6 +53,19 @@ fn delete_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
 fn set_window_theme(theme: String) -> Result<(), String> {
     log::info!("set_window_theme: {}", theme);
     Ok(())
+}
+
+#[tauri::command]
+async fn open_external(app: tauri::AppHandle, url: String) -> Result<bool, String> {
+    let url = if url.starts_with("http://") || url.starts_with("https://") {
+        url
+    } else {
+        format!("https://{url}")
+    };
+    app.opener()
+        .open_url(&url, None::<String>)
+        .map_err(|e| format!("打开链接失败: {e}"))?;
+    Ok(true)
 }
 
 // ---- W2: Proxy minimal (对标 CC Switch proxyApi) ----
@@ -192,6 +206,7 @@ pub fn run() {
             restore_backup,
             delete_backup,
             set_window_theme,
+            open_external,
             get_proxy_status,
             start_proxy,
             stop_proxy,

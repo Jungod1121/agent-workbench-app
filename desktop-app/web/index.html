@@ -135,9 +135,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .tag{font-size:10px; font-weight:500; padding:2px 6px; border-radius:9999px; background:hsl(var(--secondary)); color:hsl(var(--secondary-foreground)); border:1px solid hsl(var(--border))}
 .badge{font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; flex-shrink:0; border:1px solid transparent}
 .list-meta{font-size:11px; color:hsl(var(--muted-foreground)); text-align:right; flex-shrink:0; display:flex; flex-direction:column; gap:2px; align-items:flex-end}
-.gauge{display:flex; align-items:center; gap:4px}
-.gauge-dot{width:7px; height:7px; border-radius:50%; background:hsl(var(--border)); flex-shrink:0}
-.gauge-line{width:14px; height:2px; border-radius:1px; background:hsl(var(--border)); flex-shrink:0}
+.gauge{display:flex; align-items:center; gap:6px}
+.gauge-dot{width:8px; height:8px; border-radius:50%; background:hsl(var(--border)); flex-shrink:0; transition:background .2s, box-shadow .2s}
+.gauge-line{width:16px; height:2px; border-radius:1px; background:hsl(var(--border)); flex-shrink:0; transition:background .2s}
 .gauge-label{font-size:11px; font-weight:600; letter-spacing:-0.01em; white-space:nowrap; margin-left:6px}
 .empty{text-align:center; padding:48px 20px; color:hsl(var(--muted-foreground)); border:1px dashed hsl(var(--border)); border-radius:12px; background:hsl(var(--muted) / 0.3)}
 .empty h3{font-size:16px; font-weight:600; color:hsl(var(--foreground)); margin:0 0 8px}
@@ -161,9 +161,12 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
   background:hsl(var(--background)); border:0; border-radius:0; box-shadow:none;
   transform: none; opacity:1; padding:0;
 }
-.drawer-head{flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:12px; height:64px; margin-top:28px; padding:0 24px 0 80px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--muted) / 0.2); -webkit-app-region:no-drag}
-.drawer-head h2{font-size:18px; font-weight:600; letter-spacing:-0.01em}
-.drawer-close{width:36px; height:36px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); cursor:pointer; display:grid; place-items:center; font-size:18px; color:hsl(var(--muted-foreground))}
+.drawer-head{flex-shrink:0; display:flex; align-items:center; height:64px; margin-top:28px; padding:0; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--background)); -webkit-app-region:drag}
+.drawer-head-inner{width:100%; display:flex; align-items:center; gap:16px; padding:0 24px; -webkit-app-region:drag}
+.drawer-head .btn-back{flex-shrink:0; width:36px; height:36px; padding:6px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--background)); color:hsl(var(--muted-foreground)); display:grid; place-items:center; cursor:pointer; -webkit-app-region:no-drag}
+.drawer-head .btn-back:hover{background:hsl(var(--muted)); color:hsl(var(--foreground)); border-color:hsl(var(--border))}
+.drawer-head h2{font-size:18px; font-weight:600; letter-spacing:-0.01em; line-height:1; -webkit-app-region:no-drag; user-select:none}
+.drawer-close{width:36px; height:36px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); cursor:pointer; display:grid; place-items:center; font-size:18px; color:hsl(var(--muted-foreground)); -webkit-app-region:no-drag}
 .drawer-close:hover{background:hsl(var(--muted))}
 .drawer-body{flex:1; overflow-y:auto; overflow-x:hidden; padding:24px; padding-right:16px}
 .drawer-body::-webkit-scrollbar{width:6px}
@@ -396,7 +399,7 @@ async function showConflictDialog(remoteCount, localCount, remoteAt){
     const drawer=document.getElementById('drawer');
     const prev=drawer.innerHTML;
     drawer.innerHTML=`
-      <div class="drawer-head"><h2>同步冲突</h2><button class="drawer-close" id="conflictClose">×</button></div>
+      <div class="drawer-head" data-tauri-drag-region><div class="drawer-head-inner" data-tauri-drag-region style="justify-content:space-between"><h2>同步冲突</h2><button class="drawer-close" id="conflictClose" aria-label="关闭">×</button></div></div>
       <div class="drawer-body">
         <div class="sync-preview" style="background:hsl(var(--destructive) / 0.08); border-color:hsl(var(--destructive) / 0.2); color:hsl(var(--destructive));">检测到本地与云端均有未同步的修改（本地 ${localCount} 项 / 云端 ${remoteCount} 项，云端更新于 ${remoteAt?new Date(remoteAt).toLocaleString('zh-CN'):'未知'}）。直接覆盖会导致一端丢失。</div>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px;">
@@ -498,9 +501,11 @@ function renderSettingsDrawer(prefillError){
   const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
   // CC 同款：grid 6列 glass + motion
   drawer.innerHTML=`
-    <div class="drawer-head" style="justify-content:flex-start; gap:12px">
-      <button class="btn btn-secondary" id="settingsBack" style="width:36px; height:36px; padding:0; border-radius:10px; border:1px solid hsl(var(--border)); background:hsl(var(--card));" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
-      <h2 style="font-size:20px; font-weight:600; letter-spacing:-0.01em">${t('common.settings')}</h2>
+    <div class="drawer-head" data-tauri-drag-region>
+      <div class="drawer-head-inner" data-tauri-drag-region>
+        <button class="btn-back" id="settingsBack" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
+        <h2>${t('common.settings')}</h2>
+      </div>
     </div>
     <div class="drawer-body">
       <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:12px; margin-bottom:24px; border:1px solid hsl(var(--border))">
@@ -734,7 +739,7 @@ function renderSettingsDrawer(prefillError){
         </div>
       </div>
     `;
-    document.getElementById('about-github').addEventListener('click',()=>{ if(window.__TAURI__ && window.__TAURI__.opener) window.__TAURI__.opener.openUrl('https://github.com/Jungod1121/agent-workbench-app'); else window.open('https://github.com/Jungod1121/agent-workbench-app','_blank'); });
+    document.getElementById('about-github').addEventListener('click',()=>{ openExternal('https://github.com/Jungod1121/agent-workbench-app').catch(()=> window.open('https://github.com/Jungod1121/agent-workbench-app','_blank')); });
     document.getElementById('about-check').addEventListener('click',()=> showToast('已是最新（演示）'));
   } else if(settingsTab==='sync'){
     body.innerHTML=`
@@ -1223,10 +1228,12 @@ function rowHtml(p){
       <div class="gauge" title="${esc(stageInfo(p.stage).label)}${p.paused?' · 已暂停':''}">
         ${STAGES.map((st,i)=>{
           const idx=stageIndex(p.stage);
-          const dotCol = p.paused ? 'hsl(var(--muted-foreground))' : st.color;
-          const isActive = i<=idx;
-          const isCurrent = i===idx && idx>=0;
-          return `<div class="gauge-dot" style="background:${isActive?dotCol:'hsl(var(--border))'}${isCurrent?'; box-shadow:0 0 0 3px '+dotCol+'22':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${i<idx?(p.paused?'hsl(var(--muted-foreground))':st.color):'hsl(var(--border))'}"></div>`:''}`
+          const isPaused=!!p.paused;
+          const isActive=i<=idx && idx>=0;
+          const isCurrent=i===idx && idx>=0;
+          const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : (isActive? st.color : st.color+'33');
+          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<idx ? st.color : st.color+'33');
+          return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+(isPaused?'hsl(var(--muted-foreground))33':st.color+'33')+'; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
         }).join('')}
       </div>
       <span class="gauge-label" style="color:${p.paused?'hsl(var(--muted-foreground))':s.color}; background:${p.paused?'hsl(var(--muted))':s.bg}; border:1px solid ${p.paused?'hsl(var(--border))':s.color+'1a'}; padding:2px 6px; border-radius:6px">${esc(t('stages.'+p.stage))}${p.paused?' · '+esc(t('stages.paused')):''}</span>
@@ -1254,7 +1261,7 @@ const CATEGORIES=[{key:'general',label:'通用'},{key:'work',label:'工作'},{ke
 function openCreateModal(){
   const drawer=document.getElementById('drawer');
   drawer.innerHTML=`
-    <div class="drawer-head"><div style="display:flex; align-items:center; gap:12px"><button class="btn btn-secondary" id="modalBack" style="width:36px; height:36px; padding:0; border-radius:8px" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button><h2>新建项目</h2></div><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button></div>
+    <div class="drawer-head" data-tauri-drag-region><div class="drawer-head-inner" data-tauri-drag-region style="justify-content:space-between"><div style="display:flex; align-items:center; gap:16px; -webkit-app-region:no-drag"><button class="btn-back" id="modalBack" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button><h2>新建项目</h2></div><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button></div></div>
     <div class="drawer-body">
       <div class="field"><label>项目名称</label><input type="text" id="f-name" placeholder="例如：客服自动回复 Agent"></div>
       <div class="field"><label>简介</label><textarea id="f-desc" rows="3" placeholder="这个 Agent 是做什么的…"></textarea></div>
@@ -1289,7 +1296,7 @@ function openDetail(id){ const p=state.projects.find(x=>x.id===id); if(!p) retur
 function renderDetail(p){
   const drawer=document.getElementById('drawer');
   drawer.innerHTML=`
-    <div class="drawer-head"><div style="display:flex; align-items:center; gap:12px"><button class="btn btn-secondary" id="modalBack" style="width:36px; height:36px; padding:0; border-radius:8px" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button><h2>项目详情</h2></div><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button></div>
+    <div class="drawer-head" data-tauri-drag-region><div class="drawer-head-inner" data-tauri-drag-region style="justify-content:space-between"><div style="display:flex; align-items:center; gap:16px; -webkit-app-region:no-drag"><button class="btn-back" id="modalBack" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button><h2>项目详情</h2></div><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button></div></div>
     <div class="drawer-body">
       <div class="field"><label>项目名称</label><input type="text" id="d-name" value="${esc(p.name)}"></div>
       <div class="field"><label>简介</label><textarea id="d-desc" rows="3">${esc(p.description)}</textarea></div>
@@ -1556,21 +1563,23 @@ const syncNowBtn=document.getElementById('syncNowBtn');
 if(syncNowBtn) syncNowBtn.addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 const settingsBtnEl=document.getElementById('settingsBtn');
 if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings());
+async function openExternal(url){
+  try{
+    const u=new URL(url);
+    if(!['http:','https:'].includes(u.protocol)) throw new Error('Unsupported scheme');
+  }catch{ throw new Error('Invalid URL'); }
+  if(dbAvailable()){
+    await tauriInvoke('open_external', {url});
+    return;
+  }
+  window.open(url,'_blank');
+}
 const brandEl=document.getElementById('topbarBrand')||document.getElementById('topbarTitle');
 if(brandEl){
-  const goLanding=()=>{
+  const goLanding=async()=>{
     const url='https://jungod1121.github.io/agent-workbench-app/';
-    try{
-      if(window.__TAURI__ && window.__TAURI__.opener && window.__TAURI__.opener.openUrl){
-        window.__TAURI__.opener.openUrl(url);
-        return;
-      }
-      if(window.__TAURI__ && window.__TAURI__.invoke){
-        window.__TAURI__.invoke('plugin:opener|open_url', {url}).then(()=>{}).catch(()=> window.open(url,'_blank'));
-        return;
-      }
-    }catch(e){}
-    window.open(url,'_blank');
+    try{ await openExternal(url); }
+    catch(e){ try{ window.open(url,'_blank'); }catch(_){ showToast('打开链接失败: '+(e&&e.message||e)); } }
   };
   brandEl.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); goLanding(); });
   brandEl.setAttribute('role','link');
