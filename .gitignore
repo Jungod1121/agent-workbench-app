@@ -1,0 +1,35 @@
+# --- macOS ---
+.DS_Store
+**/.DS_Store
+
+# --- Node ---
+node_modules/
+desktop-app/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# --- Tauri / Rust ---
+desktop-app/src-tauri/target/
+desktop-app/src-tauri/gen/
+src-tauri/target/
+src-tauri/gen/
+**/target/
+
+# --- Build ---
+dist/
+desktop-app/dist/
+build/
+
+# --- Cloudflare ---
+.dev.vars
+.wrangler/
+cloudflare-worker/.dev.vars
+cloudflare-worker/.wrangler/
+worker-configuration.d.ts
+
+# --- Env ---
+.env
+.env.local
+.env.*.local

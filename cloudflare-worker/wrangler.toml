@@ -1,0 +1,14 @@
+name = "agent-workbench-sync"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# 部署前先执行：
+#   wrangler kv namespace create WORKBENCH_KV
+# 然后把命令返回的 id 填到下面
+kv_namespaces = [
+  { binding = "WORKBENCH_KV", id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
+]
+
+# SYNC_TOKEN 不要写在这个文件里（会被提交到仓库），
+# 部署后用下面这条命令单独设置为 Secret：
+#   wrangler secret put SYNC_TOKEN
