@@ -8,11 +8,10 @@
 <link rel="stylesheet" href="./assets/apple-gradients.css">
 <style>
 /* ======================================================
-   Agent Workbench · Apple 软件 UI 重做
-   依据 ~/.dsh/skills/apple-style-design
-   工作流 C · 模板 4 · T3 真折射 + T0 顶栏
-   铁律：单蓝 #0066CC / 骨架 #FFF #F5F5F7 / 字重 300/400/600/700 禁500
-          圆角 0/8/18/9999 / 玻璃 6-15% + saturate180 / 投影仅产品图
+   Agent Workbench · Apple 软件 UI · A1+BCD 全选落地
+   A1 顶栏双胶囊 More 溢出 · B 单蓝/禁500/8-18-9999/hairline无影
+   C 卡片0.97/搜索44/抽屉18 slide · D 按压spring/降动/44+ring+skip
+   铁律：#0066CC/#0071E3 #FFF/#F5F5F7 400/600 0/8/18/9999 saturate180
    ====================================================== */
 html,body{height:100%}
 body{
@@ -25,8 +24,15 @@ body{
 *{box-sizing:border-box}
 button,input,select,textarea{font-family:var(--apx-font)}
 :focus-visible{outline:2px solid var(--apx-blue-focus); outline-offset:2px}
+.skip-link{
+  position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;
+}
+.skip-link:focus{
+  left:16px; top:16px; width:auto; height:auto; padding:10px 16px; background:var(--apx-ink); color:#fff;
+  border-radius:9999px; z-index:1000; font-size:12px; font-weight:600;
+}
 
-/* 玻璃场景：柔光井 —— 供 T3 折射/模糊有内容可取，非装饰主角 */
+/* 玻璃场景柔光井 */
 #lgScene{position:relative; min-height:100vh; isolation:isolate; background:var(--apx-parchment)}
 .bg-wells{position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden}
 .bg-wells::before{
@@ -37,167 +43,162 @@ button,input,select,textarea{font-family:var(--apx-font)}
     radial-gradient(620px 420px at 54% 92%, rgba(253,159,89,0.05), transparent 75%),
     radial-gradient(520px 340px at 50% 50%, rgba(45,212,191,0.04), transparent 72%);
 }
+.app-shell{position:relative; z-index:1; display:flex; min-height:100vh; padding:16px; gap:16px}
 
-/* 外框：16px 外边距 + 16px 间距 —— 呼吸感 6-8% */
-.app-shell{
-  position:relative; z-index:1;
-  display:flex; min-height:100vh;
-  padding:16px; gap:16px;
-}
-
-/* 侧栏：240 · T0 CSS 磨砂（官网官网同款）· 非 T3 真折射 */
+/* 侧栏 T0 */
 .sidebar{
   width:240px; flex-shrink:0;
   position:sticky; top:16px; height:calc(100vh - 32px); height:calc(100dvh - 32px);
   display:flex; flex-direction:column; gap:18px;
-  padding:20px 14px 16px;
-  border-radius:18px;
-  overflow:hidden;
+  padding:20px 14px 16px; border-radius:18px; overflow:hidden;
   background: rgba(245,245,247,0.8);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border:1px solid rgba(0,0,0,0.08);
 }
 .sidebar-brand{display:flex; align-items:center; gap:10px; padding:2px 4px 0}
-.sidebar-logo{
-  width:28px; height:28px; border-radius:8px; flex-shrink:0;
-  background: var(--apx-blue); color:#fff; display:grid; place-items:center;
-  font-size:13px; font-weight:700; letter-spacing:-0.02em;
-}
+.sidebar-logo{width:28px; height:28px; border-radius:8px; flex-shrink:0; background: var(--apx-blue); color:#fff; display:grid; place-items:center; font-size:13px; font-weight:700; letter-spacing:-0.02em}
 .sidebar-title{font-size:13px; font-weight:600; letter-spacing:-0.01em; line-height:1.1; color:var(--apx-ink)}
-
-/* 侧栏导航：≥44px 触控目标 · 分组标题 Title Case · 字重 400/600 */
 .sidebar-section{display:flex; flex-direction:column; gap:6px}
-.sidebar-label{
-  font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
-  color:var(--apx-muted); padding:0 8px; margin-top:4px;
-}
+.sidebar-label{font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--apx-muted); padding:0 8px; margin-top:4px}
 .sidebar-nav{display:flex; flex-direction:column; gap:2px}
 .sidebar-item{
   display:flex; align-items:center; justify-content:space-between; gap:8px;
-  min-height:36px; padding:8px 10px; border-radius:10px;
+  min-height:44px; padding:10px 10px; border-radius:10px;
   font-size:13px; font-weight:400; color:var(--apx-ink);
   cursor:pointer; border:1px solid transparent;
-  transition: background .35s var(--apx-spring), border-color .35s var(--apx-spring), transform .35s var(--apx-spring), color .35s;
+  transition: background .22s var(--apx-spring), border-color .22s var(--apx-spring), transform .12s cubic-bezier(0.16,1,0.3,1), color .22s;
   user-select:none;
 }
 .sidebar-item:hover{background:rgba(0,0,0,0.04)}
 .sidebar-item.active{background:var(--apx-ink); color:#fff; font-weight:600; border-color:var(--apx-ink)}
 .sidebar-item:active{transform:scale(0.97)}
-.sidebar-item .count{
-  font-size:11px; font-weight:600; padding:2px 7px; border-radius:9999px;
-  background:rgba(0,0,0,0.06); color:var(--apx-muted); flex-shrink:0;
-}
+.sidebar-item .count{font-size:11px; font-weight:600; padding:3px 7px; border-radius:9999px; background:rgba(0,0,0,0.06); color:var(--apx-muted); flex-shrink:0}
 .sidebar-item.active .count{background:rgba(255,255,255,0.16); color:#fff}
 .sidebar-item svg{width:14px; height:14px; flex-shrink:0; opacity:.9}
 .sidebar-item.active svg{opacity:1}
-
-/* 侧栏统计：极简 · 数字单独但不喧宾 */
-.sidebar-stats{
-  padding:10px 10px; border-radius:12px; background:#fff; border:1px solid var(--apx-hairline);
-  display:grid; grid-template-columns:1fr 1fr; gap:8px;
-}
+.sidebar-stats{padding:10px 10px; border-radius:12px; background:#fff; border:1px solid var(--apx-hairline); display:grid; grid-template-columns:1fr 1fr; gap:8px}
 .sidebar-stats b{font-size:15px; font-weight:600; letter-spacing:-0.02em; color:var(--apx-ink)}
 .sidebar-stats span{font-size:10px; font-weight:400; color:var(--apx-muted)}
-
-/* 底栏 sync */
 .sidebar-foot{margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid rgba(0,0,0,0.06)}
-.sync-pill{
-  display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:10px;
-  background:#fff; border:1px solid var(--apx-hairline); font-size:11px; line-height:1.4; color:var(--apx-muted);
-}
+.sync-pill{display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:10px; background:#fff; border:1px solid var(--apx-hairline); font-size:11px; line-height:1.4; color:var(--apx-muted)}
 .sync-pill .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0}
-.dot.ok{ background:#2F8F5D } .dot.warn{background:#B4791F} .dot.idle{background:var(--apx-muted)} .dot.busy{background:var(--apx-blue); animation:pulse 1s infinite ease-in-out} .dot.off{background:#B4432F}
+.dot.ok{background:#2F8F5D} .dot.warn{background:#B4791F} .dot.idle{background:var(--apx-muted)} .dot.busy{background:var(--apx-blue); animation:pulse 1s infinite ease-in-out} .dot.off{background:#B4432F}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* 主区：纯白卡片 18 圆角 · 内容层与功能层分离 */
-.main{
-  flex:1; min-width:0; display:flex; flex-direction:column;
-  background:#fff; border:1px solid var(--apx-hairline); border-radius:18px; overflow:hidden;
-}
+/* 主区 */
+.main{flex:1; min-width:0; display:flex; flex-direction:column; background:#fff; border:1px solid var(--apx-hairline); border-radius:18px; overflow:hidden}
 
-/* 顶栏：T0 磨砂 52px · rgba245,245,247,.8 + saturate180 blur20 + hairline */
+/* 顶栏 T0 52px + 双胶囊 */
 .topbar{
   position:sticky; top:0; z-index:10; height:52px;
-  display:flex; align-items:center; gap:14px; padding:0 20px 0 24px;
+  display:flex; align-items:center; gap:12px; padding:0 14px 0 20px;
   background: rgba(245,245,247,0.8);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom:1px solid rgba(0,0,0,0.08);
 }
+.topbar-left{display:flex; align-items:center; gap:12px; flex-shrink:0}
 .topbar-title{font-size:17px; font-weight:600; letter-spacing:-0.01em; color:var(--apx-ink); white-space:nowrap}
 .topbar-meta{font-size:12px; color:var(--apx-muted); white-space:nowrap}
-.topbar-search{flex:1; max-width:420px; position:relative}
+.topbar-center{flex:1; display:flex; justify-content:center; min-width:0; overflow:hidden}
+.stage-pill-wrap{position:relative; display:flex; align-items:center; min-width:0; max-width:100%}
+.stage-pill{
+  display:inline-flex; align-items:center; gap:2px; padding:2px;
+  background: var(--apx-parchment); border:1px solid var(--apx-hairline); border-radius:9999px;
+  overflow:hidden; flex-wrap:nowrap;
+}
+.stage-pill-item{
+  min-height:28px; padding:6px 12px; border-radius:9999px; border:1px solid transparent; background:transparent;
+  font-size:12px; font-weight:400; color:var(--apx-muted); cursor:pointer; white-space:nowrap; flex-shrink:0;
+  transition: background .22s var(--apx-spring), color .22s, transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s;
+}
+.stage-pill-item:hover{color:var(--apx-ink); background:rgba(0,0,0,0.04)}
+.stage-pill-item.active{background:var(--apx-ink); color:#fff; font-weight:600; border-color:var(--apx-ink)}
+.stage-pill-item:active{transform:scale(0.97)}
+.stage-more-trigger{min-width:36px}
+.stage-popover{
+  position:absolute; top:calc(100% + 8px); right:0; min-width:180px; padding:6px;
+  background:#fff; border:1px solid var(--apx-hairline); border-radius:12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08); z-index:20;
+  display:flex; flex-direction:column; gap:2px;
+}
+.stage-popover.hidden{display:none}
+.stage-popover .stage-pill-item{width:100%; text-align:left; justify-content:flex-start; background:#fff}
+.stage-popover .stage-pill-item.active{background:var(--apx-ink); color:#fff}
+.topbar-right{display:flex; align-items:center; gap:10px; flex-shrink:0}
+.topbar-search{position:relative; width:280px; max-width:36vw}
 .topbar-search input{
-  width:100%; height:36px; padding:0 14px 0 34px; border-radius:9999px;
+  width:100%; height:44px; padding:0 40px 0 36px; border-radius:9999px;
   border:1px solid var(--apx-hairline); background:#fff; font-size:13px; color:var(--apx-ink);
-  transition: border-color .3s var(--apx-spring), box-shadow .3s;
+  transition: border-color .22s var(--apx-spring), box-shadow .22s;
 }
 .topbar-search input::placeholder{color:var(--apx-muted)}
-.topbar-search input:focus{outline:none; border-color:var(--apx-blue-focus); box-shadow:0 0 0 3px rgba(0,113,227,0.15); background:#fff}
-.topbar-search::before{
-  content:""; position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; pointer-events:none; opacity:.55;
-  background: no-repeat center / 14px 14px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16 16l4 4'/%3E%3C/svg%3E");
+.topbar-search input:focus{outline:none; border-color:var(--apx-blue-focus); box-shadow:0 0 0 3px rgba(0,113,227,0.15)}
+.topbar-search .search-icon{
+  position:absolute; left:12px; top:50%; transform:translateY(-50%); width:14px; height:14px; pointer-events:none; opacity:.55;
 }
+.search-clear{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:9999px; border:0; background:rgba(0,0,0,0.06); color:var(--apx-muted);
+  display:grid; place-items:center; cursor:pointer; font-size:14px; line-height:1;
+  transition: background .22s, transform .12s cubic-bezier(0.16,1,0.3,1);
+}
+.search-clear:hover{background:rgba(0,0,0,0.10); color:var(--apx-ink)}
+.search-clear:active{transform:translateY(-50%) scale(0.97)}
+.search-clear.hidden{display:none}
 
-/* 按钮：胶囊 9999 · 主蓝 #0066CC · 按压 scale .97 · spring */
+/* 按钮：44 最小触点 + spring */
 .apx-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  min-height:36px; padding:8px 16px; border-radius:9999px; border:0;
+  min-height:44px; padding:10px 18px; border-radius:9999px; border:0;
   font-size:13px; font-weight:600; letter-spacing:-0.01em; cursor:pointer;
-  transition: transform .45s var(--apx-spring), background-color .35s, border-color .35s, color .35s, box-shadow .35s, opacity .35s;
+  transition: transform .12s cubic-bezier(0.16,1,0.3,1), background-color .22s, border-color .22s, color .22s, box-shadow .22s, opacity .22s;
 }
 .apx-btn:active{transform:scale(0.97)}
 .apx-btn:focus-visible{outline:2px solid var(--apx-blue-focus); outline-offset:2px}
 .apx-btn-primary{background:var(--apx-blue); color:#fff}
 .apx-btn-primary:hover{background:var(--apx-blue-focus)}
-.apx-btn-secondary{background:#fff; color:var(--apx-ink); border:1px solid var(--apx-hairline)}
+.apx-btn-secondary{background:#fff; color:var(--apx-ink); border:1px solid var(--apx-hairline); min-height:44px}
 .apx-btn-secondary:hover{background:var(--apx-parchment)}
-.apx-btn-ghost{background:rgba(0,0,0,0.06); color:var(--apx-ink); border:1px solid transparent}
-.apx-btn-ghost:hover{background:rgba(0,0,0,0.08)}
-.apx-btn-utility{background:var(--apx-ink); color:#fff; min-height:32px; padding:7px 14px; font-size:12px; border-radius:9999px}
+.apx-btn-utility{background:var(--apx-ink); color:#fff; min-height:44px; padding:10px 16px; font-size:12px; border-radius:9999px}
 .apx-btn-utility:disabled{opacity:.5; cursor:default}
 
-/* 内容：留白即呼吸 · 页边距 6-8% · 标题下方 48-64 空气 */
+/* 内容 */
 .content{padding:28px 28px 48px; max-width:1160px; width:100%; margin:0 auto}
 .content-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px}
 .content-title{font-size:28px; font-weight:600; letter-spacing:-0.02em; line-height:1.1; color:var(--apx-ink); margin:0}
 .content-sub{font-size:13px; color:var(--apx-muted); margin:6px 0 0}
-.content-actions{display:flex; gap:8px; align-items:center}
-
-/* Bento 概览：4 格 · 18 圆角 · 层次靠面积 */
 .bento-overview{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px}
-.bento-cell{
-  border-radius:18px; padding:16px 16px 14px; background:var(--apx-parchment); border:1px solid var(--apx-hairline);
-  min-height:96px; display:flex; flex-direction:column; justify-content:space-between;
-}
+.bento-cell{border-radius:18px; padding:16px 16px 14px; background:var(--apx-parchment); border:1px solid var(--apx-hairline); min-height:96px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition: transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s, background .22s}
+.bento-cell:hover{border-color:rgba(0,0,0,0.14)}
+.bento-cell:active{transform:scale(0.97)}
 .bento-cell strong{font-size:28px; font-weight:600; letter-spacing:-0.02em; line-height:1; color:var(--apx-ink)}
 .bento-cell span{font-size:11px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:var(--apx-muted)}
 .bento-cell.active{background:var(--apx-ink); border-color:var(--apx-ink); color:#fff}
 .bento-cell.active strong{color:#fff}
 .bento-cell.active span{color:rgba(255,255,255,0.6)}
-
-/* 工具栏：芯片胶囊 */
 .toolbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 16px}
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{
-  font-size:12px; font-weight:400; padding:7px 12px; border-radius:9999px;
+  font-size:12px; font-weight:400; padding:8px 14px; border-radius:9999px; min-height:32px;
   border:1px solid var(--apx-hairline); background:#fff; color:var(--apx-muted);
-  cursor:pointer; transition: all .3s var(--apx-spring);
+  cursor:pointer; transition: all .22s var(--apx-spring), transform .12s cubic-bezier(0.16,1,0.3,1);
 }
 .chip:hover{border-color:rgba(0,0,0,0.18); color:var(--apx-ink)}
 .chip.active{background:var(--apx-ink); color:#fff; border-color:var(--apx-ink); font-weight:600}
+.chip:active{transform:scale(0.97)}
 .toolbar-count{font-size:12px; color:var(--apx-muted)}
 
-/* 网格：工具卡片 18 圆角 · 无阴影 · 层级靠表面色与 hairline */
+/* 网格卡 18 无影 hairline 0.97 */
 .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px}
 .card{
   background:#fff; border:1px solid var(--apx-hairline); border-radius:18px;
   padding:18px 18px 16px; cursor:pointer; position:relative; overflow:hidden;
-  transition: transform .45s var(--apx-spring), border-color .35s, background-color .35s;
+  transition: transform .12s cubic-bezier(0.16,1,0.3,1), border-color .22s, background-color .22s;
 }
-.card:hover{transform:translateY(-2px); border-color:rgba(0,0,0,0.14)}
-.card:active{transform:scale(0.99)}
+.card:hover{transform:translateY(-1px); border-color:rgba(0,0,0,0.14)}
+.card:active{transform:scale(0.97)}
 .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px}
 .card-name{font-size:15px; font-weight:600; letter-spacing:-0.01em; line-height:1.35; color:var(--apx-ink)}
 .badge{font-size:11px; font-weight:600; padding:4px 9px; border-radius:9999px; flex-shrink:0; border:1px solid transparent; letter-spacing:-0.01em}
@@ -214,20 +215,20 @@ button,input,select,textarea{font-family:var(--apx-font)}
 .empty h3{font-size:21px; font-weight:600; letter-spacing:-0.01em; color:var(--apx-ink); margin:0 0 8px}
 .empty p{font-size:13px; margin:0 0 18px; color:var(--apx-muted)}
 
-/* 表单：≥44px 行高 · 8/18 语义 · 焦点环 #0071E3 */
+/* 表单 8/44 */
 .field{margin-bottom:14px}
 .field label{display:block; font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--apx-muted); margin-bottom:6px}
 .field input,.field textarea,.field select{
-  width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--apx-hairline); background:#fff; color:var(--apx-ink); font-size:13px; outline:none;
-  transition: border-color .25s, box-shadow .25s;
+  width:100%; min-height:44px; padding:11px 12px; border-radius:8px; border:1px solid var(--apx-hairline); background:#fff; color:var(--apx-ink); font-size:13px; outline:none;
+  transition: border-color .22s, box-shadow .22s;
 }
 .field input::placeholder,.field textarea::placeholder{color:#a1a1a6}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--apx-blue-focus); box-shadow:0 0 0 3px rgba(0,113,227,0.15)}
-.field textarea{resize:vertical; line-height:1.6}
+.field textarea{resize:vertical; line-height:1.6; min-height:88px}
 .field-row{display:flex; gap:10px}
 .field-row .field{flex:1}
 
-/* 抽屉：T3 regular 液态玻璃 · 功能层 · 圆角同心 18 · saturate180 */
+/* 抽屉 18 slide [0.16,1,0.3,1] 0.26 + sticky footer */
 .overlay{position:fixed; inset:0; background:rgba(0,0,0,0.32); display:none; align-items:stretch; justify-content:flex-end; z-index:50; padding:16px}
 .overlay.show{display:flex}
 .drawer{
@@ -235,68 +236,65 @@ button,input,select,textarea{font-family:var(--apx-font)}
   padding:24px 24px 40px; border-radius:18px; position:relative;
   background:rgba(255,255,255,0.96); border:1px solid var(--apx-hairline);
   box-shadow: 0 16px 48px rgba(0,0,0,0.12); color:var(--apx-ink);
+  transform: translateX(16px); opacity:0;
+  transition: transform .26s cubic-bezier(0.16,1,0.3,1), opacity .22s;
 }
+.overlay.show .drawer{transform: translateX(0); opacity:1}
 .drawer[data-liquid-glass]{background:rgba(255,255,255,0.72) !important; border:1px solid rgba(255,255,255,0.6) !important; box-shadow:none !important}
 .drawer-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:20px}
 .drawer-head h2{font-size:22px; font-weight:600; letter-spacing:-0.02em; line-height:1.1; margin:0}
-.drawer-close{background:none; border:0; font-size:22px; cursor:pointer; color:var(--apx-muted); width:32px; height:32px; border-radius:50%; display:grid; place-items:center; flex-shrink:0}
+.drawer-close{background:none; border:0; font-size:22px; cursor:pointer; color:var(--apx-muted); width:44px; height:44px; border-radius:50%; display:grid; place-items:center; flex-shrink:0; transition: background .22s, transform .12s cubic-bezier(0.16,1,0.3,1)}
 .drawer-close:hover{background:var(--apx-parchment)}
+.drawer-close:active{transform:scale(0.97)}
 .settings-tabs{display:flex; gap:6px; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--apx-hairline)}
-.settings-tab{font-size:12px; font-weight:600; padding:7px 14px; border-radius:9999px; border:1px solid var(--apx-hairline); background:#fff; color:var(--apx-muted); cursor:pointer; transition:all .3s}
+.settings-tab{font-size:12px; font-weight:600; padding:8px 14px; border-radius:9999px; min-height:32px; border:1px solid var(--apx-hairline); background:#fff; color:var(--apx-muted); cursor:pointer; transition:all .22s var(--apx-spring), transform .12s cubic-bezier(0.16,1,0.3,1)}
 .settings-tab.active{background:var(--apx-ink); color:#fff; border-color:var(--apx-ink)}
+.settings-tab:active{transform:scale(0.97)}
 .sync-preview{font-size:11px; line-height:1.7; color:var(--apx-muted); background:var(--apx-parchment); border:1px solid var(--apx-hairline); border-radius:12px; padding:12px 14px; margin-top:10px}
 .toast{
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--apx-ink); color:#fff;
   padding:10px 16px; border-radius:9999px; font-size:12px; font-weight:500; z-index:100;
-  opacity:0; pointer-events:none; transition: opacity .3s var(--apx-spring), transform .3s var(--apx-spring);
+  opacity:0; pointer-events:none; transition: opacity .22s var(--apx-spring), transform .22s var(--apx-spring);
 }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px)}
 .hidden{display:none !important}
-
-/* Prompt 列表：分组卡 18 */
 .prompt-card{background:#fff; border:1px solid var(--apx-hairline); border-radius:12px; padding:14px; margin-bottom:10px}
 .prompt-card pre{background:var(--apx-parchment); border:1px solid var(--apx-hairline); border-radius:8px; padding:10px; font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:160px; overflow:auto; margin:0 0 8px}
 
-/* 响应式：833 平板横屏 / 640 手机 —— 侧栏收起，顶栏常驻购买胶囊 */
+@media (max-width: 1100px){ .topbar-center{display:none} }
 @media (max-width: 980px){ .bento-overview{grid-template-columns:repeat(2,1fr)} }
 @media (max-width: 860px){
   .app-shell{padding:0; gap:0}
   .sidebar{display:none}
   .main{border-radius:0; border-left:0; border-right:0}
-  .topbar{padding:0 14px}
+  .topbar{padding:0 12px}
+  .topbar-search{width:200px; max-width:44vw}
   .content{padding:20px 16px 40px}
-  .drawer{width:100%; border-radius:0}
+  .drawer{width:100%; border-radius:0; height:100%; padding:20px 16px 40px}
   .overlay{padding:0}
   .bento-overview{grid-template-columns:1fr 1fr; gap:10px}
   .grid{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
+  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important}
 }
 </style>
 </head>
 <body>
-
+<a href="#main" class="skip-link">跳至主内容</a>
 <div id="lgScene" data-lg-scene>
   <div class="bg-wells" aria-hidden="true"></div>
-
   <div class="app-shell">
-    <!-- 侧栏：240 · T0 CSS 磨砂 · 去标语 -->
     <aside class="sidebar" id="sidebar" style="border-radius:18px;">
       <div class="sidebar-brand">
         <div class="sidebar-logo">A</div>
-        <div>
-          <div class="sidebar-title">Agent Workbench</div>
-        </div>
+        <div><div class="sidebar-title">Agent Workbench</div></div>
       </div>
-
       <div class="sidebar-section">
         <div class="sidebar-label">项目 Project</div>
         <nav class="sidebar-nav" id="sidebarNav"></nav>
       </div>
-
       <div class="sidebar-stats" id="sidebarStats"></div>
-
       <div class="sidebar-foot">
         <div class="sync-pill" id="syncPill">
           <span class="dot idle" id="connDot"></span>
@@ -304,39 +302,47 @@ button,input,select,textarea{font-family:var(--apx-font)}
         </div>
         <div style="display:flex; gap:8px;">
           <button class="apx-btn apx-btn-utility" id="syncNowBtn" style="flex:1;">立即同步</button>
-          <button class="apx-btn apx-btn-secondary" id="settingsBtn" style="flex:1; min-height:32px; border-radius:9999px; font-size:12px;">设置</button>
+          <button class="apx-btn apx-btn-secondary" id="settingsBtn" style="flex:1; font-size:12px;">设置</button>
         </div>
       </div>
     </aside>
 
-    <!-- 主区：顶栏 T0 + 内容 -->
-    <div class="main">
+    <div class="main" id="main">
       <div class="topbar" id="topbar">
-        <div>
+        <div class="topbar-left">
           <div class="topbar-title">项目</div>
           <div class="topbar-meta" id="topbarMeta">全部 · 0 个项目</div>
         </div>
-        <div class="topbar-search"><input type="text" id="searchInput" placeholder="搜索项目名称 / 标签…"></div>
-        <button class="apx-btn apx-btn-primary" id="addProjectBtn">+ 新建项目</button>
+        <div class="topbar-center">
+          <div class="stage-pill-wrap" id="stagePillWrap">
+            <div class="stage-pill" id="stagePill"></div>
+            <div class="stage-popover hidden" id="stageMorePopover"></div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-search">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg>
+            <input type="text" id="searchInput" placeholder="搜索项目名称 / 标签… " aria-label="搜索">
+            <button class="search-clear hidden" id="searchClear" aria-label="清除搜索">×</button>
+          </div>
+          <button class="apx-btn apx-btn-primary" id="addProjectBtn">+ 新建项目</button>
+        </div>
       </div>
 
       <div class="content">
         <div class="content-head">
           <div>
             <h1 class="content-title" id="contentTitle">全部项目</h1>
-            <p class="content-sub" id="contentSub">一屏只看一个维度 · 筛选在左侧，搜索在上方</p>
+            <p class="content-sub" id="contentSub">一屏只看一个维度 · 筛选在左侧与顶部</p>
           </div>
           <div class="content-actions">
             <span class="toolbar-count" id="toolbarCount"></span>
           </div>
         </div>
-
         <div class="bento-overview" id="bentoOverview"></div>
-
         <div class="toolbar">
           <div class="chips" id="filterChips"></div>
         </div>
-
         <div id="gridArea"></div>
       </div>
     </div>
@@ -345,7 +351,6 @@ button,input,select,textarea{font-family:var(--apx-font)}
 
 <div id="onboardScreen" class="hidden" style="display:none;"></div>
 <div class="hidden"><input id="ob-url"><input id="ob-token"><button id="ob-connect"></button><div id="onboardError"></div></div>
-
 <div class="overlay" id="overlay"><div class="drawer" id="drawer" data-liquid-glass data-lg-preset="regular" style="border-radius:18px;"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -360,7 +365,6 @@ const STAGES = [
 ];
 const SETTINGS_KEY = 'workbench-settings';
 const CACHE_KEY = 'workbench-cache';
-
 let state = { projects: [], filterStage: 'all', search: '', loaded: false };
 let settings = null;
 let syncStatus = 'idle';
@@ -447,7 +451,7 @@ function renderSettingsDrawer(prefillError){
   if(settingsTab==='general'){
     body.innerHTML=`
       <div class="field"><label>本机存储</label><div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div></div>
-      <div class="field"><label>设计</label><div style="font-size:12px;color:var(--apx-muted);line-height:1.6;margin-top:4px;">Apple 浅灰 #F5F5F7 · 单蓝 #0066CC · 字重 400/600 · 圆角 18/9999 · 玻璃 6–15% + saturate(180%) · 按压 scale(.97)</div></div>
+      <div class="field"><label>设计</label><div style="font-size:12px;color:var(--apx-muted);line-height:1.6;margin-top:4px;">Apple 浅灰 #F5F5F7 · 单蓝 #0066CC · 字重 400/600 · 圆角 8/18/9999 · 玻璃 6–15% + saturate(180%) · 按压 scale(.97)</div></div>
       <div style="display:flex;gap:8px;margin-top:18px;"><button class="apx-btn apx-btn-utility" id="goSyncBtn" style="flex:1;">去设置同步 →</button></div>
     `;
     document.getElementById('goSyncBtn').addEventListener('click',()=>{ settingsTab='sync'; renderSettingsDrawer(); });
@@ -510,8 +514,6 @@ function showToast(msg){
   clearTimeout(showToast._timer);
   showToast._timer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-
-/* 侧栏：图标 SF Symbols 线性 1.5px */
 function iconFor(key){
   const m={
     all:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -523,7 +525,6 @@ function iconFor(key){
   };
   return m[key]||m.all;
 }
-
 function renderStats(){
   const el=document.getElementById('sidebarStats');
   if(!el) return;
@@ -556,7 +557,7 @@ function renderBento(){
   const counts={}; STAGES.forEach(s=>counts[s.key]=0);
   state.projects.forEach(p=>{ counts[p.stage]=(counts[p.stage]||0)+1; });
   el.innerHTML=STAGES.map(s=>`
-    <div class="bento-cell ${state.filterStage===s.key?'active':''}" data-stage="${s.key}" style="cursor:pointer;">
+    <div class="bento-cell ${state.filterStage===s.key?'active':''}" data-stage="${s.key}">
       <span>${s.label} · ${s.en}</span>
       <strong>${counts[s.key]||0}</strong>
     </div>
@@ -569,6 +570,72 @@ function renderChips(){
   const pills=[{key:'all',label:'全部'}].concat(STAGES.map(s=>({key:s.key,label:s.label}))).concat([{key:'paused',label:'已暂停'}]);
   el.innerHTML=pills.map(s=>`<button class="chip ${state.filterStage===s.key?'active':''}" data-stage="${s.key}">${s.label}</button>`).join('');
   el.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.filterStage=b.dataset.stage; render(); }));
+}
+/* A1 顶栏双胶囊 ResizeObserver More 溢出（CC Switch AppSwitcher:116 思路） */
+function renderStagePill(){
+  const pill=document.getElementById('stagePill');
+  const popover=document.getElementById('stageMorePopover');
+  const wrap=document.getElementById('stagePillWrap');
+  if(!pill||!wrap) return;
+  const stages=[{key:'all',label:'全部'},...STAGES.map(s=>({key:s.key,label:s.label})),{key:'paused',label:'已暂停'}];
+  pill.innerHTML='';
+  popover.innerHTML='';
+  popover.classList.add('hidden');
+  // 创建所有 pill 项
+  const btns=stages.map(s=>{
+    const b=document.createElement('button');
+    b.className='stage-pill-item'+(state.filterStage===s.key?' active':'');
+    b.dataset.stage=s.key;
+    b.textContent=s.label;
+    b.addEventListener('click',()=>{ state.filterStage=s.key; render(); closeStageMore(); });
+    return b;
+  });
+  // More 触发器
+  const moreBtn=document.createElement('button');
+  moreBtn.className='stage-pill-item stage-more-trigger hidden';
+  moreBtn.textContent='⋯';
+  moreBtn.setAttribute('aria-label','更多筛选');
+  moreBtn.addEventListener('click',(e)=>{ e.stopPropagation(); popover.classList.toggle('hidden'); });
+  pill.append(...btns, moreBtn);
+
+  // 布局检测：若溢出则把尾部移入 popover，始终保证 active 可见
+  function layout(){
+    // 先全部回 pill
+    while(popover.firstChild){ pill.insertBefore(popover.firstChild, moreBtn); }
+    moreBtn.classList.add('hidden');
+    popover.classList.add('hidden');
+    if(pill.scrollWidth <= wrap.clientWidth) return;
+    moreBtn.classList.remove('hidden');
+    // 保证 active 不进溢出：若 active 在尾部，优先移非 active
+    const activeKey=state.filterStage;
+    // 从末尾向前逐个移入 popover 直到不溢出
+    for(let i=btns.length-1; i>=0 && pill.scrollWidth > wrap.clientWidth; i--){
+      const b=btns[i];
+      if(b.dataset.stage===activeKey) continue;
+      popover.insertBefore(b, popover.firstChild);
+    }
+    // 若仍溢出，允许 active 也进
+    for(let i=btns.length-1; i>=0 && pill.scrollWidth > wrap.clientWidth; i--){
+      if(popover.contains(btns[i])) continue;
+      popover.insertBefore(btns[i], popover.firstChild);
+    }
+    if(popover.children.length===0) moreBtn.classList.add('hidden');
+  }
+  layout();
+  if(!wrap._ro){
+    const ro=new ResizeObserver(()=>layout());
+    ro.observe(wrap);
+    wrap._ro=ro;
+    window.addEventListener('resize', layout);
+  }
+  // 点击外部收起
+  if(!wrap._outside){
+    document.addEventListener('click',(e)=>{
+      if(!wrap.contains(e.target)) closeStageMore();
+    });
+    wrap._outside=true;
+  }
+  function closeStageMore(){ popover.classList.add('hidden'); }
 }
 function filteredProjects(){
   return state.projects
@@ -592,7 +659,7 @@ function renderGrid(){
   if(toolbarCount) toolbarCount.textContent=list.length+' / '+total;
   const titleMap={all:'全部项目', idea:'构思中', building:'开发中', testing:'测试中', live:'已上线', paused:'已暂停'};
   if(contentTitle) contentTitle.textContent=titleMap[state.filterStage]||'项目';
-  if(contentSub) contentSub.textContent=state.search?`搜索 “${state.search}” · ${list.length} 个结果`:'一屏只看一个维度 · 筛选在左侧，搜索在上方';
+  if(contentSub) contentSub.textContent=state.search?`搜索 “${state.search}” · ${list.length} 个结果`:'一屏只看一个维度 · 筛选在左侧与顶部';
   if(state.projects.length===0){
     el.innerHTML=`<div class="empty"><h3>还没有项目</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来。</p><button class="apx-btn apx-btn-primary" id="emptyAddBtn">+ 新建项目</button></div>`;
     document.getElementById('emptyAddBtn').addEventListener('click',()=>openCreateModal());
@@ -610,7 +677,7 @@ function cardHtml(p){
   const idx=stageIndex(p.stage);
   const promptCount=(p.prompts||[]).length;
   return `
-  <div class="card" id="card-${p.id}">
+  <div class="card" id="card-${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}">
     ${p.paused?'<div class="paused-ribbon">已暂停</div>':''}
     <div class="card-top"><div class="card-name">${esc(p.name)}</div><div class="badge" style="background:${s.bg};color:${s.color}; border-color:${s.bg}">${s.label}</div></div>
     <p class="card-desc">${esc(p.description)||'暂无简介 — 点按卡片查看 Prompt 版本与备注。'}</p>
@@ -625,7 +692,7 @@ function cardHtml(p){
     <div class="card-foot"><span>${promptCount} 条 Prompt</span><span>更新于 ${relTime(p.updatedAt)}</span></div>
   </div>`;
 }
-function render(){ if(!state.loaded) return; renderStats(); renderBento(); renderChips(); renderGrid(); }
+function render(){ if(!state.loaded) return; renderStats(); renderBento(); renderChips(); renderStagePill(); renderGrid(); updateSearchClear(); }
 
 function openCreateModal(){
   const drawer=document.getElementById('drawer');
@@ -658,9 +725,9 @@ function renderDetail(p){
     <div class="field"><label>简介</label><textarea id="d-desc" rows="3">${esc(p.description)}</textarea></div>
     <div class="field-row"><div class="field"><label>阶段</label><select id="d-stage">${STAGES.map(s=>`<option value="${s.key}" ${s.key===p.stage?'selected':''}>${s.label}</option>`).join('')}</select></div><div class="field"><label>标签 · 逗号分隔</label><input type="text" id="d-tags" value="${esc((p.tags||[]).join(', '))}"></div></div>
     <div style="display:flex;align-items:center;gap:8px; font-size:13px; color:var(--apx-muted); margin:2px 0 16px;"><input type="checkbox" id="d-paused" ${p.paused?'checked':''} style="width:16px;height:16px;accent-color:var(--apx-ink)"><label for="d-paused" style="margin:0; font-size:12px; text-transform:none; letter-spacing: -0.01em;">标记为已暂停</label></div>
-    <div style="display:flex;gap:8px;"><button class="apx-btn apx-btn-primary" id="saveDetailBtn" style="flex:1;">保存修改</button><button class="apx-btn apx-btn-secondary" id="deleteProjectBtn" style="color:#B4432F; border-color:#e8caca;">删除项目</button></div>
+    <div style="display:flex;gap:8px;"><button class="apx-btn apx-btn-primary" id="saveDetailBtn" style="flex:1;">保存修改</button><button class="apx-btn apx-btn-secondary" id="deleteProjectBtn" style="color:#B4432F; border-color:#e0c9c9;">删除项目</button></div>
     <hr style="border:0;border-top:1px solid var(--apx-hairline);margin:20px 0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:14px;font-weight:600;letter-spacing:-0.01em;margin:0;">Prompt 版本 · ${ (p.prompts||[]).length}</h3><button class="apx-btn apx-btn-secondary" id="addPromptBtn" style="min-height:32px; font-size:12px; padding:6px 12px;">+ 添加 Prompt</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:14px;font-weight:600;letter-spacing:-0.01em;margin:0;">Prompt 版本 · ${ (p.prompts||[]).length}</h3><button class="apx-btn apx-btn-secondary" id="addPromptBtn" style="min-height:44px; font-size:12px; padding:8px 14px;">+ 添加 Prompt</button></div>
     <div id="promptFormSlot"></div>
     <div id="promptList">${renderPromptList(p)}</div>`;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
@@ -681,9 +748,9 @@ function renderPromptList(p){
       <pre>${esc(pr.content)}</pre>
       ${pr.notes?`<div style="font-size:12px;color:var(--apx-muted);margin-bottom:8px;">备注：${esc(pr.notes)}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${!pr.isCurrent?`<button class="apx-btn apx-btn-secondary" data-act="current" style="min-height:32px; font-size:12px; padding:6px 10px;">设为当前版本</button>`:''}
-        <button class="apx-btn apx-btn-secondary" data-act="edit" style="min-height:32px; font-size:12px; padding:6px 10px;">编辑</button>
-        <button class="apx-btn apx-btn-secondary" data-act="delete" style="min-height:32px; font-size:12px; padding:6px 10px; color:#B4432F;">删除</button>
+        ${!pr.isCurrent?`<button class="apx-btn apx-btn-secondary" data-act="current" style="min-height:44px; font-size:12px; padding:8px 12px;">设为当前版本</button>`:''}
+        <button class="apx-btn apx-btn-secondary" data-act="edit" style="min-height:44px; font-size:12px; padding:8px 12px;">编辑</button>
+        <button class="apx-btn apx-btn-secondary" data-act="delete" style="min-height:44px; font-size:12px; padding:8px 12px; color:#B4432F;">删除</button>
       </div>
     </div>`).join('');
 }
@@ -766,9 +833,28 @@ function deleteProject(id){
 }
 function openOverlay(){ document.getElementById('overlay').classList.add('show'); setTimeout(()=>{ if(window.ApxLiquidGlass) window.ApxLiquidGlass.instances.forEach(i=>i.markChanged(document.getElementById('drawer')))},80); }
 function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+function updateSearchClear(){
+  const inp=document.getElementById('searchInput');
+  const btn=document.getElementById('searchClear');
+  if(!inp||!btn) return;
+  if(inp.value) btn.classList.remove('hidden'); else btn.classList.add('hidden');
+}
 document.getElementById('overlay').addEventListener('click',(e)=>{ if(e.target.id==='overlay') closeOverlay(); });
 document.getElementById('addProjectBtn').addEventListener('click',()=>openCreateModal());
-document.getElementById('searchInput').addEventListener('input',(e)=>{ state.search=e.target.value; render(); });
+const searchInput=document.getElementById('searchInput');
+searchInput.addEventListener('input',(e)=>{ state.search=e.target.value; updateSearchClear(); render(); });
+document.getElementById('searchClear').addEventListener('click',()=>{ searchInput.value=''; state.search=''; updateSearchClear(); render(); searchInput.focus(); });
+document.addEventListener('keydown',(e)=>{
+  const isMod=e.metaKey||e.ctrlKey;
+  if(isMod && (e.key==='k' || e.key==='K' || e.key==='f' || e.key==='F')){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    e.preventDefault(); searchInput.focus();
+  }
+  if(e.key==='Escape'){
+    const clear=document.getElementById('searchClear');
+    if(document.activeElement===searchInput && searchInput.value){ searchInput.value=''; state.search=''; updateSearchClear(); render(); }
+  }
+});
 document.getElementById('syncNowBtn').addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 document.getElementById('settingsBtn').addEventListener('click',()=>openSyncSettings());
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
@@ -786,7 +872,6 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
       await window.ApxLiquidGlass.applyAll();
       const drawer=document.getElementById('drawer');
       const inst=window.ApxLiquidGlass.instances[0];
-      // 侧栏已改 T0 CSS 磨砂，仅抽屉保留 T3 regular
       if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.26, refraction:1.08, chroma:0.14, cornerRadius:18, zRadius:32 });
     }catch(e){ console.warn('[glass] T3 init fallback',e); }
   }
