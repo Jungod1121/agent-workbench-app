@@ -21,11 +21,6 @@
       "csp": null
     }
   },
-  "plugins": {
-    "store": {
-      "autoSave": 500
-    }
-  },
   "bundle": {
     "active": true,
     "targets": "all",
