@@ -1559,22 +1559,20 @@ if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings())
 const brandEl=document.getElementById('topbarBrand')||document.getElementById('topbarTitle');
 if(brandEl){
   const goLanding=()=>{
-    const local='./landing.html';
-    const remote='https://jungod1121.github.io/agent-workbench-app/';
-    // 优先本地 landing（私密仓 Pages 不可用），Tauri 内直接跳转，浏览器则新开标签
+    const url='https://jungod1121.github.io/agent-workbench-app/';
     try{
-      if(window.__TAURI__){
-        // Tauri webview 内直接导航到 landing，便于返回
-        window.location.href=local;
+      if(window.__TAURI__ && window.__TAURI__.opener && window.__TAURI__.opener.openUrl){
+        window.__TAURI__.opener.openUrl(url);
+        return;
+      }
+      if(window.__TAURI__ && window.__TAURI__.invoke){
+        window.__TAURI__.invoke('plugin:opener|open_url', {url}).then(()=>{}).catch(()=> window.open(url,'_blank'));
         return;
       }
     }catch(e){}
-    // 浏览器环境：尝试新标签打开本地，失败回退 remote
-    const w=window.open(local,'_blank');
-    if(!w) window.location.href=local;
+    window.open(url,'_blank');
   };
   brandEl.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); goLanding(); });
-  // 键盘可达
   brandEl.setAttribute('role','link');
   brandEl.setAttribute('tabindex','0');
   brandEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); goLanding(); }});
