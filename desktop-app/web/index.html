@@ -43,12 +43,13 @@ button,input,select,textarea{font-family:var(--apx-font)}
     radial-gradient(620px 420px at 54% 92%, rgba(253,159,89,0.05), transparent 75%),
     radial-gradient(520px 340px at 50% 50%, rgba(45,212,191,0.04), transparent 72%);
 }
-.app-shell{position:relative; z-index:1; display:flex; min-height:100vh; padding:16px; gap:16px}
+.drag-bar{position:fixed; top:0; left:0; right:0; height:28px; z-index:1000; -webkit-app-region:drag; pointer-events:auto}
+.app-shell{position:relative; z-index:1; display:flex; min-height:100vh; padding:44px 16px 16px; gap:16px}
 
 /* 侧栏 T0 */
 .sidebar{
   width:240px; flex-shrink:0;
-  position:sticky; top:16px; height:calc(100vh - 32px); height:calc(100dvh - 32px);
+  position:sticky; top:44px; height:calc(100vh - 60px); height:calc(100dvh - 60px);
   display:flex; flex-direction:column; gap:18px;
   padding:20px 14px 16px; border-radius:18px; overflow:hidden;
   background: rgba(245,245,247,0.8);
@@ -282,6 +283,7 @@ button,input,select,textarea{font-family:var(--apx-font)}
 </head>
 <body>
 <a href="#main" class="skip-link">跳至主内容</a>
+<div class="drag-bar" data-tauri-drag-region></div>
 <div id="lgScene" data-lg-scene>
   <div class="bg-wells" aria-hidden="true"></div>
   <div class="app-shell">
