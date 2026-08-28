@@ -82,6 +82,24 @@ async fn set_proxy_upstream(state: State<'_, ProxyState>, upstream: String) -> R
     }
 }
 
+#[tauri::command]
+fn export_projects_to_file(path: String, projects: Vec<Project>) -> Result<(), String> {
+    let json = serde_json::to_string_pretty(&serde_json::json!({"projects": projects})).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn import_projects_from_file(path: String) -> Result<Vec<Project>, String> {
+    let s = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let v: serde_json::Value = serde_json::from_str(&s).map_err(|e| e.to_string())?;
+    let projects: Vec<Project> = v
+        .get("projects")
+        .and_then(|v| serde_json::from_value(v.clone()).ok())
+        .unwrap_or_default();
+    Ok(projects)
+}
+
 fn fallback_config_dir() -> std::path::PathBuf {
     std::env::temp_dir().join("agent-workbench")
 }
@@ -177,7 +195,9 @@ pub fn run() {
             get_proxy_status,
             start_proxy,
             stop_proxy,
-            set_proxy_upstream
+            set_proxy_upstream,
+            export_projects_to_file,
+            import_projects_from_file
         ])
         .setup(|app| {
             // W2: Proxy state

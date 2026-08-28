@@ -251,7 +251,7 @@ const STAGES = [
 ];
 const SETTINGS_KEY = 'workbench-settings';
 const CACHE_KEY = 'workbench-cache';
-let state = { projects: [], filterStage: 'all', search: '', loaded: false };
+let state = { projects: [], filterStage: 'all', search: '', loaded: false, page:1, pageSize:10 };
 let settings = null;
 let syncStatus = 'idle';
 let pushTimer = null;
@@ -652,19 +652,61 @@ function renderSettingsDrawer(prefillError){
     const total=state.projects.length;
     const prompts=state.projects.reduce((s,p)=>s+(p.prompts||[]).length,0);
     const live=state.projects.filter(p=>p.stage==='live').length;
+    const pausedCount=state.projects.filter(p=>p.paused).length;
+    const stageCounts=STAGES.map(s=>({key:s.key, label:s.label, count: state.projects.filter(p=>p.stage===s.key).length, color:s.color}));
+    const maxStage=Math.max(1, ...stageCounts.map(s=>s.count));
+    const tagMap={}; state.projects.forEach(p=>(p.tags||[]).forEach(t=> tagMap[t]=(tagMap[t]||0)+1));
+    const topTags=Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const refreshOpt=localStorage.getItem('usage-refresh-ms')||'0';
     body.innerHTML=`
       <div class="field"><label>使用统计 · 对标 CC Switch UsageDashboard</label>
         <div class="usage-bar" style="margin-top:8px">
           <div class="usage-stat"><b>${total}</b><br><span>项目</span></div>
           <div class="usage-stat"><b>${prompts}</b><br><span>Prompts</span></div>
           <div class="usage-stat"><b>${live}</b><br><span>已上线</span></div>
-          <div class="usage-stat"><b>${state.projects.filter(p=>p.paused).length}</b><br><span>已暂停</span></div>
+          <div class="usage-stat"><b>${pausedCount}</b><br><span>已暂停</span></div>
         </div>
       </div>
-      <div class="field"><label>趋势（占位）</label><div class="sync-preview">后续可接入 CC Switch 式 Usage 看板：按日/周统计 Token/请求/花费，当前为占位。</div></div>
+      <div class="field"><label>阶段分布</label>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px">
+          ${stageCounts.map(sc=>`
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px">
+              <span style="width:60px; text-align:right; color:hsl(var(--muted-foreground))">${sc.label}</span>
+              <div style="flex:1; height:8px; background:hsl(var(--muted)); border-radius:9999px; overflow:hidden"><div style="width:${(sc.count/maxStage*100).toFixed(0)}%; height:100%; background:${sc.color}; border-radius:9999px"></div></div>
+              <span style="width:28px; font-weight:600">${sc.count}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>热门标签 Top 6</label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px">
+          ${topTags.length? topTags.map(([tag,c])=>`<span class="tag" style="background:hsl(var(--primary) / 0.1); border-color:hsl(var(--primary) / 0.2); color:hsl(var(--primary))">${esc(tag)} · ${c}</span>`).join('') : '<span style="font-size:12px; color:hsl(var(--muted-foreground))">暂无标签</span>'}
+        </div>
+      </div>
+      <div class="field"><label>刷新间隔 · 对标 CC usageDashboardRefreshIntervalMs</label>
+        <select id="usage-interval" style="width:100%; min-height:36px; border-radius:8px; border:1px solid hsl(var(--border)); padding:8px 10px; font-size:13px">
+          <option value="0" ${refreshOpt==='0'?'selected':''}>手动</option>
+          <option value="5000" ${refreshOpt==='5000'?'selected':''}>5 秒</option>
+          <option value="10000" ${refreshOpt==='10000'?'selected':''}>10 秒</option>
+          <option value="30000" ${refreshOpt==='30000'?'selected':''}>30 秒</option>
+          <option value="60000" ${refreshOpt==='60000'?'selected':''}>60 秒</option>
+        </select>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px">自动刷新看板与 usageProxy 点，W3 轻量实现；W4 接 CC Session/Cost 真数据。</div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-secondary" id="usage-refresh" style="flex:1;">刷新统计</button></div>
     `;
     document.getElementById('usage-refresh').addEventListener('click',()=>{ updateUsage(); renderSettingsDrawer(); showToast('已刷新'); });
+    const sel=document.getElementById('usage-interval');
+    if(sel) sel.addEventListener('change',()=>{
+      localStorage.setItem('usage-refresh-ms', sel.value);
+      showToast('刷新间隔 '+ (sel.value==='0'?'手动':(parseInt(sel.value)/1000)+'s'));
+      setupUsageAutoRefresh();
+    });
+    function setupUsageAutoRefresh(){
+      clearInterval(window._usageTimer);
+      const ms=parseInt(localStorage.getItem('usage-refresh-ms')||'0',10);
+      if(ms>0) window._usageTimer=setInterval(()=>{ updateUsage(); if(settingsTab==='usage') renderSettingsDrawer(); }, ms);
+    }
+    setupUsageAutoRefresh();
   } else if(settingsTab==='about'){
     body.innerHTML=`
       <div class="field"><label>关于 Agent Workbench</label>
@@ -691,9 +733,14 @@ function renderSettingsDrawer(prefillError){
       ${hasSync?`<button class="btn btn-secondary" id="st-disable" style="width:100%;margin-top:10px; color:hsl(var(--destructive));">断开同步（保留本地数据）</button>`:``}
       <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:12px;">提示：三台设备填同一组地址+密钥即可互相同步；断网时正常用，联网后自动补推。DeepLink: agentworkbench://import?url=&token=</div>
       <div style="margin-top:20px; border-top:1px solid hsl(var(--border)); padding-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;"><label style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:hsl(var(--muted-foreground)); margin:0">本地备份 · SQLite WAL（对标 CC backupRetainCount 30）</label><button class="btn btn-secondary" id="backupNowBtn" style="min-height:28px; font-size:11px; padding:4px 8px;">立即备份</button></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;"><label style="font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:hsl(var(--muted-foreground)); margin:0">本地备份 · SQLite WAL（对标 CC backupRetainCount）</label><button class="btn btn-secondary" id="backupNowBtn" style="min-height:28px; font-size:11px; padding:4px 8px;">立即备份</button></div>
+        <div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:8px">
+          <div class="field" style="margin:0"><label>自动备份间隔</label><select id="backupInterval" style="width:100%; min-height:32px; border-radius:8px; border:1px solid hsl(var(--border)); padding:6px 8px"><option value="0">关闭</option><option value="6">6 小时</option><option value="12">12 小时</option><option value="24">24 小时</option><option value="168">7 天</option></select></div>
+          <div class="field" style="margin:0"><label>保留份数</label><select id="backupRetain" style="width:100%; min-height:32px; border-radius:8px; border:1px solid hsl(var(--border)); padding:6px 8px"><option value="5">5 份</option><option value="10">10 份</option><option value="20">20 份</option><option value="30">30 份</option><option value="50">50 份</option></select></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px"><button class="btn btn-secondary" id="exportBtn" style="flex:1; min-height:32px;">导出 JSON 文件</button><button class="btn btn-secondary" id="importFileBtn" style="flex:1; min-height:32px;">导入 JSON 文件</button></div>
         <div id="backupList" style="margin-top:8px; display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; font-size:12px;">加载中…</div>
-        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px;">说明：任何覆盖操作前自动 safetyBackup；保留 30 份，按时间倒序。路径：app_config_dir/backups/</div>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px;">说明：覆盖前自动 safetyBackup；按设置保留份数；路径 app_config_dir/backups/</div>
       </div>
     `;
     if(prefillError) document.getElementById('st-error').classList.remove('hidden');
@@ -720,7 +767,7 @@ function renderSettingsDrawer(prefillError){
     });
     const dis=document.getElementById('st-disable');
     if(dis) dis.addEventListener('click',()=>{ if(!confirm('确定断开同步？本地数据会保留，仅清除地址和密钥。')) return; clearSyncSettings(); renderSettingsDrawer(); showToast('已断开同步，保留本地数据'); });
-    // W1: 备份列表（对标 CC Switch BackupListSection + backupRetainCount）
+    // W1/W3: 备份列表 + 自动备份 + 导入导出（对标 CC Switch BackupListSection + ImportExportSection）
     const backupListEl=document.getElementById('backupList');
     const backupBtn=document.getElementById('backupNowBtn');
     if(backupBtn) backupBtn.addEventListener('click', async()=>{ const id=await dbBackupNow('manual'); if(id){ showToast('已备份 '+id); loadBackups(); } else showToast('备份失败（仅 Tauri 可用）'); });
@@ -752,6 +799,75 @@ function renderSettingsDrawer(prefillError){
       }));
     }
     loadBackups();
+    // 自动备份间隔 + 保留份数
+    const intervalEl=document.getElementById('backupInterval');
+    const retainEl=document.getElementById('backupRetain');
+    if(intervalEl){
+      intervalEl.value=localStorage.getItem('backup-interval')||'24';
+      intervalEl.addEventListener('change',()=>{ localStorage.setItem('backup-interval', intervalEl.value); showToast('自动备份 '+ (intervalEl.value==='0'?'已关闭':intervalEl.value+'h')); setupAutoBackup(); });
+    }
+    if(retainEl){
+      retainEl.value=localStorage.getItem('backup-retain')||'30';
+      retainEl.addEventListener('change',()=>{ localStorage.setItem('backup-retain', retainEl.value); showToast('保留 '+retainEl.value+' 份'); });
+    }
+    function setupAutoBackup(){
+      clearInterval(window._autoBackupTimer);
+      const h=parseInt(localStorage.getItem('backup-interval')||'24',10);
+      if(!h || h===0) return;
+      window._autoBackupTimer=setInterval(async()=>{ await dbBackupNow('auto-'+h+'h'); loadBackups(); }, h*3600*1000);
+    }
+    setupAutoBackup();
+    // 导入导出（Tauri 真对话框 + 浏览器回退）
+    const exportBtn=document.getElementById('exportBtn');
+    const importBtn=document.getElementById('importFileBtn');
+    if(exportBtn) exportBtn.addEventListener('click', async()=>{
+      const jsonStr=JSON.stringify({projects: state.projects}, null, 2);
+      if(dbAvailable()){
+        try{
+          const picked=await tauriInvoke('plugin:dialog|save', {options:{title:'导出 JSON', filters:[{name:'JSON', extensions:['json']}], defaultPath:'workbench-export.json'}});
+          const path = typeof picked==='string'?picked:(picked && picked.path);
+          if(path){
+            await tauriInvoke('export_projects_to_file', {path, projects: state.projects});
+            showToast('已导出到 '+path);
+            return;
+          }
+        }catch(e){ console.warn('dialog save fallback',e); }
+      }
+      const blob=new Blob([jsonStr],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='workbench-export-'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(url);
+      showToast('已导出（下载）');
+    });
+    if(importBtn) importBtn.addEventListener('click', async()=>{
+      if(dbAvailable()){
+        try{
+          const picked=await tauriInvoke('plugin:dialog|open', {options:{title:'导入 JSON', filters:[{name:'JSON', extensions:['json']}], multiple:false}});
+          const path = typeof picked==='string'?picked:(Array.isArray(picked)?picked[0]:(picked && picked.path));
+          if(path){
+            const imported=await tauriInvoke('import_projects_from_file', {path});
+            if(Array.isArray(imported)){
+              if(!confirm(`导入 ${imported.length} 个项目？将覆盖本地 ${state.projects.length} 个。`)) return;
+              await safetyBackup('pre-import-file');
+              state.projects=imported; cacheLocally(state.projects); await dbSaveProjects(state.projects); render(); showToast('已导入 '+imported.length+' 个');
+              return;
+            }
+          }
+        }catch(e){ console.warn('dialog open fallback',e); }
+      }
+      const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+      inp.onchange=async()=>{
+        const file=inp.files[0]; if(!file) return;
+        try{
+          const txt=await file.text(); const data=JSON.parse(txt);
+          const imported=data.projects||data;
+          if(!Array.isArray(imported)) throw new Error('bad format');
+          if(!confirm(`导入 ${imported.length} 个项目？将覆盖本地 ${state.projects.length} 个。`)) return;
+          await safetyBackup('pre-import-file');
+          state.projects=imported; cacheLocally(state.projects); await dbSaveProjects(state.projects); render(); showToast('已导入 '+imported.length+' 个');
+        }catch(e){ showToast('导入失败: '+e.message); }
+      };
+      inp.click();
+    });
   }
 }
 
@@ -805,7 +921,7 @@ function renderChips(){
   if(!el) return;
   const pills=[{key:'all',label:t('stages.all')}].concat(STAGES.map(s=>({key:s.key,label:t('stages.'+s.key)}))).concat([{key:'paused',label:t('stages.paused')}]);
   el.innerHTML=pills.map(s=>`<button class="chip ${state.filterStage===s.key?'active':''}" data-stage="${s.key}">${s.label}</button>`).join('');
-  el.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.filterStage=b.dataset.stage; render(); }));
+  el.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.filterStage=b.dataset.stage; state.page=1; render(); }));
 }
 function renderStagePill(){
   const pill=document.getElementById('stagePill');
@@ -821,7 +937,7 @@ function renderStagePill(){
     b.className='stage-pill-item'+(state.filterStage===s.key?' active':'');
     b.dataset.stage=s.key;
     b.textContent=s.label;
-    b.addEventListener('click',()=>{ state.filterStage=s.key; render(); closeMore(); });
+    b.addEventListener('click',()=>{ state.filterStage=s.key; state.page=1; render(); closeMore(); });
     return b;
   });
   const moreBtn=document.createElement('button');
@@ -864,13 +980,28 @@ function renderStagePill(){
   }
   function closeMore(){ popover.classList.add('hidden'); }
 }
+function debounce(fn, ms){ let t=null; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+function highlight(text, q){
+  if(!q) return esc(text);
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx<0) return esc(text);
+  const before=esc(text.slice(0,idx));
+  const match=esc(text.slice(idx, idx+q.length));
+  const after=esc(text.slice(idx+q.length));
+  return `${before}<mark style="background:hsl(48 96% 53% / 0.3); padding:0 2px; border-radius:2px">${match}</mark>${after}`;
+}
 function filteredProjects(){
   return state.projects
     .filter(p=>state.filterStage==='paused'?p.paused:(state.filterStage==='all'?true:p.stage===state.filterStage))
     .filter(p=>{
       if(!state.search) return true;
       const q=state.search.toLowerCase();
-      return p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)) || (p.category||'').toLowerCase().includes(q);
+      return p.name.toLowerCase().includes(q)
+        || (p.description||'').toLowerCase().includes(q)
+        || (p.tags||[]).some(t=>t.toLowerCase().includes(q))
+        || (p.category||'').toLowerCase().includes(q)
+        || (stageInfo(p.stage).label||'').toLowerCase().includes(q)
+        || (p.prompts||[]).some(pr=> (pr.title||'').toLowerCase().includes(q) || (pr.content||'').toLowerCase().includes(q));
     })
     .sort((a,b)=> ( (a.sort_index||0)-(b.sort_index||0) ) || (new Date(b.updatedAt)-new Date(a.updatedAt)) );
 }
@@ -891,10 +1022,22 @@ function renderGrid(){
     el.innerHTML=`<div class="empty"><h3>${t('app.noMatch')}</h3><p>试试换个筛选条件或搜索词。</p></div>`;
     return;
   }
-  // 16 行式 h16 ListItemRow
-  el.innerHTML=`<div class="list">${list.map(rowHtml).join('')}</div>`;
+  // 分页 · W3（对标 CC 虚拟化/分页）
+  const totalPages=Math.max(1, Math.ceil(list.length / state.pageSize));
+  if(state.page>totalPages) state.page=totalPages;
+  const start=(state.page-1)*state.pageSize;
+  const pageList=list.slice(start, start+state.pageSize);
+  // 16 行式 h16 ListItemRow + 分页条
+  el.innerHTML=`<div class="list">${pageList.map(rowHtml).join('')}</div>` + (totalPages>1 ? `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding:10px 12px; background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:8px; font-size:12px"><div>第 ${state.page} / ${totalPages} 页 · 共 ${list.length} 项 · 显示 ${pageList.length} · 拖拽在全列表排序</div><div style="display:flex; gap:6px; align-items:center"><button class="btn btn-secondary" id="prevPage" ${state.page<=1?'disabled':''} style="min-height:32px; padding:6px 12px">上一页</button><select id="pageSizeSel" style="min-height:32px; border-radius:8px; border:1px solid hsl(var(--border)); padding:6px 8px"><option value="10" ${state.pageSize===10?'selected':''}>10/页</option><option value="20" ${state.pageSize===20?'selected':''}>20/页</option><option value="50" ${state.pageSize===50?'selected':''}>50/页</option></select><button class="btn btn-secondary" id="nextPage" ${state.page>=totalPages?'disabled':''} style="min-height:32px; padding:6px 12px">下一页</button></div></div>` : '');
+  // 分页事件
+  const prevBtn=document.getElementById('prevPage');
+  const nextBtn=document.getElementById('nextPage');
+  const sizeSel=document.getElementById('pageSizeSel');
+  if(prevBtn) prevBtn.addEventListener('click',()=>{ if(state.page>1){ state.page--; render(); }});
+  if(nextBtn) nextBtn.addEventListener('click',()=>{ if(state.page<totalPages){ state.page++; render(); }});
+  if(sizeSel) sizeSel.addEventListener('change',(e)=>{ state.pageSize=parseInt(e.target.value,10); state.page=1; render(); });
   let dragSrcId=null;
-  list.forEach(p=>{
+  pageList.forEach(p=>{
     const row=document.getElementById('row-'+p.id);
     if(row){
       row.addEventListener('click',(e)=>{
@@ -968,8 +1111,8 @@ function rowHtml(p){
     <div class="drag-handle" draggable="false" title="拖拽排序" aria-label="拖拽排序" style="font-size:12px; line-height:1">⋮⋮</div>
     <div class="list-icon" style="background:${iconBg}; color:${iconFg}; border-color:${iconBg}">${iconLetter}</div>
     <div class="list-main">
-      <div class="list-name">${esc(p.name)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span>${catBadge}</div>
-      <div class="list-desc">${esc(p.description)||'暂无简介'} · ${tags}</div>
+      <div class="list-name">${highlight(p.name, state.search)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span>${catBadge}</div>
+      <div class="list-desc">${highlight(p.description||'暂无简介', state.search)} · ${tags}</div>
     </div>
     <div style="display:flex; gap:4px; align-items:center">
       <div class="gauge">
@@ -1174,8 +1317,9 @@ function updateSearchClear(){
 document.getElementById('overlay').addEventListener('click',(e)=>{ if(e.target.id==='overlay') closeOverlay(); });
 document.getElementById('addProjectBtn').addEventListener('click',()=>openCreateModal());
 const searchInput=document.getElementById('searchInput');
-searchInput.addEventListener('input',(e)=>{ state.search=e.target.value; updateSearchClear(); render(); });
-document.getElementById('searchClear').addEventListener('click',()=>{ searchInput.value=''; state.search=''; updateSearchClear(); render(); searchInput.focus(); });
+const debouncedRender=debounce(()=> render(), 180);
+searchInput.addEventListener('input',(e)=>{ state.search=e.target.value; state.page=1; updateSearchClear(); debouncedRender(); });
+document.getElementById('searchClear').addEventListener('click',()=>{ searchInput.value=''; state.search=''; state.page=1; updateSearchClear(); render(); searchInput.focus(); });
 document.addEventListener('keydown',(e)=>{
   const isMod=e.metaKey||e.ctrlKey;
   if(isMod && (e.key==='k' || e.key==='K' || e.key==='f' || e.key==='F')){
