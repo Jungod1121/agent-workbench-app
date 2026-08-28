@@ -12,17 +12,17 @@ body {
   background: var(--apx-parchment);
   color: var(--apx-ink);
 }
-#lgScene { position: relative; min-height: 100vh; isolation: isolate; }
-.bg-wells { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+#lgScene { position: relative; min-height: 100vh; isolation: isolate; background: var(--apx-parchment); }
+.bg-wells { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .bg-wells::before {
   content: ""; position: absolute; inset: 0;
   background:
-    radial-gradient(820px 520px at 14% 10%, rgba(0,102,204,0.18), transparent 68%),
-    radial-gradient(760px 500px at 88% 16%, rgba(164,120,199,0.16), transparent 70%),
-    radial-gradient(900px 620px at 50% 92%, rgba(253,159,89,0.14), transparent 74%);
+    radial-gradient(560px 380px at 22% 18%, rgba(0,102,204,0.14), transparent 68%),
+    radial-gradient(520px 360px at 86% 20%, rgba(164,120,199,0.12), transparent 70%),
+    radial-gradient(640px 420px at 50% 88%, rgba(253,159,89,0.10), transparent 74%);
 }
 .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; padding: 12px; gap: 16px; }
-/* 侧栏：T3 内收玻璃岛（CC Switch 式，浅色 parchment 单底，不贴边） */
+/* 侧栏：实体浅色，不再整块 T3（去外框，去贴边玻璃） */
 .sidebar {
   width: 240px; flex-shrink: 0;
   position: sticky; top: 12px; height: calc(100vh - 24px); height: calc(100dvh - 24px);
@@ -31,14 +31,8 @@ body {
   gap: 14px;
   overflow: hidden;
   border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.06);
-  background: rgba(255,255,255,0.82);
-}
-.sidebar[data-liquid-glass] {
-  background: rgba(255,255,255,0.18) !important;
-  border: 1px solid rgba(255,255,255,0.22) !important;
-  border-right: 1px solid rgba(255,255,255,0.22) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+  border: 1px solid var(--apx-hairline);
+  background: #fff;
 }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 4px 2px; }
 .sidebar-logo {
@@ -60,19 +54,18 @@ body {
 .sidebar-item .count { font-family: var(--apx-font); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: rgba(0,0,0,0.06); color: var(--apx-muted); }
 .sidebar-item.active .count { background: rgba(255,255,255,0.18); color: #fff; }
 .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
-.sidebar[data-liquid-glass] .sidebar-foot { border-top-color: rgba(255,255,255,0.12); }
+.sidebar-foot { border-top-color: var(--apx-hairline); }
 .sync-pill {
   display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px;
-  background: rgba(255,255,255,0.92); border: 1px solid var(--apx-hairline);
+  background: #f5f5f7; border: 1px solid var(--apx-hairline);
   font-size: 11px; line-height: 1.4; color: var(--apx-muted);
 }
-.sidebar[data-liquid-glass] .sync-pill { background: rgba(255,255,255,0.72); border-color: rgba(255,255,255,0.32); color: var(--apx-ink); }
 .sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot.ok { background: #2F8F5D; } .dot.warn { background: #B4791F; } .dot.idle { background: var(--apx-muted); } .dot.busy { background: var(--apx-blue); animation: pulse 1s infinite ease-in-out; } .dot.off { background: #B4432F; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* 主区 — 统一浅色 parchment 单底（不搞黑白对半） */
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--apx-parchment); border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.04); }
+/* 主区 — 统一浅色单底，无外框，内容卡片承载层级 */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: transparent; border-radius: 16px; overflow: hidden; border: none; }
 /* 顶栏：T0 官网磨砂 52px（apple.com 同款） */
 .topbar {
   position: sticky; top: 0; z-index: 10; height: 52px;
@@ -140,7 +133,7 @@ body {
   width: min(560px, 100%); background: rgba(255,255,255,0.92); height: 100%; overflow-y: auto;
   padding: 22px 22px 60px; border-left: 1px solid rgba(0,0,0,0.06); position: relative;
 }
-.drawer[data-liquid-glass] { background: rgba(255,255,255,0.10) !important; }
+.drawer[data-liquid-glass] { background: rgba(255,255,255,0.08) !important; border: none !important; }
 .settings-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--apx-hairline); padding-bottom: 12px; }
 .settings-tab { font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--apx-hairline); background: #fff; color: var(--apx-muted); cursor: pointer; }
 .settings-tab.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
@@ -162,8 +155,8 @@ body {
   <div class="bg-wells" aria-hidden="true"></div>
 
   <div class="app-shell">
-    <!-- 侧栏：240 内收玻璃岛（T3 regular 浅色，不贴边） -->
-    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="regular" style="border-radius:16px;">
+    <!-- 侧栏：240 实体浅色（T3 仅抽屉/弹窗，不整块玻璃，避免外框） -->
+    <aside class="sidebar" id="sidebar" style="border-radius:16px;">
       <div class="sidebar-brand">
         <div class="sidebar-logo">A</div>
         <div>
@@ -613,12 +606,10 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
   if(window.ApxLiquidGlass && document.getElementById('lgScene')){
     try{
       await window.ApxLiquidGlass.applyAll();
-      const bar=document.getElementById('sidebar');
       const drawer=document.getElementById('drawer');
       const inst=window.ApxLiquidGlass.instances[0];
-      // 内收玻璃岛：适度折射可见但不喧宾夺主（ CC Switch 式克制）
-      if(inst && bar && bar._lg) inst.updateConfig(bar,{ blur:0.22, refraction:0.88, chroma:0.10, cornerRadius:16, zRadius:22 });
-      if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.24, refraction:0.86, chroma:0.08, cornerRadius:16 });
+      // T3 仅抽屉/弹窗：功能层浮层才用，侧栏与内容层保持实体
+      if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.28, refraction:1.10, chroma:0.16, cornerRadius:16, zRadius:32 });
     }catch(e){ console.warn('[glass] T3 init fallback',e); }
   }
 })();
