@@ -49,11 +49,11 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom:1px solid hsl(var(--border));
 }
-.topbar-left{display:flex; align-items:center; gap:10px; flex-shrink:0}
+.topbar-left{display:flex; align-items:center; gap:10px; flex-shrink:0; cursor:pointer; -webkit-app-region:no-drag}
+.topbar-left:hover .topbar-title{opacity:0.85}
 .topbar-logo{width:28px; height:28px; border-radius:8px; background:transparent; display:grid; place-items:center; font-size:13px; font-weight:700; overflow:hidden; border:0; object-fit:cover; image-rendering: -webkit-optimize-contrast}
 .topbar-logo img{width:100%; height:100%; object-fit:cover; display:block; image-rendering: -webkit-optimize-contrast; border:0}
-.topbar-title{font-size:16px; font-weight:600; letter-spacing:-0.01em}
-.topbar-meta{font-size:12px; color:hsl(var(--muted-foreground))}
+.topbar-title{font-size:16px; font-weight:700; letter-spacing:-0.02em; background:linear-gradient(135deg,#2DD4BF 0%,#4F8DF9 45%,#A78BFA 100%); -webkit-background-clip:text; background-clip:text; color:transparent; cursor:pointer}
 /* 阶段 pill 单列主导航（CC AppSwitcher 思路） */
 .topbar-center{flex:1; display:flex; justify-content:center; min-width:0; overflow:visible}
 .stage-pill-wrap{position:relative; display:flex; align-items:center; min-width:0; max-width:100%; overflow:visible}
@@ -203,12 +203,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 <div class="app-shell">
   <div class="main" id="main">
     <div class="topbar" id="topbar">
-      <div class="topbar-left">
+      <div class="topbar-left" id="topbarBrand" title="查看产品介绍">
         <div class="topbar-logo" style="padding:0; background:transparent; border:0"><img src="./craft-icon-28.png" srcset="./craft-icon-2x.png 2x, ./craft-icon.png 3x" alt="Agent Workbench" width="28" height="28" style="width:28px; height:28px; border-radius:6px; object-fit:contain; display:block; image-rendering: pixelated" /></div>
-        <div>
-          <div class="topbar-title">Agent Workbench</div>
-          <div class="topbar-meta" id="topbarMeta">全部 · 0 个项目</div>
-        </div>
+        <div class="topbar-title" id="topbarTitle">Agent Workbench</div>
       </div>
       <div class="topbar-center">
         <div class="stage-pill-wrap" id="stagePillWrap">
@@ -495,28 +492,27 @@ function renderSettingsDrawer(prefillError){
   const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
   // CC 同款：grid 6列 glass + motion
   drawer.innerHTML=`
-    <div class="drawer-head">
-      <div style="display:flex; align-items:center; gap:12px">
-        <button class="btn btn-secondary" id="settingsBack" style="width:36px; height:36px; padding:0; border-radius:8px" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
-        <h2>${t('common.settings')}</h2>
-      </div>
-      <button class="drawer-close" id="closeBtn" aria-label="关闭">×</button>
+    <div class="drawer-head" style="justify-content:flex-start; gap:12px">
+      <button class="btn btn-secondary" id="settingsBack" style="width:36px; height:36px; padding:0; border-radius:10px; border:1px solid hsl(var(--border)); background:hsl(var(--card));" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>
+      <h2 style="font-size:20px; font-weight:600; letter-spacing:-0.01em">${t('common.settings')}</h2>
     </div>
     <div class="drawer-body">
-      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; margin-bottom:24px; border:1px solid hsl(var(--border))">
-        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.general')}</button>
-        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.sync')}</button>
-        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.proxy')}</button>
-        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.icons')}</button>
-        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">Usage</button>
-        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">About</button>
+      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:12px; margin-bottom:24px; border:1px solid hsl(var(--border))">
+        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.general')}</button>
+        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.sync')}</button>
+        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.proxy')}</button>
+        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.icons')}</button>
+        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">Usage</button>
+        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">About</button>
       </div>
       <div id="settingsBody" style="animation: settingsIn 0.3s ease"></div>
     </div>
     <style>@keyframes settingsIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }</style>
   `;
-  document.getElementById('closeBtn').addEventListener('click', closeOverlay);
-  document.getElementById('settingsBack').addEventListener('click', closeOverlay);
+  const backBtn=document.getElementById('settingsBack');
+  if(backBtn) backBtn.addEventListener('click', closeOverlay);
+  const closeBtn=document.getElementById('closeBtn');
+  if(closeBtn) closeBtn.addEventListener('click', closeOverlay);
   drawer.querySelectorAll('.settings-tab').forEach(btn=>btn.addEventListener('click',()=>{ settingsTab=btn.dataset.tab; renderSettingsDrawer(); }));
   const body=document.getElementById('settingsBody');
   if(settingsTab==='general'){
@@ -941,7 +937,7 @@ function renderStagePill(){
   const wrap=document.getElementById('stagePillWrap');
   if(!pill||!wrap) return;
   const slot=wrap.parentElement;
-  const stages=[{key:'all',label:t('stages.all')},...STAGES.map(s=>({key:s.key,label:t('stages.'+s.key)})),{key:'paused',label:t('stages.paused')}];
+  const stages=[{key:'all',label:t('stages.all'),color:'hsl(var(--muted-foreground))',bg:'hsl(var(--muted))'},...STAGES.map(s=>({key:s.key,label:t('stages.'+s.key),color:s.color,bg:s.bg})),{key:'paused',label:t('stages.paused'),color:'#86868b',bg:'hsl(var(--muted))'}];
   const total=stages.length;
   if(_stageVisibleCount>total) _stageVisibleCount=total;
   if(_stageVisibleCount<1) _stageVisibleCount=1;
@@ -957,10 +953,24 @@ function renderStagePill(){
   popover.innerHTML='';
   popover.classList.add('hidden');
   function makeBtn(s){
+    const isActive=state.filterStage===s.key;
     const b=document.createElement('button');
-    b.className='stage-pill-item'+(state.filterStage===s.key?' active':'');
+    b.className='stage-pill-item'+(isActive?' active':'');
     b.dataset.stage=s.key;
-    b.textContent=s.label;
+    b.style.display='inline-flex';
+    b.style.alignItems='center';
+    b.style.gap='6px';
+    const dot=document.createElement('span');
+    dot.style.cssText=`width:6px;height:6px;border-radius:50%;background:${s.color};flex-shrink:0;display:inline-block${isActive?';box-shadow:0 0 0 2px '+s.color+'33':''}`;
+    const label=document.createElement('span');
+    label.textContent=s.label;
+    b.append(dot,label);
+    if(isActive){
+      b.style.background=s.bg;
+      b.style.color=s.color;
+      b.style.borderColor=s.color+'22';
+      b.style.fontWeight='600';
+    }
     b.addEventListener('click',()=>{ state.filterStage=s.key; state.page=1; render(); closeMore(); });
     return b;
   }
@@ -1200,7 +1210,7 @@ function rowHtml(p){
     <div class="drag-handle" draggable="false" title="拖拽排序" aria-label="拖拽排序" style="font-size:12px; line-height:1">⋮⋮</div>
     <div class="list-icon" style="background:${iconBg}; color:${iconFg}; border-color:${iconBg}">${iconLetter}</div>
     <div class="list-main">
-      <div class="list-name">${highlight(p.name, state.search)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span>${catBadge}</div>
+      <div class="list-name">${highlight(p.name, state.search)}${catBadge}</div>
       <div class="list-desc">${highlight(p.description||'暂无简介', state.search)} · ${tags}</div>
     </div>
     <div style="display:flex; gap:4px; align-items:center; flex-shrink:0">
@@ -1537,6 +1547,22 @@ const syncNowBtn=document.getElementById('syncNowBtn');
 if(syncNowBtn) syncNowBtn.addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 const settingsBtnEl=document.getElementById('settingsBtn');
 if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings());
+const brandEl=document.getElementById('topbarBrand')||document.getElementById('topbarTitle');
+if(brandEl){
+  brandEl.addEventListener('click',()=>{
+    const url='https://jungod1121.github.io/agent-workbench-app/';
+    try{
+      if(window.__TAURI__ && window.__TAURI__.opener && window.__TAURI__.opener.openUrl){
+        window.__TAURI__.opener.openUrl(url);
+      } else if(window.__TAURI__ && window.__TAURI__.invoke){
+        // fallback via opener plugin
+        window.__TAURI__.invoke('plugin:opener|open_url', {url}).catch(()=> window.open(url,'_blank'));
+      } else {
+        window.open(url,'_blank');
+      }
+    }catch(e){ window.open(url,'_blank'); }
+  });
+}
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
 (function initTauriEvents(){
