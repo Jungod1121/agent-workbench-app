@@ -167,6 +167,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .sync-preview{font-size:11px; line-height:1.6; color:hsl(var(--muted-foreground)); background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:8px; padding:10px 12px; margin-top:8px}
 .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:hsl(var(--foreground)); color:hsl(var(--background)); padding:10px 16px; border-radius:9999px; font-size:12px; font-weight:500; z-index:100; opacity:0; pointer-events:none; transition: opacity .2s, transform .2s}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px)}
+.ctx-item{padding:8px 12px; border-radius:6px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px; color:hsl(var(--foreground))}
+.ctx-item:hover{background:hsl(var(--muted))}
+.ctx-item.danger{color:hsl(var(--destructive))}
 .hidden{display:none !important}
 .prompt-card{background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:8px; padding:12px; margin-bottom:8px}
 .prompt-card pre{background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:6px; padding:8px; font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:140px; overflow:auto; margin:0 0 8px}
@@ -228,6 +231,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
         <div class="usage-stat"><b id="usageProxy">●</b><br><span>代理</span></div>
       </div>
 
+      <!-- W4: 视图切换（对标 CC Switch currentView providers/skills/sessions） -->
+      <div id="viewSwitcher" style="display:flex; gap:6px; margin-bottom:12px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border)); width:fit-content"></div>
+
       <div class="toolbar">
         <div class="chips" id="filterChips"></div>
         <span class="toolbar-count" id="toolbarCount"></span>
@@ -241,6 +247,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 <div class="hidden"><input id="ob-url"><input id="ob-token"><button id="ob-connect"></button><div id="onboardError"></div></div>
 <div class="overlay" id="overlay"><div class="drawer" id="drawer"></div></div>
 <div class="toast" id="toast"></div>
+<div id="ctxMenu" class="hidden" style="position:fixed; z-index:60; min-width:160px; background:hsl(var(--popover)); border:1px solid hsl(var(--border)); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); padding:4px; display:flex; flex-direction:column; gap:2px"></div>
 
 <script>
 const STAGES = [
@@ -249,9 +256,26 @@ const STAGES = [
   { key: 'testing',  label: '测试中', color: '#7c3aed', bg: '#ede9fe' },
   { key: 'live',     label: '已上线', color: '#059669', bg: '#d1fae5' },
 ];
+// W4: Skills/Sessions/MCP 占位（对标 CC Switch 8 源）
+const MOCK_SKILLS=[
+  {id:'sk1', name:'学术写作助手', description:'论文写作、文献管理、引用格式化', apps:['claude','codex'], installed:true, installs:1243},
+  {id:'sk2', name:'数据分析', description:'Python 数据分析与可视化', apps:['claude'], installed:false, installs:892},
+  {id:'sk3', name:'前端设计', description:'Tailwind + Framer 动效', apps:['codex','gemini'], installed:true, installs:567},
+  {id:'sk4', name:'代理调试', description:'本地代理与故障转移', apps:['claude','gemini'], installed:false, installs:321},
+];
+const MOCK_SESSIONS=[
+  {id:'sess1', title:'与 Claude 的对话 · 项目规划', provider:'claude', projectDir:'~/Projects/agent-workbench-app', lastActiveAt:new Date(Date.now()-2*3600*1000).toISOString(), messageCount:24},
+  {id:'sess2', title:'Codex 会话 · 修复同步', provider:'codex', projectDir:'~/Projects/cc-switch', lastActiveAt:new Date(Date.now()-5*3600*1000).toISOString(), messageCount:12},
+  {id:'sess3', title:'Gemini 会话 · 设计评审', provider:'gemini', projectDir:'~/Projects/demo', lastActiveAt:new Date(Date.now()-24*3600*1000).toISOString(), messageCount:8},
+];
+const MOCK_MCP=[
+  {id:'mcp1', name:'filesystem', command:'npx -y @modelcontextprotocol/server-filesystem /tmp', apps:['claude','codex'], enabled:true},
+  {id:'mcp2', name:'brave-search', command:'npx -y @modelcontextprotocol/server-brave-search', apps:['claude'], enabled:false},
+  {id:'mcp3', name:'github', command:'npx -y @modelcontextprotocol/server-github', apps:['codex'], enabled:true},
+];
 const SETTINGS_KEY = 'workbench-settings';
 const CACHE_KEY = 'workbench-cache';
-let state = { projects: [], filterStage: 'all', search: '', loaded: false, page:1, pageSize:10 };
+let state = { projects: [], filterStage: 'all', search: '', loaded: false, page:1, pageSize:10, view:'projects' };
 let settings = null;
 let syncStatus = 'idle';
 let pushTimer = null;
@@ -482,7 +506,7 @@ function renderSettingsDrawer(prefillError){
   const drawer=document.getElementById('drawer');
   const hasSync=hasSyncSettings();
   const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
-  // CC 同款：grid 6列 glass + motion
+  // CC 同款：grid 7列 glass + motion（W4 新增 Auth）
   drawer.innerHTML=`
     <div class="drawer-head">
       <div style="display:flex; align-items:center; gap:12px">
@@ -492,13 +516,14 @@ function renderSettingsDrawer(prefillError){
       <button class="drawer-close" id="closeBtn" aria-label="关闭">×</button>
     </div>
     <div class="drawer-body">
-      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; margin-bottom:24px; border:1px solid hsl(var(--border))">
-        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.general')}</button>
-        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.sync')}</button>
-        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.proxy')}</button>
-        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.icons')}</button>
-        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">Usage</button>
-        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">About</button>
+      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; margin-bottom:24px; border:1px solid hsl(var(--border))">
+        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.general')}</button>
+        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.sync')}</button>
+        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.proxy')}</button>
+        <button class="settings-tab ${settingsTab==='auth'?'active':''}" data-tab="auth" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='auth'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='auth'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='auth'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">Auth</button>
+        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.icons')}</button>
+        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">Usage</button>
+        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:8px 4px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">About</button>
       </div>
       <div id="settingsBody" style="animation: settingsIn 0.3s ease"></div>
     </div>
@@ -603,6 +628,77 @@ function renderSettingsDrawer(prefillError){
       if(!st.is_running){ showToast('代理未运行'); return; }
       try{ await navigator.clipboard.writeText('http://'+st.address); showToast('已复制 '+st.address); }catch(e){ showToast(st.address); }
     });
+  } else if(settingsTab==='auth'){
+    const auths=[
+      {key:'copilot', name:'GitHub Copilot', desc:'Device Code 流（对标 CC ManagedAuthProvider github_copilot）', icon:'<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>'},
+      {key:'codex', name:'Codex OAuth', desc:'Device Code + Poll（对标 CC codex_oauth）', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>'},
+      {key:'xai', name:'xAI OAuth', desc:'Device Code（对标 CC xai_oauth）', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 3"/></svg>'},
+    ];
+    const getAuth=(k)=>{ try{ return JSON.parse(localStorage.getItem('auth-'+k)||'null'); }catch(e){ return null; } };
+    const setAuth=(k,v)=>{ if(v) localStorage.setItem('auth-'+k, JSON.stringify(v)); else localStorage.removeItem('auth-'+k); };
+    body.innerHTML=`
+      <div class="field"><label>认证中心 · 对标 CC AuthCenterPanel（W4 占位 Device-Code）</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">三区 Copilot / Codex / xAI，各含 Device-Code 登录、轮询、设为默认、解绑。W4 为本地占位，流程与 CC 一致。</p></div>
+      <div style="display:flex; flex-direction:column; gap:12px">
+        ${auths.map(a=>{
+          const data=getAuth(a.key);
+          const isAuthed=!!data;
+          return `<div style="border:1px solid hsl(var(--border)); border-radius:12px; padding:16px; background:hsl(var(--card))">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+              <div style="display:flex; align-items:center; gap:10px"><span style="width:32px; height:32px; border-radius:8px; background:hsl(var(--muted)); display:grid; place-items:center">${a.icon}</span><div><div style="font-size:13px; font-weight:600">${a.name}</div><div style="font-size:11px; color:hsl(var(--muted-foreground))">${a.desc}</div></div></div>
+              <span style="font-size:11px; font-weight:600; padding:4px 8px; border-radius:9999px; background:${isAuthed?'hsl(142 76% 92%)':'hsl(var(--muted))'}; color:${isAuthed?'#059669':'hsl(var(--muted-foreground))'}">${isAuthed?'已认证':'未认证'}</span>
+            </div>
+            ${isAuthed? `<div style="margin-top:10px; font-size:12px; color:hsl(var(--muted-foreground))">账号：<b style="color:hsl(var(--foreground))">${esc(data.login||data.id||'unknown')}</b> · ${new Date(data.authenticated_at||Date.now()).toLocaleString('zh-CN')} · ${data.is_default?'默认':''}</div>` : ''}
+            <div style="display:flex; gap:8px; margin-top:12px">
+              ${!isAuthed? `<button class="btn btn-primary" data-auth-login="${a.key}" style="flex:1; min-height:32px;">登录</button>` : `<button class="btn btn-secondary" data-auth-logout="${a.key}" style="flex:1; min-height:32px; color:hsl(var(--destructive))">解绑</button><button class="btn btn-secondary" data-auth-default="${a.key}" style="min-height:32px;" ${data && data.is_default?'disabled':''}>设为默认</button>`}
+              <button class="btn btn-secondary" data-auth-test="${a.key}" style="min-height:32px;">测试</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:12px">说明：真实 CC 流程为 authStartLogin→user_code/verification_uri→pollForAccount→setDefault；W4 本地模拟 device_code 弹窗，数据落 localStorage auth-*。</div>
+    `;
+    body.querySelectorAll('[data-auth-login]').forEach(btn=>btn.addEventListener('click',()=>{
+      const key=btn.getAttribute('data-auth-login');
+      const user_code=Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+      const verification_uri='https://github.com/login/device';
+      const drawerEl=document.getElementById('drawer');
+      const prev=drawerEl.innerHTML;
+      drawerEl.innerHTML=`
+        <div class="drawer-head"><h2>Device Code 登录 · ${key}</h2><button class="drawer-close" id="authClose">×</button></div>
+        <div class="drawer-body" style="text-align:center; padding:32px 24px">
+          <div style="font-size:48px; font-weight:700; letter-spacing:0.1em; margin:16px 0">${user_code}</div>
+          <div style="font-size:13px; color:hsl(var(--muted-foreground))">请在新窗口打开 <a href="${verification_uri}" target="_blank" style="color:hsl(var(--primary))">${verification_uri}</a> 并输入此码</div>
+          <div style="margin-top:16px; font-size:12px; color:hsl(var(--muted-foreground))">已复制到剪贴板，等待验证…（模拟 3s 后成功）</div>
+          <div style="display:flex; gap:8px; margin-top:24px; justify-content:center"><button class="btn btn-secondary" id="authCancel">取消</button><button class="btn btn-primary" id="authConfirm">我已输入</button></div>
+        </div>`;
+      try{ navigator.clipboard.writeText(user_code); }catch(e){}
+      let done=false;
+      const finish=()=>{
+        if(done) return; done=true;
+        const now=new Date().toISOString();
+        setAuth(key, {id: key+'_'+Date.now().toString(36), login: key+'_user', is_default: false, authenticated_at: now, user_code});
+        showToast(key+' 已认证');
+        renderSettingsDrawer();
+      };
+      const timer=setTimeout(finish, 3000);
+      document.getElementById('authClose').addEventListener('click',()=>{ clearTimeout(timer); drawerEl.innerHTML=prev; renderSettingsDrawer(); });
+      document.getElementById('authCancel').addEventListener('click',()=>{ clearTimeout(timer); drawerEl.innerHTML=prev; renderSettingsDrawer(); });
+      document.getElementById('authConfirm').addEventListener('click',()=>{ clearTimeout(timer); finish(); });
+    }));
+    body.querySelectorAll('[data-auth-logout]').forEach(btn=>btn.addEventListener('click',()=>{ const k=btn.getAttribute('data-auth-logout'); if(!confirm('解绑 '+k+'？')) return; setAuth(k,null); showToast('已解绑'); renderSettingsDrawer(); }));
+    body.querySelectorAll('[data-auth-default]').forEach(btn=>btn.addEventListener('click',()=>{
+      const k=btn.getAttribute('data-auth-default');
+      ['copilot','codex','xai'].forEach(key=>{
+        const d=getAuth(key);
+        if(d){ d.is_default=(key===k); setAuth(key,d); }
+      });
+      showToast('已设为默认: '+k); renderSettingsDrawer();
+    }));
+    body.querySelectorAll('[data-auth-test]').forEach(btn=>btn.addEventListener('click',()=>{
+      const k=btn.getAttribute('data-auth-test');
+      const d=getAuth(k);
+      showToast(d? k+' 测试通过 ✓' : k+' 未认证');
+    }));
   } else if(settingsTab==='icons'){
     body.innerHTML=`
       <div class="field"><label>图标库 · 对标 CC Switch</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">CC Switch 使用 lucide-react 0.542.0（UI 图标）+ 100+ 抽取 Provider 图标（src/icons/extracted + metadata + IconPicker），本应用已对标接入 lucide 风格 + 阶段图标。</p></div>
@@ -1005,7 +1101,60 @@ function filteredProjects(){
     })
     .sort((a,b)=> ( (a.sort_index||0)-(b.sort_index||0) ) || (new Date(b.updatedAt)-new Date(a.updatedAt)) );
 }
+function renderSkills(){
+  const el=document.getElementById('gridArea');
+  const q=(state.search||'').toLowerCase();
+  const list=MOCK_SKILLS.filter(s=> !q || s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
+  const toolbarCount=document.getElementById('toolbarCount');
+  const topbarMeta=document.getElementById('topbarMeta');
+  if(topbarMeta) topbarMeta.textContent='Skills · '+list.length+' 个';
+  if(toolbarCount) toolbarCount.textContent=list.length+' / '+MOCK_SKILLS.length;
+  if(list.length===0){ el.innerHTML=`<div class="empty"><h3>没有匹配的 Skill</h3><p>试试换个搜索词</p></div>`; return; }
+  el.innerHTML=`<div class="list">${list.map(s=>`
+    <div class="list-row" style="cursor:default">
+      <div class="list-icon" style="background:${s.installed?'hsl(142 76% 92%)':'hsl(var(--muted))'}; color:${s.installed?'#059669':'hsl(var(--muted-foreground))'}">${s.installed?'✓':'○'}</div>
+      <div class="list-main"><div class="list-name">${highlight(s.name, state.search)} ${s.installed?'<span class="badge" style="background:hsl(142 76% 92%); color:#059669; margin-left:6px">已安装</span>':''}</div><div class="list-desc">${highlight(s.description, state.search)} · ${s.apps.join(', ')} · ${s.installs} installs</div></div>
+      <button class="btn ${s.installed?'btn-secondary':'btn-primary'}" data-skill="${s.id}" style="min-height:32px; font-size:12px; padding:6px 10px">${s.installed?'已安装':'安装'}</button>
+    </div>`).join('')}</div>`;
+  el.querySelectorAll('[data-skill]').forEach(btn=>btn.addEventListener('click',()=>{ const id=btn.dataset.skill; const sk=MOCK_SKILLS.find(x=>x.id===id); if(sk) { sk.installed=!sk.installed; showToast(sk.installed?'已安装 '+sk.name:'已卸载 '+sk.name); render(); } }));
+}
+function renderSessions(){
+  const el=document.getElementById('gridArea');
+  const q=(state.search||'').toLowerCase();
+  const list=MOCK_SESSIONS.filter(s=> !q || s.title.toLowerCase().includes(q) || s.provider.toLowerCase().includes(q));
+  const toolbarCount=document.getElementById('toolbarCount');
+  const topbarMeta=document.getElementById('topbarMeta');
+  if(topbarMeta) topbarMeta.textContent='Sessions · '+list.length+' 个';
+  if(toolbarCount) toolbarCount.textContent=list.length+' / '+MOCK_SESSIONS.length;
+  if(list.length===0){ el.innerHTML=`<div class="empty"><h3>没有匹配的会话</h3><p>试试换个搜索词</p></div>`; return; }
+  el.innerHTML=`<div class="list">${list.map(s=>`
+    <div class="list-row" style="cursor:default">
+      <div class="list-icon" style="background:hsl(var(--muted)); color:hsl(var(--muted-foreground))">${esc(s.provider[0].toUpperCase())}</div>
+      <div class="list-main"><div class="list-name">${highlight(s.title, state.search)} <span class="badge" style="margin-left:6px">${esc(s.provider)}</span></div><div class="list-desc">${esc(s.projectDir)} · ${s.messageCount} 消息 · ${relTime(s.lastActiveAt)}</div></div>
+      <button class="btn btn-secondary" data-sess="${s.id}" style="min-height:32px; font-size:12px">打开</button>
+    </div>`).join('')}</div>`;
+  el.querySelectorAll('[data-sess]').forEach(btn=>btn.addEventListener('click',()=> showToast('打开会话 '+btn.dataset.sess+'（占位）')));
+}
+function renderMcp(){
+  const el=document.getElementById('gridArea');
+  const q=(state.search||'').toLowerCase();
+  const list=MOCK_MCP.filter(s=> !q || s.name.toLowerCase().includes(q) || s.command.toLowerCase().includes(q));
+  const toolbarCount=document.getElementById('toolbarCount');
+  const topbarMeta=document.getElementById('topbarMeta');
+  if(topbarMeta) topbarMeta.textContent='MCP · '+list.length+' 个服务';
+  if(toolbarCount) toolbarCount.textContent=list.length+' / '+MOCK_MCP.length;
+  el.innerHTML=`<div class="list">${list.map(s=>`
+    <div class="list-row" style="cursor:default">
+      <div class="list-icon" style="background:${s.enabled?'hsl(142 76% 92%)':'hsl(var(--muted))'}; color:${s.enabled?'#059669':'hsl(var(--muted-foreground))'}">M</div>
+      <div class="list-main"><div class="list-name">${highlight(s.name, state.search)} ${s.enabled?'<span class="badge" style="background:hsl(142 76% 92%); color:#059669; margin-left:6px">启用</span>':''}</div><div class="list-desc" style="font-family:ui-monospace, Menlo, monospace; font-size:11px">${esc(s.command)} · ${s.apps.join(', ')}</div></div>
+      <button class="btn ${s.enabled?'btn-secondary':'btn-primary'}" data-mcp="${s.id}" style="min-height:32px; font-size:12px">${s.enabled?'禁用':'启用'}</button>
+    </div>`).join('')}</div>`;
+  el.querySelectorAll('[data-mcp]').forEach(btn=>btn.addEventListener('click',()=>{ const id=btn.dataset.mcp; const m=MOCK_MCP.find(x=>x.id===id); if(m){ m.enabled=!m.enabled; showToast(m.name+' '+(m.enabled?'已启用':'已禁用')); render(); }}));
+}
 function renderGrid(){
+  if(state.view==='skills'){ renderSkills(); return; }
+  if(state.view==='sessions'){ renderSessions(); return; }
+  if(state.view==='mcp'){ renderMcp(); return; }
   const el=document.getElementById('gridArea');
   const list=filteredProjects();
   const toolbarCount=document.getElementById('toolbarCount');
@@ -1042,11 +1191,11 @@ function renderGrid(){
     if(row){
       row.addEventListener('click',(e)=>{
         if(row.classList.contains('dragging')) return;
-        // 避免拖拽手柄点击触发详情
         if(e.target.closest('.drag-handle')) return;
         openDetail(p.id);
       });
       row.addEventListener('keydown',(e)=>{ if(e.key==='Enter') openDetail(p.id); });
+      row.addEventListener('contextmenu',(e)=>{ e.preventDefault(); showCtxMenu(e.clientX, e.clientY, p.id); });
       row.addEventListener('dragstart',(e)=>{
         dragSrcId=p.id;
         row.classList.add('dragging');
@@ -1098,6 +1247,45 @@ function renderGrid(){
     }
   });
 }
+function showCtxMenu(x,y, projectId){
+  const menu=document.getElementById('ctxMenu');
+  const p=state.projects.find(x=>x.id===projectId);
+  if(!p || !menu) return;
+  menu.innerHTML=`
+    <div class="ctx-item" data-act="edit" data-id="${p.id}">✎ 编辑</div>
+    <div class="ctx-item" data-act="duplicate" data-id="${p.id}">⧉ 复制项目</div>
+    <div class="ctx-item" data-act="copy" data-id="${p.id}">⎘ 复制名称</div>
+    <div style="height:1px; background:hsl(var(--border)); margin:4px 0"></div>
+    <div class="ctx-item danger" data-act="delete" data-id="${p.id}">🗑 删除</div>
+  `;
+  menu.style.left=Math.min(x, window.innerWidth-170)+'px';
+  menu.style.top=Math.min(y, window.innerHeight-160)+'px';
+  menu.classList.remove('hidden');
+  menu.querySelectorAll('.ctx-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const act=el.dataset.act;
+      const id=el.dataset.id;
+      hideCtxMenu();
+      if(act==='edit') openDetail(id);
+      else if(act==='duplicate'){
+        const src=state.projects.find(x=>x.id===id);
+        if(src){
+          const now=new Date().toISOString();
+          const copy={...JSON.parse(JSON.stringify(src)), id:uid('p'), name:src.name+' 副本', createdAt:now, updatedAt:now, sort_index:(src.sort_index||0)+0.5, prompts:(src.prompts||[]).map(pr=>({...pr, id:uid('pr')}))};
+          state.projects.push(copy);
+          state.projects.sort((a,b)=> (a.sort_index||0)-(b.sort_index||0) || new Date(b.updatedAt)-new Date(a.updatedAt));
+          state.projects.forEach((proj,i)=> proj.sort_index=i);
+          saveData(); render(); showToast('已复制');
+        }
+      }
+      else if(act==='copy'){ navigator.clipboard.writeText(p.name).then(()=>showToast('已复制名称')); }
+      else if(act==='delete'){ deleteProject(id); }
+    });
+  });
+}
+function hideCtxMenu(){ const m=document.getElementById('ctxMenu'); if(m) m.classList.add('hidden'); }
+document.addEventListener('click', hideCtxMenu);
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') hideCtxMenu(); });
 function rowHtml(p){
   const s=stageInfo(p.stage);
   const promptCount=(p.prompts||[]).length;
@@ -1128,9 +1316,15 @@ function rowHtml(p){
     </div>
   </div>`;
 }
+function renderViewSwitcher(){
+  const el=document.getElementById('viewSwitcher');
+  if(!el) return;
+  const views=[{key:'projects',label:'项目'},{key:'skills',label:'Skills'},{key:'sessions',label:'Sessions'},{key:'mcp',label:'MCP'}];
+  el.innerHTML=views.map(v=>`<button class="btn ${state.view===v.key?'btn-primary':'btn-secondary'}" data-view="${v.key}" style="min-height:32px; padding:6px 12px; font-size:12px">${v.label}</button>`).join('');
+  el.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{ state.view=b.dataset.view; state.page=1; render(); }));
+}
 function render(){ 
   if(!state.loaded) return;
-  // i18n 静态区立即预览
   const titleEl=document.querySelector('.topbar-title');
   if(titleEl) titleEl.textContent=t('app.title');
   const searchEl=document.getElementById('searchInput');
@@ -1139,6 +1333,14 @@ function render(){
   if(addBtn) addBtn.textContent=t('app.addProject');
   const importBtn=document.getElementById('importJsonBtn');
   if(importBtn) importBtn.textContent=t('app.import');
+  renderViewSwitcher();
+  // 仅项目视图显示 stage/chips
+  const toolbar=document.querySelector('.toolbar');
+  const stageWrap=document.getElementById('stagePillWrap');
+  if(toolbar) toolbar.style.display = state.view==='projects' ? 'flex' : 'none';
+  if(stageWrap) stageWrap.style.display = state.view==='projects' ? 'flex' : 'none';
+  const topbarCenter=document.querySelector('.topbar-center');
+  if(topbarCenter) topbarCenter.style.display = state.view==='projects' ? 'flex' : 'none';
   renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
 }
 
@@ -1322,13 +1524,20 @@ searchInput.addEventListener('input',(e)=>{ state.search=e.target.value; state.p
 document.getElementById('searchClear').addEventListener('click',()=>{ searchInput.value=''; state.search=''; state.page=1; updateSearchClear(); render(); searchInput.focus(); });
 document.addEventListener('keydown',(e)=>{
   const isMod=e.metaKey||e.ctrlKey;
+  if(isMod && e.key===',' ){ e.preventDefault(); openSyncSettings(); return; }
+  if(isMod && (e.key==='1')){ e.preventDefault(); state.view='projects'; state.page=1; render(); return; }
+  if(isMod && (e.key==='2')){ e.preventDefault(); state.view='skills'; state.page=1; render(); return; }
+  if(isMod && (e.key==='3')){ e.preventDefault(); state.view='sessions'; state.page=1; render(); return; }
+  if(isMod && (e.key==='4')){ e.preventDefault(); state.view='mcp'; state.page=1; render(); return; }
+  if(isMod && (e.key==='n' || e.key==='N')){ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return; e.preventDefault(); openCreateModal(); return; }
   if(isMod && (e.key==='k' || e.key==='K' || e.key==='f' || e.key==='F')){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
     e.preventDefault(); searchInput.focus();
   }
   if(e.key==='Escape'){
-    if(document.activeElement===searchInput && searchInput.value){ searchInput.value=''; state.search=''; updateSearchClear(); render(); }
+    if(document.activeElement===searchInput && searchInput.value){ searchInput.value=''; state.search=''; state.page=1; updateSearchClear(); render(); }
     if(document.getElementById('overlay').classList.contains('show')) closeOverlay();
+    hideCtxMenu();
   }
 });
 document.getElementById('importJsonBtn').addEventListener('click', async()=>{
