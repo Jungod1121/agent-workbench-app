@@ -228,7 +228,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
           <input type="text" id="searchInput" placeholder="搜索项目…” aria-label="搜索">
           <button class="search-clear hidden" id="searchClear" aria-label="清除">×</button>
         </div>
-        <button class="btn btn-primary" id="addProjectBtn" title="新建项目" aria-label="新建项目" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="btn btn-primary" id="addProjectBtn" title="新建项目" aria-label="新建项目" style="min-height:36px; padding:8px 14px; border-radius:8px; gap:6px; white-space:nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg><span id="addProjectLabel">+ 新建</span></button>
         <button class="btn btn-secondary" id="importJsonBtn" title="导入本机项目" aria-label="导入本机项目" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="btn btn-secondary" id="settingsBtn" title="设置" aria-label="设置" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.10a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
@@ -377,12 +377,22 @@ function saveSyncState(s){ localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(s
 let syncState=loadSyncState();
 function tauriInvoke(cmd, args){ 
   try{
+    if(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) return window.__TAURI_INTERNALS__.invoke(cmd, args);
     if(window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) return window.__TAURI__.core.invoke(cmd, args);
     if(window.__TAURI__ && window.__TAURI__.invoke) return window.__TAURI__.invoke(cmd, args);
-  }catch(e){}
+    if(window.__TAURI_IPC__ && window.__TAURI_IPC__.invoke) return window.__TAURI_IPC__.invoke(cmd, args);
+  }catch(e){ console.warn('[tauriInvoke] try fail', e); }
   return Promise.reject(new Error('tauri not available'));
 }
-function dbAvailable(){ return !!(window.__TAURI__ && ( (window.__TAURI__.core && window.__TAURI__.core.invoke) || window.__TAURI__.invoke)); }
+function dbAvailable(){ 
+  try{
+    if(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) return true;
+    if(window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) return true;
+    if(window.__TAURI__ && window.__TAURI__.invoke) return true;
+    if(window.__TAURI_IPC__ && window.__TAURI_IPC__.invoke) return true;
+  }catch(e){}
+  return false;
+}
 async function dbGetProjects(){ if(!dbAvailable()) return null; try{ return await tauriInvoke('get_projects'); }catch(e){ console.warn('dbGet failed',e); return null; } }
 async function dbSaveProjects(projects){ if(!dbAvailable()) return; try{ await tauriInvoke('save_projects', {projects}); }catch(e){ console.warn('dbSave failed',e); } }
 async function dbBackupNow(note){ if(!dbAvailable()) return null; try{ return await tauriInvoke('backup_now', {note}); }catch(e){ console.warn('backup failed',e); return null; } }
@@ -1229,11 +1239,10 @@ function rowHtml(p){
         ${STAGES.map((st,i)=>{
           const idx=stageIndex(p.stage);
           const isPaused=!!p.paused;
-          const isActive=i<=idx && idx>=0;
           const isCurrent=i===idx && idx>=0;
-          const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : (isActive? st.color : st.color+'33');
-          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<idx ? st.color : st.color+'33');
-          return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+(isPaused?'hsl(var(--muted-foreground))33':st.color+'33')+'; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
+          const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : st.color;
+          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<idx ? st.color : st.color+'66');
+          return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+(isPaused?'hsl(var(--muted-foreground))33':st.color+'40')+'; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
         }).join('')}
       </div>
       <span class="gauge-label" style="color:${p.paused?'hsl(var(--muted-foreground))':s.color}; background:${p.paused?'hsl(var(--muted))':s.bg}; border:1px solid ${p.paused?'hsl(var(--border))':s.color+'1a'}; padding:2px 6px; border-radius:6px">${esc(t('stages.'+p.stage))}${p.paused?' · '+esc(t('stages.paused')):''}</span>
@@ -1250,10 +1259,12 @@ function render(){
   if(titleEl) titleEl.textContent=t('app.title');
   const searchEl=document.getElementById('searchInput');
   if(searchEl) searchEl.placeholder=t('app.searchPlaceholder');
+  const addLabel=document.getElementById('addProjectLabel');
+  if(addLabel) addLabel.textContent=t('app.addProject');
   const addBtn=document.getElementById('addProjectBtn');
-  if(addBtn) addBtn.textContent=t('app.addProject');
+  if(addBtn) addBtn.title=t('app.addProject');
   const importBtn=document.getElementById('importJsonBtn');
-  if(importBtn) importBtn.textContent=t('app.import');
+  if(importBtn){ importBtn.title=t('app.import'); importBtn.setAttribute('aria-label', t('app.import')); }
   renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
 }
 
@@ -1564,27 +1575,50 @@ if(syncNowBtn) syncNowBtn.addEventListener('click',()=>{ if(!hasSyncSettings()){
 const settingsBtnEl=document.getElementById('settingsBtn');
 if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings());
 async function openExternal(url){
+  console.log('[openExternal] start', url, 'dbAvailable', dbAvailable(), 'internals', !!(window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke));
   try{
     const u=new URL(url);
     if(!['http:','https:'].includes(u.protocol)) throw new Error('Unsupported scheme');
-  }catch{ throw new Error('Invalid URL'); }
-  if(dbAvailable()){
-    await tauriInvoke('open_external', {url});
+  }catch(e){ console.error('[openExternal] Invalid URL', e); throw new Error('Invalid URL'); }
+  // 优先走 CC Switch 同款 Rust 桥（系统浏览器），不依赖 dbAvailable 判定
+  try{
+    console.log('[openExternal] tauri invoke open_external', url);
+    const r=await tauriInvoke('open_external', {url});
+    console.log('[openExternal] invoke ok', r);
     return;
+  }catch(e){
+    console.warn('[openExternal] invoke fail, fallback window.open', e);
+    // 回退：浏览器环境或 invoke 不可用
+    try{
+      const w=window.open(url,'_blank');
+      console.log('[openExternal] window.open result', !!w);
+      if(w) return;
+      throw new Error('window.open blocked');
+    }catch(we){
+      console.error('[openExternal] window.open fail', we);
+      throw e; // 抛出原始 invoke 错误，便于上层 toast
+    }
   }
-  window.open(url,'_blank');
 }
 const brandEl=document.getElementById('topbarBrand')||document.getElementById('topbarTitle');
+console.log('[brand] init found', !!brandEl, brandEl?brandEl.id:'null', 'tauri', !!(window.__TAURI__));
 if(brandEl){
   const goLanding=async()=>{
     const url='https://jungod1121.github.io/agent-workbench-app/';
-    try{ await openExternal(url); }
-    catch(e){ try{ window.open(url,'_blank'); }catch(_){ showToast('打开链接失败: '+(e&&e.message||e)); } }
+    console.log('[brand] click goLanding', url);
+    showToast('正在打开介绍页…');
+    try{ await openExternal(url); showToast('已在系统浏览器打开'); console.log('[brand] openExternal success'); }
+    catch(e){ console.error('[brand] openExternal fail', e); showToast('打开失败: '+(e&&e.message||e)); try{ const w=window.open(url,'_blank'); console.log('[brand] fallback window.open', !!w); if(!w) showToast('请手动访问: '+url); }catch(_){} }
   };
-  brandEl.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); goLanding(); });
+  brandEl.addEventListener('click', (e)=>{ console.log('[brand] click event'); e.preventDefault(); e.stopPropagation(); goLanding(); });
   brandEl.setAttribute('role','link');
   brandEl.setAttribute('tabindex','0');
   brandEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); goLanding(); }});
+  // 确保可点击：移除可能阻挡的 drag
+  brandEl.style.pointerEvents='auto';
+  brandEl.style.webkitAppRegion='no-drag';
+} else {
+  console.warn('[brand] not found');
 }
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);

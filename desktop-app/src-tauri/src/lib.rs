@@ -57,14 +57,19 @@ fn set_window_theme(theme: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn open_external(app: tauri::AppHandle, url: String) -> Result<bool, String> {
+    log::info!("open_external called: {}", url);
     let url = if url.starts_with("http://") || url.starts_with("https://") {
         url
     } else {
         format!("https://{url}")
     };
-    app.opener()
+    log::info!("open_external opening: {}", url);
+    let res = app
+        .opener()
         .open_url(&url, None::<String>)
-        .map_err(|e| format!("打开链接失败: {e}"))?;
+        .map_err(|e| format!("打开链接失败: {e}"));
+    log::info!("open_external result: {:?}", res);
+    res?;
     Ok(true)
 }
 
