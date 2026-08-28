@@ -395,17 +395,21 @@ function renderSettingsDrawer(prefillError){
   const drawer=document.getElementById('drawer');
   const hasSync=hasSyncSettings();
   const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
+  // CC 同款：grid 6列 glass + motion
   drawer.innerHTML=`
-    <div class="drawer-head">
-      <h2>${t('common.settings')}</h2><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button>
+    <div class="drawer-head" style="margin:-20px -20px 16px; padding:0 20px; height:64px; border-bottom:1px solid hsl(var(--border)); display:flex; align-items:center; justify-content:space-between">
+      <h2 style="font-size:16px; font-weight:600">${t('common.settings')}</h2><button class="drawer-close" id="closeBtn" aria-label="关闭" style="width:32px; height:32px; border-radius:8px">×</button>
     </div>
-    <div class="settings-tabs">
-      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general">${t('common.general')}</button>
-      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync">${t('common.sync')}</button>
-      <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy">${t('common.proxy')}</button>
-      <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons">${t('common.icons')}</button>
+    <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; margin-bottom:24px; border:1px solid hsl(var(--border))">
+      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.general')}</button>
+      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.sync')}</button>
+      <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.proxy')}</button>
+      <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">${t('common.icons')}</button>
+      <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">Usage</button>
+      <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:8px 6px; border-radius:6px; font-size:11px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--background))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.06)':''}; cursor:pointer">About</button>
     </div>
-    <div id="settingsBody"></div>
+    <div id="settingsBody" style="animation: settingsIn 0.3s ease"></div>
+    <style>@keyframes settingsIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }</style>
   `;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
   drawer.querySelectorAll('.settings-tab').forEach(btn=>btn.addEventListener('click',()=>{ settingsTab=btn.dataset.tab; renderSettingsDrawer(); }));
@@ -503,7 +507,40 @@ function renderSettingsDrawer(prefillError){
     }
     renderIcons();
     input.addEventListener('input',()=> renderIcons(input.value));
-  } else {
+  } else if(settingsTab==='usage'){
+    const total=state.projects.length;
+    const prompts=state.projects.reduce((s,p)=>s+(p.prompts||[]).length,0);
+    const live=state.projects.filter(p=>p.stage==='live').length;
+    body.innerHTML=`
+      <div class="field"><label>使用统计 · 对标 CC Switch UsageDashboard</label>
+        <div class="usage-bar" style="margin-top:8px">
+          <div class="usage-stat"><b>${total}</b><br><span>项目</span></div>
+          <div class="usage-stat"><b>${prompts}</b><br><span>Prompts</span></div>
+          <div class="usage-stat"><b>${live}</b><br><span>已上线</span></div>
+          <div class="usage-stat"><b>${state.projects.filter(p=>p.paused).length}</b><br><span>已暂停</span></div>
+        </div>
+      </div>
+      <div class="field"><label>趋势（占位）</label><div class="sync-preview">后续可接入 CC Switch 式 Usage 看板：按日/周统计 Token/请求/花费，当前为占位。</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-secondary" id="usage-refresh" style="flex:1;">刷新统计</button></div>
+    `;
+    document.getElementById('usage-refresh').addEventListener('click',()=>{ updateUsage(); renderSettingsDrawer(); showToast('已刷新'); });
+  } else if(settingsTab==='about'){
+    body.innerHTML=`
+      <div class="field"><label>关于 Agent Workbench</label>
+        <div class="sync-preview" style="background:hsl(var(--card));">
+          <div style="font-size:14px; font-weight:600">Agent Workbench v0.1.0</div>
+          <div style="font-size:12px; color:hsl(var(--muted-foreground)); margin-top:4px">对标 CC Switch 129k★ 的 All-in-One 管理器，本地优先 + Tauri 2 + 100+ 图标库</div>
+          <div style="margin-top:12px; display:flex; gap:8px">
+            <button class="btn btn-secondary" id="about-github" style="min-height:32px; font-size:12px">GitHub</button>
+            <button class="btn btn-secondary" id="about-check" style="min-height:32px; font-size:12px">检查更新</button>
+          </div>
+          <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:12px">构建：Tauri 2.8 + Rust 1.85 + window-state/single-instance/tray/deep-link/log/updater<br>设置同款：6 标签 glass + motion + 语言/主题 立即预览</div>
+        </div>
+      </div>
+    `;
+    document.getElementById('about-github').addEventListener('click',()=>{ if(window.__TAURI__ && window.__TAURI__.opener) window.__TAURI__.opener.openUrl('https://github.com/Jungod1121/agent-workbench-app'); else window.open('https://github.com/Jungod1121/agent-workbench-app','_blank'); });
+    document.getElementById('about-check').addEventListener('click',()=> showToast('已是最新（演示）'));
+  } else if(settingsTab==='sync'){
     body.innerHTML=`
       <div class="sync-preview hidden" id="st-error" style="background:hsl(var(--destructive) / 0.08); color:hsl(var(--destructive)); border-color:hsl(var(--destructive) / 0.2); margin-bottom:12px;">${prefillError?esc(prefillError):''}</div>
       <div class="field"><label>Worker 地址</label><input type="text" id="st-url" placeholder="https://agent-workbench-sync.xxx.workers.dev" value="${hasSync?esc(settings.url):''}"></div>
