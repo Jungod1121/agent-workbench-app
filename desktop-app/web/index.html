@@ -146,7 +146,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .field textarea{resize:vertical; min-height:80px}
 
 /* 全屏设置：仿 CC Switch Dialog variant fullscreen + App.tsx currentView=settings */
-.overlay{position:fixed; inset:0; background:hsl(var(--background)); display:none; flex-direction:column; z-index:50; padding:32px 0 0}
+.overlay{position:fixed; inset:0; background:hsl(var(--background)); display:none; flex-direction:column; z-index:50; padding:0}
 .overlay.show{display:flex; animation: overlayIn .2s ease}
 @keyframes overlayIn{ from{opacity:0} to{opacity:1} }
 .drawer{
@@ -154,7 +154,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
   background:hsl(var(--background)); border:0; border-radius:0; box-shadow:none;
   transform: none; opacity:1; padding:0;
 }
-.drawer-head{flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:12px; height:64px; padding:0 24px 0 72px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--muted) / 0.2); -webkit-app-region:no-drag}
+.drawer-head{flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:12px; height:64px; margin-top:28px; padding:0 24px 0 80px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--muted) / 0.2); -webkit-app-region:no-drag}
 .drawer-head h2{font-size:18px; font-weight:600; letter-spacing:-0.01em}
 .drawer-close{width:36px; height:36px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); cursor:pointer; display:grid; place-items:center; font-size:18px; color:hsl(var(--muted-foreground))}
 .drawer-close:hover{background:hsl(var(--muted))}
@@ -934,62 +934,87 @@ function renderChips(){
   el.innerHTML=pills.map(s=>`<button class="chip ${state.filterStage===s.key?'active':''}" data-stage="${s.key}">${s.label}</button>`).join('');
   el.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.filterStage=b.dataset.stage; state.page=1; render(); }));
 }
+let _stageVisibleCount=6;
 function renderStagePill(){
   const pill=document.getElementById('stagePill');
   const popover=document.getElementById('stageMorePopover');
   const wrap=document.getElementById('stagePillWrap');
   if(!pill||!wrap) return;
+  const slot=wrap.parentElement;
   const stages=[{key:'all',label:t('stages.all')},...STAGES.map(s=>({key:s.key,label:t('stages.'+s.key)})),{key:'paused',label:t('stages.paused')}];
+  const total=stages.length;
+  if(_stageVisibleCount>total) _stageVisibleCount=total;
+  if(_stageVisibleCount<1) _stageVisibleCount=1;
+  let visibleCount=Math.min(_stageVisibleCount, total);
+  let visibleList=stages.slice(0, Math.max(1, visibleCount));
+  if(!visibleList.some(s=>s.key===state.filterStage)){
+    const active=stages.find(s=>s.key===state.filterStage);
+    if(active && visibleList.length>0) visibleList[visibleList.length-1]=active;
+  }
+  const overflowSet=new Set(visibleList.map(s=>s.key));
+  let overflowList=stages.filter(s=> !overflowSet.has(s.key));
   pill.innerHTML='';
   popover.innerHTML='';
   popover.classList.add('hidden');
-  const btns=stages.map(s=>{
+  function makeBtn(s){
     const b=document.createElement('button');
     b.className='stage-pill-item'+(state.filterStage===s.key?' active':'');
     b.dataset.stage=s.key;
     b.textContent=s.label;
     b.addEventListener('click',()=>{ state.filterStage=s.key; state.page=1; render(); closeMore(); });
     return b;
-  });
-  const moreBtn=document.createElement('button');
-  moreBtn.className='stage-pill-item stage-more-trigger hidden';
-  moreBtn.textContent='⋯';
-  moreBtn.addEventListener('click',(e)=>{ e.stopPropagation(); popover.classList.toggle('hidden'); });
-  pill.append(...btns, moreBtn);
-  function layout(){
-    while(popover.firstChild){ pill.insertBefore(popover.firstChild, moreBtn); }
-    moreBtn.classList.add('hidden');
-    popover.classList.add('hidden');
-    if(pill.scrollWidth <= wrap.clientWidth) return;
-    moreBtn.classList.remove('hidden');
-    const activeKey=state.filterStage;
-    for(let i=btns.length-1; i>=0 && pill.scrollWidth > wrap.clientWidth; i--){
-      const b=btns[i];
-      if(b.dataset.stage===activeKey) continue;
-      popover.insertBefore(b, popover.firstChild);
-    }
-    for(let i=btns.length-1; i>=0 && pill.scrollWidth > wrap.clientWidth; i--){
-      if(popover.contains(btns[i])) continue;
-      popover.insertBefore(btns[i], popover.firstChild);
-    }
-    if(popover.children.length===0) moreBtn.classList.add('hidden');
   }
-  layout();
+  visibleList.forEach(s=> pill.appendChild(makeBtn(s)));
+  let moreBtn=null;
+  if(overflowList.length>0){
+    moreBtn=document.createElement('button');
+    moreBtn.className='stage-pill-item stage-more-trigger';
+    moreBtn.textContent='⋯';
+    moreBtn.setAttribute('aria-label','更多阶段');
+    moreBtn.addEventListener('click',(e)=>{ e.stopPropagation(); popover.classList.toggle('hidden'); });
+    pill.appendChild(moreBtn);
+    overflowList.forEach(s=> popover.appendChild(makeBtn(s)));
+  }
+  function closeMore(){ if(popover) popover.classList.add('hidden'); }
+  function compute(){
+    const sSlot=wrap.parentElement;
+    const sPill=document.getElementById('stagePill');
+    if(!sSlot||!sPill) return;
+    const sample=sPill.querySelector('.stage-pill-item');
+    if(!sample) return;
+    const itemW=sample.offsetWidth;
+    if(itemW<=0) return;
+    const st=getComputedStyle(sPill);
+    const gap=parseFloat(st.columnGap||st.gap)||4;
+    const pad=(parseFloat(st.paddingLeft)||0)+(parseFloat(st.paddingRight)||0);
+    const available=sSlot.clientWidth;
+    const widthAll=pad + total*itemW + (total-1)*gap;
+    let next;
+    if(widthAll <= available) next=total;
+    else {
+      const fit=Math.floor((available - pad - itemW)/(itemW+gap));
+      next=Math.max(1, Math.min(total-1, fit));
+    }
+    if(next!==_stageVisibleCount){
+      _stageVisibleCount=next;
+      requestAnimationFrame(()=> renderStagePill());
+    }
+  }
+  requestAnimationFrame(compute);
   if(!wrap._ro){
-    if(typeof ResizeObserver !== 'undefined'){
+    if(typeof ResizeObserver!=='undefined'){
       try{
-        const ro=new ResizeObserver(()=>layout());
-        ro.observe(wrap);
+        const ro=new ResizeObserver(()=> compute());
+        ro.observe(slot);
         wrap._ro=ro;
       }catch(e){}
     }
-    window.addEventListener('resize', layout);
+    window.addEventListener('resize', compute);
   }
   if(!wrap._outside){
     document.addEventListener('click',(e)=>{ if(!wrap.contains(e.target)) closeMore(); });
     wrap._outside=true;
   }
-  function closeMore(){ popover.classList.add('hidden'); }
 }
 function debounce(fn, ms){ let t=null; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
 function highlight(text, q){
@@ -1178,11 +1203,12 @@ function rowHtml(p){
       <div class="list-name">${highlight(p.name, state.search)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span>${catBadge}</div>
       <div class="list-desc">${highlight(p.description||'暂无简介', state.search)} · ${tags}</div>
     </div>
-    <div style="display:flex; gap:4px; align-items:center">
-      <div class="gauge">
+    <div style="display:flex; gap:4px; align-items:center; flex-shrink:0">
+      <div class="gauge" title="${esc(stageInfo(p.stage).label)}${p.paused?' · 已暂停':''}">
         ${STAGES.map((st,i)=>{
           const idx=stageIndex(p.stage);
-          return `<div class="gauge-dot" style="background:${i<=idx?s.color:'hsl(var(--border))'}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${i<idx?s.color:'hsl(var(--border))'}"></div>`:''}`
+          const col=p.paused ? 'hsl(var(--muted-foreground))' : s.color;
+          return `<div class="gauge-dot" style="background:${i<=idx?col:'hsl(var(--border))'}${i===idx && idx>=0?'; box-shadow:0 0 0 2px '+col+'33':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${i<idx?col:'hsl(var(--border))'}"></div>`:''}`
         }).join('')}
       </div>
     </div>
