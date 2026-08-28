@@ -7,22 +7,23 @@
 <link rel="stylesheet" href="./assets/apple-tokens.css">
 <link rel="stylesheet" href="./assets/apple-gradients.css">
 <style>
-/* ——— Apple 软件 UI · 240 侧栏 + 主区 + 玻璃工具栏（保功能，重布局）——— */
+/* ——— Apple 软件 UI · 240 侧栏 + 主区 + 玻璃工具栏（暗色系）——— */
 body {
-  background: var(--apx-parchment);
-  color: var(--apx-ink);
+  background: #0c0c0e;
+  color: #f5f5f7;
 }
-#lgScene { position: relative; min-height: 100vh; isolation: isolate; background: var(--apx-parchment); }
+#lgScene { position: relative; min-height: 100vh; isolation: isolate; background: #0c0c0e; }
 .bg-wells { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
 .bg-wells::before {
   content: ""; position: absolute; inset: 0;
   background:
-    radial-gradient(560px 380px at 22% 18%, rgba(0,102,204,0.14), transparent 68%),
-    radial-gradient(520px 360px at 86% 20%, rgba(164,120,199,0.12), transparent 70%),
-    radial-gradient(640px 420px at 50% 88%, rgba(253,159,89,0.10), transparent 74%);
+    radial-gradient(640px 420px at 18% 14%, rgba(0,102,204,0.22), transparent 68%),
+    radial-gradient(600px 400px at 88% 18%, rgba(164,120,199,0.18), transparent 70%),
+    radial-gradient(700px 460px at 52% 90%, rgba(253,159,89,0.16), transparent 74%),
+    radial-gradient(520px 360px at 50% 50%, rgba(45,212,191,0.08), transparent 72%);
 }
 .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; padding: 12px; gap: 16px; }
-/* 侧栏：实体浅色，不再整块 T3（去外框，去贴边玻璃） */
+/* 侧栏：暗色内收玻璃岛（T3 thick 深色） */
 .sidebar {
   width: 240px; flex-shrink: 0;
   position: sticky; top: 12px; height: calc(100vh - 24px); height: calc(100dvh - 24px);
@@ -35,8 +36,8 @@ body {
   background: transparent;
 }
 .sidebar:not([data-liquid-glass]) {
-  border: 1px solid var(--apx-hairline);
-  background: #fff;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(39,39,41,0.92);
 }
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 4px 2px; }
 .sidebar-logo {
@@ -44,53 +45,55 @@ body {
   background: var(--apx-blue); color: #fff; display: grid; place-items: center;
   font-family: var(--apx-font); font-size: 14px; font-weight: 700; letter-spacing: -0.02em;
 }
-.sidebar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; color: var(--apx-ink); }
-.sidebar-sub { font-size: 11px; color: var(--apx-muted); letter-spacing: -0.01em; }
+.sidebar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; color: #f5f5f7; }
+.sidebar-sub { font-size: 11px; color: #86868b; letter-spacing: -0.01em; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .sidebar-item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 9px 10px; border-radius: 10px; font-size: 13px; font-weight: 500;
-  color: var(--apx-ink); cursor: pointer; border: 1px solid transparent;
+  color: #f5f5f7; cursor: pointer; border: 1px solid transparent;
   transition: background 0.2s, border-color 0.2s; user-select: none;
 }
-.sidebar-item:hover { background: rgba(0,0,0,0.04); }
-.sidebar-item.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
-.sidebar-item .count { font-family: var(--apx-font); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: rgba(0,0,0,0.06); color: var(--apx-muted); }
-.sidebar-item.active .count { background: rgba(255,255,255,0.18); color: #fff; }
-.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
-.sidebar-foot { border-top-color: var(--apx-hairline); }
+.sidebar-item:hover { background: rgba(255,255,255,0.06); }
+.sidebar-item.active { background: #fff; color: #1d1d1f; border-color: #fff; }
+.sidebar-item .count { font-family: var(--apx-font); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: rgba(255,255,255,0.10); color: #86868b; }
+.sidebar-item.active .count { background: rgba(0,0,0,0.08); color: #1d1d1f; }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+.sidebar-foot { border-top-color: rgba(255,255,255,0.08); }
 .sync-pill {
   display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px;
-  background: #f5f5f7; border: 1px solid var(--apx-hairline);
-  font-size: 11px; line-height: 1.4; color: var(--apx-muted);
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10);
+  font-size: 11px; line-height: 1.4; color: #86868b;
 }
 .sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dot.ok { background: #2F8F5D; } .dot.warn { background: #B4791F; } .dot.idle { background: var(--apx-muted); } .dot.busy { background: var(--apx-blue); animation: pulse 1s infinite ease-in-out; } .dot.off { background: #B4432F; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* 主区 — 统一浅色单底，无外框，内容卡片承载层级 */
+/* 主区 — 暗色单底 */
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: transparent; border-radius: 16px; overflow: hidden; border: none; }
-/* 顶栏：T0 官网磨砂 52px（apple.com 同款） */
+/* 顶栏：T0 暗色磨砂 52px */
 .topbar {
   position: sticky; top: 0; z-index: 10; height: 52px;
   display: flex; align-items: center; gap: 12px; padding: 0 20px;
-  background: rgba(245,245,247,0.8); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: rgba(22,22,23,0.72); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .topbar[data-liquid-glass] { background: rgba(245,245,247,0.42) !important; }
-.topbar-title { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; color: var(--apx-ink); white-space: nowrap; }
+.topbar-title { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; color: #f5f5f7; white-space: nowrap; }
 .topbar-search { flex: 1; max-width: 420px; position: relative; }
 .topbar-search input {
   width: 100%; height: 36px; padding: 0 12px 0 32px; border-radius: 9999px;
-  border: 1px solid var(--apx-hairline); background: #fff; font-size: 13px; color: var(--apx-ink);
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.08); font-size: 13px; color: #f5f5f7;
 }
-.topbar-search input:focus { outline: 2px solid var(--apx-blue-focus); outline-offset: 1px; }
+.topbar-search input::placeholder { color: #86868b; }
+.topbar-search input:focus { outline: 2px solid var(--apx-blue-focus); outline-offset: 1px; background: rgba(255,255,255,0.12); }
 .topbar-search::before {
   content: "⌕"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
   font-size: 13px; color: var(--apx-muted); pointer-events: none;
 }
 .apx-btn { min-height: 36px; padding: 8px 16px; font-size: 13px; }
-.apx-btn-primary { background: var(--apx-blue); }
+.apx-btn-primary { background: var(--apx-blue); color: #fff; }
+.apx-btn-utility { background: rgba(255,255,255,0.10); color: #f5f5f7; border: 1px solid rgba(255,255,255,0.10); }
 .content { padding: 20px 20px 40px; max-width: 1080px; width: 100%; margin: 0 auto; }
 
 /* 保留原功能样式，但用 Apple 令牌重肤 */
@@ -100,45 +103,45 @@ body {
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 18px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
-  font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--apx-hairline);
-  background: #fff; color: var(--apx-muted); cursor: pointer; transition: all 0.2s;
+  font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.08); color: #86868b; cursor: pointer; transition: all 0.2s;
 }
-.chip:hover { border-color: var(--apx-muted); }
-.chip.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
+.chip:hover { border-color: rgba(255,255,255,0.18); color: #f5f5f7; }
+.chip.active { background: #fff; color: #1d1d1f; border-color: #fff; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 .card {
-  background: #fff; border: 1px solid var(--apx-hairline); border-radius: 18px;
+  background: rgba(39,39,41,0.92); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
   padding: 16px; cursor: pointer; transition: transform 0.3s var(--apx-spring), box-shadow 0.3s;
 }
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.32); border-color: rgba(255,255,255,0.12); }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-.card-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; color: var(--apx-ink); }
+.card-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; color: #f5f5f7; }
 .badge { font-size: 11px; padding: 3px 8px; border-radius: 9999px; font-weight: 600; }
-.card-desc { color: var(--apx-muted); font-size: 13px; line-height: 1.45; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
+.card-desc { color: #86868b; font-size: 13px; line-height: 1.45; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
 .gauge { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
-.gauge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--apx-hairline); }
-.gauge-line { flex: 1; height: 2px; border-radius: 1px; background: var(--apx-hairline); }
-.gauge-label { font-size: 10px; color: var(--apx-muted); margin-left: 4px; }
-.card-foot { display: flex; justify-content: space-between; font-size: 11px; color: var(--apx-muted); }
+.gauge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,0.14); }
+.gauge-line { flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,0.14); }
+.gauge-label { font-size: 10px; color: #86868b; margin-left: 4px; }
+.card-foot { display: flex; justify-content: space-between; font-size: 11px; color: #86868b; }
 .tag-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
-.tag { font-size: 10px; padding: 3px 7px; border-radius: 9999px; background: #f5f5f7; color: var(--apx-ink); border: 1px solid var(--apx-hairline); }
+.tag { font-size: 10px; padding: 3px 7px; border-radius: 9999px; background: rgba(255,255,255,0.08); color: #f5f5f7; border: 1px solid rgba(255,255,255,0.08); }
 .paused-ribbon { position: absolute; top: 12px; right: -28px; background: #86868b; color: #fff; font-size: 10px; font-weight: 600; padding: 3px 30px; transform: rotate(38deg); }
-.empty { text-align: center; padding: 64px 20px; color: var(--apx-muted); }
-.empty h3 { font-size: 19px; font-weight: 600; color: var(--apx-ink); margin: 0 0 8px; }
-.field label { font-size: 11px; color: var(--apx-muted); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
-.field input, .field textarea, .field select { border-radius: 10px; border: 1px solid var(--apx-hairline); }
-.field input:focus, .field textarea:focus { outline: 2px solid var(--apx-blue-focus); }
+.empty { text-align: center; padding: 64px 20px; color: #86868b; }
+.empty h3 { font-size: 19px; font-weight: 600; color: #f5f5f7; margin: 0 0 8px; }
+.field label { font-size: 11px; color: #86868b; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+.field input, .field textarea, .field select { border-radius: 10px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.06); color: #f5f5f7; }
+.field input::placeholder, .field textarea::placeholder { color: #6e6e73; }
 .btn { border-radius: 9999px; }
 .btn:active, .apx-btn:active { transform: scale(0.97); }
-/* 抽屉：T3 regular 玻璃功能层（内收浮层，不贴边，无外框） */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; padding: 12px; }
+/* 抽屉：T3 regular 暗色玻璃浮层 */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.48); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; padding: 12px; }
 .overlay.show { display: flex; }
 .drawer {
-  width: min(560px, 100%); background: rgba(255,255,255,0.96); height: calc(100% - 24px); height: calc(100dvh - 24px); overflow-y: auto;
-  padding: 22px 22px 60px; border: none; border-radius: 16px; position: relative;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  width: min(560px, 100%); background: rgba(39,39,41,0.96); height: calc(100% - 24px); height: calc(100dvh - 24px); overflow-y: auto;
+  padding: 22px 22px 60px; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; position: relative;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.44); color: #f5f5f7;
 }
-.drawer[data-liquid-glass] { background: transparent !important; border: none !important; box-shadow: none !important; }
+.drawer[data-liquid-glass] { background: rgba(28,28,30,0.72) !important; border: none !important; box-shadow: none !important; }
 .settings-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--apx-hairline); padding-bottom: 12px; }
 .settings-tab { font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--apx-hairline); background: #fff; color: var(--apx-muted); cursor: pointer; }
 .settings-tab.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
@@ -160,8 +163,8 @@ body {
   <div class="bg-wells" aria-hidden="true"></div>
 
   <div class="app-shell">
-    <!-- 侧栏：240 内收玻璃岛（T3 克制，唯一功能层） -->
-    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="regular" style="border-radius:16px;">
+    <!-- 侧栏：240 内收玻璃岛 暗色 T3 thick -->
+    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="thick" style="border-radius:16px;">
       <div class="sidebar-brand">
         <div class="sidebar-logo">A</div>
         <div>
