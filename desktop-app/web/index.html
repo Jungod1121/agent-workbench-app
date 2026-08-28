@@ -19,6 +19,17 @@
   --radius: 0.5rem;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+.dark{
+  --background: 240 5% 12%; --foreground: 0 0% 98%;
+  --card: 240 5% 16%; --card-foreground: 0 0% 98%;
+  --popover: 240 5% 16%; --popover-foreground: 0 0% 98%;
+  --primary: 210 100% 54%; --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 18%; --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 18%; --muted-foreground: 240 5% 64.9%;
+  --accent: 240 5% 18%; --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%; --destructive-foreground: 0 0% 98%;
+  --border: 240 5% 24%; --input: 240 5% 24%; --ring: 210 100% 54%;
+}
 *{box-sizing:border-box}
 html{font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5}
 body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); font-size:14px}
@@ -238,6 +249,96 @@ let syncStatus = 'idle';
 let pushTimer = null;
 let settingsTab = 'general';
 
+// ===== i18n（对标 CC Switch src/i18n 4 语言 立即预览+持久）=====
+const I18N = {
+  zh: {
+    settings:{language:"界面语言", languageHint:"切换后立即预览界面语言，保存后永久生效。", theme:"外观主题", themeHint:"选择应用的外观主题，立即生效。", themeLight:"浅色", themeDark:"深色", themeSystem:"跟随系统", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
+    common:{save:"保存", cancel:"取消", close:"关闭", settings:"设置", general:"通用", sync:"同步", proxy:"代理", icons:"图标库"},
+    app:{title:"Agent Workbench", addProject:"+ 新建", searchPlaceholder:"搜索项目…", import:"导入", all:"全部", noProjects:"还没有项目", noMatch:"没有匹配的项目"},
+    stages:{idea:"构思中", building:"开发中", testing:"测试中", live:"已上线", paused:"已暂停", all:"全部"}
+  },
+  "zh-TW": {
+    settings:{language:"介面語言", languageHint:"切換後立即預覽介面語言，保存後永久生效。", theme:"外觀主題", themeHint:"選擇應用的外觀主題，立即生效。", themeLight:"淺色", themeDark:"深色", themeSystem:"跟隨系統", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
+    common:{save:"保存", cancel:"取消", close:"關閉", settings:"設定", general:"通用", sync:"同步", proxy:"代理", icons:"圖標庫"},
+    app:{title:"Agent Workbench", addProject:"+ 新建", searchPlaceholder:"搜尋專案…", import:"匯入", all:"全部", noProjects:"還沒有專案", noMatch:"沒有匹配的專案"},
+    stages:{idea:"構思中", building:"開發中", testing:"測試中", live:"已上線", paused:"已暫停", all:"全部"}
+  },
+  en: {
+    settings:{language:"Language", languageHint:"Switches instantly, saved permanently.", theme:"Appearance", themeHint:"Choose appearance, applies instantly.", themeLight:"Light", themeDark:"Dark", themeSystem:"System", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
+    common:{save:"Save", cancel:"Cancel", close:"Close", settings:"Settings", general:"General", sync:"Sync", proxy:"Proxy", icons:"Icons"},
+    app:{title:"Agent Workbench", addProject:"+ New", searchPlaceholder:"Search projects…", import:"Import", all:"All", noProjects:"No projects yet", noMatch:"No matches"},
+    stages:{idea:"Idea", building:"Building", testing:"Testing", live:"Live", paused:"Paused", all:"All"}
+  },
+  ja: {
+    settings:{language:"表示言語", languageHint:"切り替えは即時プレビュー、保存で永続化。", theme:"外観", themeHint:"外観を選択、即時反映。", themeLight:"ライト", themeDark:"ダーク", themeSystem:"システム", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
+    common:{save:"保存", cancel:"キャンセル", close:"閉じる", settings:"設定", general:"一般", sync:"同期", proxy:"プロキシ", icons:"アイコン"},
+    app:{title:"Agent Workbench", addProject:"+ 新規", searchPlaceholder:"プロジェクトを検索…", import:"インポート", all:"すべて", noProjects:"プロジェクトなし", noMatch:"一致なし"},
+    stages:{idea:"構想中", building:"開発中", testing:"テスト中", live:"公開済み", paused:"一時停止", all:"すべて"}
+  }
+};
+function getInitialLanguage(){
+  try{
+    const s=localStorage.getItem('language');
+    if(s==='zh'||s==='zh-TW'||s==='en'||s==='ja') return s;
+  }catch(e){}
+  const nav=(navigator.language||'').toLowerCase();
+  if(nav.startsWith('zh-tw')||nav.startsWith('zh-hk')||nav.startsWith('zh-mo')||nav.startsWith('zh-hant')) return 'zh-TW';
+  if(nav.startsWith('zh')) return 'zh';
+  if(nav.startsWith('ja')) return 'ja';
+  if(nav.startsWith('en')) return 'en';
+  return 'zh';
+}
+let currentLang=getInitialLanguage();
+function t(path){
+  const parts=path.split('.');
+  let cur=I18N[currentLang];
+  for(const p of parts){ if(cur && cur[p]!==undefined) cur=cur[p]; else return path; }
+  return typeof cur==='string'?cur:path;
+}
+function setLanguage(lang){
+  if(!['zh','zh-TW','en','ja'].includes(lang)) return;
+  localStorage.setItem('language', lang);
+  currentLang=lang;
+  document.documentElement.lang=lang;
+  render();
+  renderSettingsDrawer();
+  showToast(t('settings.language')+': '+lang);
+}
+
+// ===== Theme（对标 CC Switch theme-provider  light/dark/system 立即生效）=====
+function getInitialTheme(){
+  try{
+    const s=localStorage.getItem('cc-switch-theme')||localStorage.getItem('workbench-theme');
+    if(s==='light'||s==='dark'||s==='system') return s;
+  }catch(e){}
+  return 'system';
+}
+let currentTheme=getInitialTheme();
+function applyTheme(theme){
+  if(!['light','dark','system'].includes(theme)) return;
+  localStorage.setItem('cc-switch-theme', theme);
+  localStorage.setItem('workbench-theme', theme);
+  currentTheme=theme;
+  const root=document.documentElement;
+  root.classList.remove('light','dark');
+  if(theme==='system'){
+    const isDark=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.classList.add(isDark?'dark':'light');
+    // 通知 Tauri 原生标题栏跟随系统（与 CC 同步）
+    try{ if(window.__TAURI__ && window.__TAURI__.invoke) window.__TAURI__.invoke('set_window_theme',{theme:'system'}).catch(()=>{}); }catch(e){}
+  } else {
+    root.classList.add(theme);
+    try{ if(window.__TAURI__ && window.__TAURI__.invoke) window.__TAURI__.invoke('set_window_theme',{theme}).catch(()=>{}); }catch(e){}
+  }
+}
+applyTheme(currentTheme);
+if(window.matchMedia){
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', ()=>{
+    if(currentTheme==='system') applyTheme('system');
+  });
+}
+
 function loadSettings(){ try{ return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null'); }catch(e){ return null; } }
 function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 function hasSyncSettings(){ return !!(settings && settings.url && settings.token); }
@@ -296,12 +397,13 @@ function renderSettingsDrawer(prefillError){
   const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
   drawer.innerHTML=`
     <div class="drawer-head">
-      <h2>设置</h2><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button>
+      <h2>${t('common.settings')}</h2><button class="drawer-close" id="closeBtn" aria-label="关闭">×</button>
     </div>
     <div class="settings-tabs">
-      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general">通用</button>
-      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync">同步</button>
-      <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy">代理</button>
+      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general">${t('common.general')}</button>
+      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync">${t('common.sync')}</button>
+      <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy">${t('common.proxy')}</button>
+      <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons">${t('common.icons')}</button>
     </div>
     <div id="settingsBody"></div>
   `;
@@ -310,10 +412,27 @@ function renderSettingsDrawer(prefillError){
   const body=document.getElementById('settingsBody');
   if(settingsTab==='general'){
     body.innerHTML=`
+      <div class="field"><label>${t('settings.language')}</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">${t('settings.languageHint')}</p>
+        <div class="inline-flex gap-1 rounded-md border border-border bg-background p-1" style="display:inline-flex; gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border))">
+          <button class="btn ${currentLang==='zh'?'btn-primary':'btn-secondary'}" data-lang="zh" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionChinese')}</button>
+          <button class="btn ${currentLang==='zh-TW'?'btn-primary':'btn-secondary'}" data-lang="zh-TW" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionTraditionalChinese')}</button>
+          <button class="btn ${currentLang==='en'?'btn-primary':'btn-secondary'}" data-lang="en" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionEnglish')}</button>
+          <button class="btn ${currentLang==='ja'?'btn-primary':'btn-secondary'}" data-lang="ja" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionJapanese')}</button>
+        </div>
+      </div>
+      <div class="field"><label>${t('settings.theme')}</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">${t('settings.themeHint')}</p>
+        <div class="inline-flex gap-1 rounded-md border border-border bg-background p-1" style="display:inline-flex; gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border))">
+          <button class="btn ${currentTheme==='light'?'btn-primary':'btn-secondary'}" data-theme="light" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">☀️ ${t('settings.themeLight')}</button>
+          <button class="btn ${currentTheme==='dark'?'btn-primary':'btn-secondary'}" data-theme="dark" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">🌙 ${t('settings.themeDark')}</button>
+          <button class="btn ${currentTheme==='system'?'btn-primary':'btn-secondary'}" data-theme="system" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">🖥️ ${t('settings.themeSystem')}</button>
+        </div>
+      </div>
       <div class="field"><label>本机存储</label><div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div></div>
       <div class="field"><label>本机代理（18 轻量）</label><div class="sync-preview">本地代理：<b>${localStorage.getItem('proxy-enabled')==='1'?'已启用':'未启用'}</b> · 端口 19840 · 仅演示，未做真实转发（对标 CC Switch 本地代理）。<br>切换：<button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">${localStorage.getItem('proxy-enabled')==='1'?'关闭代理':'启用代理'}</button></div></div>
       <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button></div>
     `;
+    body.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=> setLanguage(b.dataset.lang)));
+    body.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=> { applyTheme(b.dataset.theme); renderSettingsDrawer(); }));
     document.getElementById('goSyncBtn').addEventListener('click',()=>{ settingsTab='sync'; renderSettingsDrawer(); });
     document.getElementById('proxyToggle').addEventListener('click',()=>{
       const enabled=localStorage.getItem('proxy-enabled')==='1'?'0':'1';
@@ -339,6 +458,51 @@ function renderSettingsDrawer(prefillError){
       updateUsage();
     });
     document.getElementById('proxy-test').addEventListener('click',()=>{ showToast('代理测试：演示通过'); });
+  } else if(settingsTab==='icons'){
+    body.innerHTML=`
+      <div class="field"><label>图标库 · 对标 CC Switch</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">CC Switch 使用 lucide-react 0.542.0（UI 图标）+ 100+ 抽取 Provider 图标（src/icons/extracted + metadata + IconPicker），本应用已对标接入 lucide 风格 + 阶段图标。</p></div>
+      <div class="field"><label>搜索图标</label><input type="text" id="icon-search" placeholder="输入图标名称…  lucide / stage" style="width:100%; min-height:36px; padding:8px 10px; border-radius:8px; border:1px solid hsl(var(--border))"></div>
+      <div id="icon-grid" style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; max-height:50vh; overflow-y:auto; padding-right:4px; margin-top:8px"></div>
+      <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px">提示：点击图标可复制名称，对标 CC Switch IconPicker 的搜索+网格+选中态。</div>
+    `;
+    const iconList=[
+      {name:'all', svg:iconFor('all'), label:'全部'},
+      {name:'idea', svg:iconFor('idea'), label:'构思中'},
+      {name:'building', svg:iconFor('building'), label:'开发中'},
+      {name:'testing', svg:iconFor('testing'), label:'测试中'},
+      {name:'live', svg:iconFor('live'), label:'已上线'},
+      {name:'paused', svg:iconFor('paused'), label:'已暂停'},
+      {name:'sun', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>', label:'Sun 浅色'},
+      {name:'moon', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>', label:'Moon 深色'},
+      {name:'monitor', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', label:'Monitor 跟随系统'},
+      {name:'search', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg>', label:'Search'},
+      {name:'plus', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>', label:'Plus'},
+      {name:'settings', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>', label:'Settings'},
+    ];
+    const grid=document.getElementById('icon-grid');
+    const input=document.getElementById('icon-search');
+    function renderIcons(filter=''){
+      const q=filter.toLowerCase();
+      const filtered=iconList.filter(i=> !q || i.name.includes(q) || i.label.includes(q));
+      grid.innerHTML=filtered.map(i=>`
+        <button class="icon-cell" data-name="${i.name}" style="display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); cursor:pointer; transition: all .15s">
+          <span style="width:24px; height:24px; display:grid; place-items:center; color:hsl(var(--foreground))">${i.svg}</span>
+          <span style="font-size:10px; color:hsl(var(--muted-foreground)); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%">${i.label}</span>
+        </button>
+      `).join('');
+      grid.querySelectorAll('.icon-cell').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          navigator.clipboard && navigator.clipboard.writeText(btn.dataset.name);
+          showToast('已复制: '+btn.dataset.name);
+          btn.style.borderColor='hsl(var(--primary))';
+          btn.style.background='hsl(var(--primary) / 0.1)';
+          setTimeout(()=>{ btn.style.borderColor=''; btn.style.background=''; },600);
+        });
+      });
+      if(filtered.length===0) grid.innerHTML='<div style="grid-column:1/-1; text-align:center; padding:20px; color:hsl(var(--muted-foreground)); font-size:12px">未找到匹配的图标</div>';
+    }
+    renderIcons();
+    input.addEventListener('input',()=> renderIcons(input.value));
   } else {
     body.innerHTML=`
       <div class="sync-preview hidden" id="st-error" style="background:hsl(var(--destructive) / 0.08); color:hsl(var(--destructive)); border-color:hsl(var(--destructive) / 0.2); margin-bottom:12px;">${prefillError?esc(prefillError):''}</div>
@@ -418,7 +582,7 @@ function updateUsage(){
 function renderChips(){
   const el=document.getElementById('filterChips');
   if(!el) return;
-  const pills=[{key:'all',label:'全部'}].concat(STAGES.map(s=>({key:s.key,label:s.label}))).concat([{key:'paused',label:'已暂停'}]);
+  const pills=[{key:'all',label:t('stages.all')}].concat(STAGES.map(s=>({key:s.key,label:t('stages.'+s.key)}))).concat([{key:'paused',label:t('stages.paused')}]);
   el.innerHTML=pills.map(s=>`<button class="chip ${state.filterStage===s.key?'active':''}" data-stage="${s.key}">${s.label}</button>`).join('');
   el.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{ state.filterStage=b.dataset.stage; render(); }));
 }
@@ -427,7 +591,7 @@ function renderStagePill(){
   const popover=document.getElementById('stageMorePopover');
   const wrap=document.getElementById('stagePillWrap');
   if(!pill||!wrap) return;
-  const stages=[{key:'all',label:'全部'},...STAGES.map(s=>({key:s.key,label:s.label})),{key:'paused',label:'已暂停'}];
+  const stages=[{key:'all',label:t('stages.all')},...STAGES.map(s=>({key:s.key,label:t('stages.'+s.key)})),{key:'paused',label:t('stages.paused')}];
   pill.innerHTML='';
   popover.innerHTML='';
   popover.classList.add('hidden');
@@ -494,12 +658,12 @@ function renderGrid(){
   if(topbarMeta) topbarMeta.textContent=(state.filterStage==='all'?'全部':(stageInfo(state.filterStage).label||'全部'))+' · '+total+' 个项目';
   if(toolbarCount) toolbarCount.textContent=list.length+' / '+total;
   if(state.projects.length===0){
-    el.innerHTML=`<div class="empty"><h3>还没有项目</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来，或点右上“导入”拉取本机扫描结果。</p><button class="btn btn-primary" id="emptyAddBtn">+ 新建项目</button></div>`;
+    el.innerHTML=`<div class="empty"><h3>${t('app.noProjects')}</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来，或点右上“${t('app.import')}”拉取本机扫描结果。</p><button class="btn btn-primary" id="emptyAddBtn">${t('app.addProject')}</button></div>`;
     document.getElementById('emptyAddBtn').addEventListener('click',()=>openCreateModal());
     return;
   }
   if(list.length===0){
-    el.innerHTML=`<div class="empty"><h3>没有匹配的项目</h3><p>试试换个筛选条件或搜索词。</p></div>`;
+    el.innerHTML=`<div class="empty"><h3>${t('app.noMatch')}</h3><p>试试换个筛选条件或搜索词。</p></div>`;
     return;
   }
   // 16 行式 h16 ListItemRow
@@ -520,7 +684,7 @@ function rowHtml(p){
   <div class="list-row" id="row-${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}">
     <div class="list-icon" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}">${esc(p.name[0]||'P').toUpperCase()}</div>
     <div class="list-main">
-      <div class="list-name">${esc(p.name)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${s.label}</span></div>
+      <div class="list-name">${esc(p.name)} <span class="badge" style="background:${s.bg}; color:${s.color}; border-color:${s.bg}; margin-left:6px">${t('stages.'+p.stage)}</span></div>
       <div class="list-desc">${esc(p.description)||'暂无简介'} · ${tags}</div>
     </div>
     <div style="display:flex; gap:4px; align-items:center">
@@ -537,7 +701,19 @@ function rowHtml(p){
     </div>
   </div>`;
 }
-function render(){ if(!state.loaded) return; renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); }
+function render(){ 
+  if(!state.loaded) return;
+  // i18n 静态区立即预览
+  const titleEl=document.querySelector('.topbar-title');
+  if(titleEl) titleEl.textContent=t('app.title');
+  const searchEl=document.getElementById('searchInput');
+  if(searchEl) searchEl.placeholder=t('app.searchPlaceholder');
+  const addBtn=document.getElementById('addProjectBtn');
+  if(addBtn) addBtn.textContent=t('app.addProject');
+  const importBtn=document.getElementById('importJsonBtn');
+  if(importBtn) importBtn.textContent=t('app.import');
+  renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
+}
 
 function openCreateModal(){
   const drawer=document.getElementById('drawer');
