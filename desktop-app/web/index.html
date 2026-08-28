@@ -4,164 +4,148 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Workbench</title>
+<link rel="stylesheet" href="./assets/apple-tokens.css">
+<link rel="stylesheet" href="./assets/apple-gradients.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-:root {
-  --paper: #EEF0EA; --paper-line: rgba(27,31,29,0.055);
-  --surface: #FFFFFF; --border: #DBE0D8;
-  --ink: #1B1F1D; --ink-soft: #5B615C; --ink-faint: #8A9089;
-  --accent: #24313F; --accent-soft: #E7EBEE;
-  --idea: #B4791F; --idea-bg: #FBF1DF;
-  --building: #2E6FA8; --building-bg: #E4EEF6;
-  --testing: #6B4FA0; --testing-bg: #EEE8F5;
-  --live: #2F8F5D; --live-bg: #E3F3EA;
-  --paused: #74796F; --paused-bg: #E9E9E4;
-  --danger: #B4432F; --warn: #B4791F; --warn-bg: #FBF1DF;
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(27,31,29,0.06), 0 8px 24px -12px rgba(27,31,29,0.18);
-}
-* { box-sizing: border-box; }
-html, body { height: 100%; }
+/* ——— Apple 软件 UI · 240 侧栏 + 主区 + 玻璃工具栏（保功能，重布局）——— */
 body {
-  margin: 0;
-  background:
-    repeating-linear-gradient(0deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 32px),
-    repeating-linear-gradient(90deg, var(--paper-line) 0px, var(--paper-line) 1px, transparent 1px, transparent 32px),
-    var(--paper);
-  color: var(--ink); font-family: 'IBM Plex Sans', sans-serif;
-  -webkit-font-smoothing: antialiased; user-select: none;
+  background: var(--apx-parchment);
+  color: var(--apx-ink);
 }
-input, textarea { user-select: text; }
-.mono { font-family: 'IBM Plex Mono', monospace; }
-.hidden { display: none !important; }
-
-/* ——— Liquid Glass 场景与背景光井（T3 真实折射需要背景有可模糊内容） ——— */
 #lgScene { position: relative; min-height: 100vh; isolation: isolate; }
-.bg-wells { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 1; }
+.bg-wells { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
 .bg-wells::before {
   content: ""; position: absolute; inset: 0;
   background:
-    radial-gradient(700px 500px at 18% 12%, rgba(36,49,63,0.09), transparent 68%),
-    radial-gradient(800px 600px at 88% 18%, rgba(46,111,168,0.07), transparent 70%),
-    radial-gradient(900px 700px at 52% 88%, rgba(180,67,47,0.05), transparent 72%);
+    radial-gradient(820px 520px at 14% 10%, rgba(0,102,204,0.10), transparent 68%),
+    radial-gradient(760px 500px at 88% 16%, rgba(164,120,199,0.09), transparent 70%),
+    radial-gradient(900px 620px at 50% 92%, rgba(253,159,89,0.06), transparent 74%);
 }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 20px 20px 80px; position: relative; z-index: 1; }
-
-/* Titlebar drag region */
-.titlebar-spacer { height: 4px; }
-
-/* Onboarding / settings screen — 保留但不再作为启动拦截，仅作兜底 */
-.connect-screen { max-width: 520px; margin: 70px auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px 28px; box-shadow: var(--shadow); }
-.connect-screen h2 { font-family: 'Space Grotesk', sans-serif; font-size: 21px; margin: 0 0 8px; text-align: center; }
-.connect-screen p.lead { color: var(--ink-soft); font-size: 14px; line-height: 1.6; margin: 0 0 22px; text-align: center; }
-.field { margin-bottom: 14px; text-align: left; }
-.field label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-.field input[type=text], .field input[type=password], .field textarea, .field select {
-  width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--surface); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: var(--ink); resize: vertical;
+.app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+/* 侧栏：T3 thick 深色玻璃拟态（软件范式） */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; height: 100dvh;
+  display: flex; flex-direction: column;
+  padding: 18px 14px 16px;
+  gap: 14px;
+  overflow: hidden;
+  border-right: 1px solid rgba(0,0,0,0.06);
 }
-.field input.mono, .field textarea.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
-.field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.hint { font-size: 12px; color: var(--ink-faint); margin-top: 4px; line-height: 1.5; }
-.error-box { background: var(--warn-bg); color: var(--danger); border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 16px; line-height: 1.6; }
-
-.btn { font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 13.5px; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap; transition: transform 0.08s, opacity 0.12s; }
-.btn:hover { opacity: 0.88; } .btn:active { transform: scale(0.98); }
-.btn:disabled { opacity: 0.5; cursor: default; }
-.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); font-weight: 500; }
-.btn-ghost:hover { border-color: var(--ink-faint); opacity: 1; }
-.btn-danger { background: var(--danger); border-color: var(--danger); }
-.btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 8px; }
-
-/* Sync bar — T3 液态玻璃功能层（保留现配色，仅叠玻璃材质） */
-.connect-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  background: rgba(255,255,255,0.72); border: 1px solid rgba(219,224,216,0.9); border-radius: var(--radius);
-  padding: 10px 14px; margin-bottom: 18px; font-size: 13px;
-  position: relative; /* for liquid glass host */
+.sidebar[data-liquid-glass] { border-right: 1px solid rgba(255,255,255,0.08); }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 4px 2px; }
+.sidebar-logo {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  background: var(--apx-blue); color: #fff; display: grid; place-items: center;
+  font-family: var(--apx-font); font-size: 14px; font-weight: 700; letter-spacing: -0.02em;
 }
-.connect-bar.apx-lg-host { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.18) !important; }
-.connect-status { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); }
-.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot.ok { background: var(--live); }
-.dot.warn { background: var(--warn); }
-.dot.off { background: var(--danger); }
-.dot.busy { background: var(--building); animation: pulse 1s infinite ease-in-out; }
-.dot.idle { background: var(--ink-faint); }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-.connect-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sidebar-title { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; color: var(--apx-ink); }
+.sidebar-sub { font-size: 11px; color: var(--apx-muted); letter-spacing: -0.01em; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.sidebar-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 10px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  color: var(--apx-ink); cursor: pointer; border: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s; user-select: none;
+}
+.sidebar-item:hover { background: rgba(0,0,0,0.04); }
+.sidebar-item.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
+.sidebar-item .count { font-family: var(--apx-font); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: rgba(0,0,0,0.06); color: var(--apx-muted); }
+.sidebar-item.active .count { background: rgba(255,255,255,0.18); color: #fff; }
+.sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
+.sidebar[data-liquid-glass] .sidebar-foot { border-top-color: rgba(255,255,255,0.12); }
+.sync-pill {
+  display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px;
+  background: rgba(255,255,255,0.72); border: 1px solid var(--apx-hairline);
+  font-size: 11px; line-height: 1.4; color: var(--apx-muted);
+}
+.sidebar[data-liquid-glass] .sync-pill { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.14); color: #1d1d1f; }
+.sync-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot.ok { background: #2F8F5D; } .dot.warn { background: #B4791F; } .dot.idle { background: var(--apx-muted); } .dot.busy { background: var(--apx-blue); animation: pulse 1s infinite ease-in-out; } .dot.off { background: #B4432F; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-.header { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1.5px solid var(--ink); }
-.header-left .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 6px; }
-.header-left h1 { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
-.header-left p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+/* 主区 */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* 顶栏：T0 官网磨砂 52px（apple.com 同款） */
+.topbar {
+  position: sticky; top: 0; z-index: 10; height: 52px;
+  display: flex; align-items: center; gap: 12px; padding: 0 20px;
+  background: rgba(245,245,247,0.8); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.topbar[data-liquid-glass] { background: rgba(245,245,247,0.42) !important; }
+.topbar-title { font-size: 12px; font-weight: 600; letter-spacing: -0.01em; color: var(--apx-ink); white-space: nowrap; }
+.topbar-search { flex: 1; max-width: 420px; position: relative; }
+.topbar-search input {
+  width: 100%; height: 36px; padding: 0 12px 0 32px; border-radius: 9999px;
+  border: 1px solid var(--apx-hairline); background: #fff; font-size: 13px; color: var(--apx-ink);
+}
+.topbar-search input:focus { outline: 2px solid var(--apx-blue-focus); outline-offset: 1px; }
+.topbar-search::before {
+  content: "⌕"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; color: var(--apx-muted); pointer-events: none;
+}
+.apx-btn { min-height: 36px; padding: 8px 16px; font-size: 13px; }
+.apx-btn-primary { background: var(--apx-blue); }
+.content { padding: 20px 20px 40px; max-width: 1080px; width: 100%; margin: 0 auto; }
+
+/* 保留原功能样式，但用 Apple 令牌重肤 */
 .stats { display: flex; gap: 6px; flex-wrap: wrap; }
-.stat-pill { font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); white-space: nowrap; }
-.stat-pill b { color: var(--ink); font-weight: 600; }
-
-.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 22px; }
-.search-box { flex: 1; min-width: 180px; }
-.search-box input { width: 100%; padding: 9px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: 14px; color: var(--ink); }
-.search-box input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.stat-pill { font-size: 11px; padding: 6px 10px; border-radius: 9999px; border: 1px solid var(--apx-hairline); background: #fff; color: var(--apx-muted); }
+.stat-pill b { color: var(--apx-ink); font-weight: 600; }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 18px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { font-size: 12.5px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); cursor: pointer; font-family: 'IBM Plex Mono', monospace; transition: background 0.12s, color 0.12s, border-color 0.12s; }
-.chip:hover { border-color: var(--ink-faint); }
-.chip.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 16px 14px; cursor: pointer; box-shadow: var(--shadow); transition: transform 0.1s; position: relative; overflow: hidden; }
-.card:hover { transform: translateY(-2px); }
+.chip {
+  font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--apx-hairline);
+  background: #fff; color: var(--apx-muted); cursor: pointer; transition: all 0.2s;
+}
+.chip:hover { border-color: var(--apx-muted); }
+.chip.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card {
+  background: #fff; border: 1px solid var(--apx-hairline); border-radius: 18px;
+  padding: 16px; cursor: pointer; transition: transform 0.3s var(--apx-spring), box-shadow 0.3s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-.card-name { font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 600; line-height: 1.3; }
-.badge { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; font-weight: 500; }
-.card-desc { color: var(--ink-soft); font-size: 13px; line-height: 1.5; margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 19.5px; }
-.gauge { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; }
-.gauge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
-.gauge-line { flex: 1; height: 2px; background: var(--border); border-radius: 1px; }
-.gauge-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); margin-left: 4px; }
-.card-foot { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ink-faint); }
-.tag-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
-.tag { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; padding: 2px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); }
-.paused-ribbon { position: absolute; top: 14px; right: -30px; background: var(--paused); color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 3px 34px; transform: rotate(38deg); letter-spacing: 0.05em; }
-
-.empty { text-align: center; padding: 70px 20px; color: var(--ink-soft); }
-.empty h3 { font-family: 'Space Grotesk', sans-serif; color: var(--ink); font-size: 19px; margin-bottom: 6px; }
-.empty p { font-size: 14px; margin-bottom: 18px; }
-
-.overlay { position: fixed; inset: 0; background: rgba(20,22,20,0.4); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; }
+.card-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; color: var(--apx-ink); }
+.badge { font-size: 11px; padding: 3px 8px; border-radius: 9999px; font-weight: 600; }
+.card-desc { color: var(--apx-muted); font-size: 13px; line-height: 1.45; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
+.gauge { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.gauge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--apx-hairline); }
+.gauge-line { flex: 1; height: 2px; border-radius: 1px; background: var(--apx-hairline); }
+.gauge-label { font-size: 10px; color: var(--apx-muted); margin-left: 4px; }
+.card-foot { display: flex; justify-content: space-between; font-size: 11px; color: var(--apx-muted); }
+.tag-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.tag { font-size: 10px; padding: 3px 7px; border-radius: 9999px; background: #f5f5f7; color: var(--apx-ink); border: 1px solid var(--apx-hairline); }
+.paused-ribbon { position: absolute; top: 12px; right: -28px; background: #86868b; color: #fff; font-size: 10px; font-weight: 600; padding: 3px 30px; transform: rotate(38deg); }
+.empty { text-align: center; padding: 64px 20px; color: var(--apx-muted); }
+.empty h3 { font-size: 19px; font-weight: 600; color: var(--apx-ink); margin: 0 0 8px; }
+.field label { font-size: 11px; color: var(--apx-muted); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+.field input, .field textarea, .field select { border-radius: 10px; border: 1px solid var(--apx-hairline); }
+.field input:focus, .field textarea:focus { outline: 2px solid var(--apx-blue-focus); }
+.btn { border-radius: 9999px; }
+.btn:active, .apx-btn:active { transform: scale(0.97); }
+/* 抽屉：T3 regular 玻璃功能层 */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; }
 .overlay.show { display: flex; }
-.drawer { width: min(560px, 100%); background: var(--paper); height: 100%; overflow-y: auto; padding: 26px 26px 60px; box-shadow: -12px 0 32px rgba(0,0,0,0.15); position: relative; }
-.drawer.apx-lg-host { background: rgba(238,240,234,0.78) !important; backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); }
-.drawer-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
-.drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft); line-height: 1; padding: 4px; }
-.field-row { display: flex; gap: 10px; }
-.field-row .field { flex: 1; }
-.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); margin-bottom: 16px; }
-hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
-.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.section-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; margin: 0; }
-.prompt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
-.prompt-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-.prompt-title { font-weight: 600; font-size: 14px; }
-.prompt-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
-.prompt-content { background: var(--paper); border: 1px solid var(--paper-line); border-radius: 6px; padding: 9px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink); white-space: pre-wrap; max-height: 160px; overflow-y: auto; margin-bottom: 8px; line-height: 1.5; }
-.prompt-notes { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 8px; }
-.prompt-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.current-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--live-bg); color: var(--live); }
-.form-inline { background: var(--surface); border: 1px dashed var(--ink-faint); border-radius: 8px; padding: 14px; margin-bottom: 14px; }
-.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; }
+.drawer {
+  width: min(560px, 100%); background: rgba(255,255,255,0.92); height: 100%; overflow-y: auto;
+  padding: 22px 22px 60px; border-left: 1px solid rgba(0,0,0,0.06); position: relative;
+}
+.drawer[data-liquid-glass] { background: rgba(255,255,255,0.10) !important; }
+.settings-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--apx-hairline); padding-bottom: 12px; }
+.settings-tab { font-size: 12px; padding: 7px 12px; border-radius: 9999px; border: 1px solid var(--apx-hairline); background: #fff; color: var(--apx-muted); cursor: pointer; }
+.settings-tab.active { background: var(--apx-ink); color: #fff; border-color: var(--apx-ink); }
+.sync-preview { font-size: 11px; line-height: 1.6; color: var(--apx-muted); background: #fff; border: 1px solid var(--apx-hairline); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--apx-ink); color: #fff; padding: 10px 16px; border-radius: 9999px; font-size: 12px; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
-
-/* Settings specific */
-.settings-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-.settings-tab { font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
-.settings-tab.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.settings-foot { display: flex; gap: 8px; margin-top: 18px; }
-.sync-preview { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 10px; line-height: 1.6; }
-@media (max-width: 560px) {
-  .header { align-items: flex-start; }
-  .drawer { width: 100%; padding: 20px 16px 50px; }
-  .field-row { flex-direction: column; gap: 14px; }
+.hidden { display: none !important; }
+@media (max-width: 860px) {
+  .sidebar { display: none; }
+  .topbar { padding: 0 12px; }
+  .content { padding: 16px 12px 40px; }
+  .drawer { width: 100%; }
 }
 </style>
 </head>
@@ -170,56 +154,57 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; 
 <div id="lgScene" data-lg-scene>
   <div class="bg-wells" aria-hidden="true"></div>
 
-  <div class="wrap">
-    <div class="titlebar-spacer"></div>
-
-    <!-- 保留原 onboarding 结构但永不作为启动拦截，仅供旧逻辑兼容 -->
-    <div class="connect-screen hidden" id="onboardScreen">
-      <h2>连接同步服务</h2>
-      <p class="lead">填入你部署的 Cloudflare Worker 地址和密钥，三台设备填同一组即可自动同步。</p>
-      <div class="error-box hidden" id="onboardError"></div>
-      <div class="field">
-        <label>Worker 地址</label>
-        <input type="text" class="mono" id="ob-url" placeholder="https://agent-workbench-sync.xxx.workers.dev">
-      </div>
-      <div class="field">
-        <label>同步密钥（X-Sync-Token）</label>
-        <input type="password" class="mono" id="ob-token" placeholder="部署时设置的密钥">
-        <div class="hint">密钥只会保存在这台设备本地，不会发送到除你自己的 Worker 以外的任何地方。</div>
-      </div>
-      <button class="btn" id="ob-connect" style="width:100%;margin-top:6px;">连接并同步</button>
-    </div>
-
-    <!-- Main app — 本机完整可用，同步仅设置 -->
-    <div id="appRoot" class="hidden">
-      <!-- T3 功能层：connect-bar -->
-      <div class="connect-bar" id="connectBar" data-liquid-glass data-lg-preset="regular" style="border-radius:10px;">
-        <div class="connect-status"><span class="dot idle" id="connDot"></span><span id="connText" class="mono">本地模式 · 未设置同步</span></div>
-        <div class="connect-actions">
-          <button class="btn-ghost btn btn-sm" id="syncNowBtn">立即同步</button>
-          <button class="btn-ghost btn btn-sm" id="settingsBtn">设置</button>
+  <div class="app-shell">
+    <!-- 侧栏：240 玻璃导航（T3 thick） -->
+    <aside class="sidebar" id="sidebar" data-liquid-glass data-lg-preset="thick" style="border-radius:0;">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">A</div>
+        <div>
+          <div class="sidebar-title">Agent Workbench</div>
+          <div class="sidebar-sub">Local-First · T3 Glass</div>
         </div>
       </div>
 
-      <div class="header">
-        <div class="header-left">
-          <div class="eyebrow">Local-First · Sync Optional</div>
-          <h1>Agent Workbench</h1>
-          <p>项目与 Prompt 版本管理，本机完整可用，同步为可选项。</p>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <!-- 由 JS 渲染：全部/构思/开发/测试/已上线/已暂停 -->
+      </nav>
+
+      <div id="sidebarStats" class="stats" style="padding: 4px 2px;"></div>
+
+      <div class="sidebar-foot">
+        <div class="sync-pill" id="syncPill">
+          <span class="dot idle" id="connDot"></span>
+          <span id="connText" style="flex:1;">本地模式 · 未设置同步</span>
         </div>
-        <div class="stats" id="stats"></div>
+        <div style="display:flex; gap:8px;">
+          <button class="apx-btn apx-btn-utility" id="syncNowBtn" style="flex:1; min-height:36px; font-size:12px;">立即同步</button>
+          <button class="apx-btn apx-btn-utility" id="settingsBtn" style="flex:1; min-height:36px; font-size:12px; background:#fff; color:var(--apx-ink); border:1px solid var(--apx-hairline);">设置</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主区 -->
+    <div class="main">
+      <!-- 顶栏：T0 官网磨砂 52px -->
+      <div class="topbar" id="topbar">
+        <div class="topbar-title">项目</div>
+        <div class="topbar-search"><input type="text" id="searchInput" placeholder="搜索项目名称 / 标签…"></div>
+        <button class="apx-btn apx-btn-primary" id="addProjectBtn">+ 新建项目</button>
       </div>
 
-      <div class="toolbar">
-        <div class="search-box"><input type="text" id="searchInput" placeholder="搜索项目名称 / 标签…"></div>
-        <div class="chips" id="filterChips"></div>
-        <button class="btn" id="addProjectBtn">+ 新建项目</button>
+      <div class="content">
+        <div class="toolbar" style="margin-top:4px;">
+          <div class="chips" id="filterChips"></div>
+        </div>
+        <div id="gridArea"></div>
       </div>
-
-      <div id="gridArea"></div>
     </div>
   </div>
 </div>
+
+<!-- 兼容旧 onboarding 结构（永不拦截） -->
+<div id="onboardScreen" class="hidden" style="display:none;"></div>
+<div class="hidden"><input id="ob-url"><input id="ob-token"><button id="ob-connect"></button><div id="onboardError"></div></div>
 
 <div class="overlay" id="overlay"><div class="drawer" id="drawer" data-liquid-glass data-lg-preset="regular" style="border-radius:0;"></div></div>
 <div class="toast" id="toast"></div>
@@ -228,549 +213,406 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; 
 <script src="./assets/liquid-glass-svg.js"></script>
 <script>
 const STAGES = [
-  { key: 'idea',     label: '构思中', color: 'var(--idea)',     bg: 'var(--idea-bg)' },
-  { key: 'building', label: '开发中', color: 'var(--building)', bg: 'var(--building-bg)' },
-  { key: 'testing',  label: '测试中', color: 'var(--testing)',  bg: 'var(--testing-bg)' },
-  { key: 'live',     label: '已上线', color: 'var(--live)',     bg: 'var(--live-bg)' },
+  { key: 'idea',     label: '构思中', color: '#B4791F', bg: '#FBF1DF' },
+  { key: 'building', label: '开发中', color: '#2E6FA8', bg: '#E4EEF6' },
+  { key: 'testing',  label: '测试中', color: '#6B4FA0', bg: '#EEE8F5' },
+  { key: 'live',     label: '已上线', color: '#2F8F5D', bg: '#E3F3EA' },
 ];
 const SETTINGS_KEY = 'workbench-settings';
 const CACHE_KEY = 'workbench-cache';
 
 let state = { projects: [], filterStage: 'all', search: '', loaded: false };
-let settings = null; // { url, token }
-let syncStatus = 'idle'; // idle | syncing | ok | offline | error
+let settings = null;
+let syncStatus = 'idle';
 let pushTimer = null;
-let settingsTab = 'general'; // general | sync
+let settingsTab = 'general';
 
-// ---------- settings ----------
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch (e) { return null; }
-}
-function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
-function hasSyncSettings() { return !!(settings && settings.url && settings.token); }
-function clearSyncSettings() { settings = null; localStorage.removeItem(SETTINGS_KEY); setSyncStatus('idle'); }
+function loadSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch(e){ return null; } }
+function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+function hasSyncSettings(){ return !!(settings && settings.url && settings.token); }
+function clearSyncSettings(){ settings=null; localStorage.removeItem(SETTINGS_KEY); setSyncStatus('idle'); }
+function cacheLocally(projects){ localStorage.setItem(CACHE_KEY, JSON.stringify({projects, cachedAt: new Date().toISOString()})); }
+function readCache(){ try{ return JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){return null;} }
+function apiUrl(path){ return settings.url.replace(/\/+$/,'')+path; }
+async function apiGet(){ if(!hasSyncSettings()) throw new Error('no sync'); const r=await fetch(apiUrl('/api/state'),{headers:{'X-Sync-Token':settings.token}}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function apiPut(projects){ if(!hasSyncSettings()) throw new Error('no sync'); const r=await fetch(apiUrl('/api/state'),{method:'PUT',headers:{'Content-Type':'application/json','X-Sync-Token':settings.token},body:JSON.stringify({projects})}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 
-// ---------- local cache (offline fallback) ----------
-function cacheLocally(projects) {
-  localStorage.setItem(CACHE_KEY, JSON.stringify({ projects, cachedAt: new Date().toISOString() }));
-}
-function readCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; }
-}
-
-// ---------- API ----------
-function apiUrl(path) { return settings.url.replace(/\/+$/, '') + path; }
-async function apiGet() {
-  if (!hasSyncSettings()) throw new Error('no sync settings');
-  const res = await fetch(apiUrl('/api/state'), { headers: { 'X-Sync-Token': settings.token } });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-async function apiPut(projects) {
-  if (!hasSyncSettings()) throw new Error('no sync settings');
-  const res = await fetch(apiUrl('/api/state'), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Sync-Token': settings.token },
-    body: JSON.stringify({ projects }),
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
-}
-
-// ---------- sync orchestration ----------
-async function pullFromServer(showToastOnSuccess) {
-  if (!hasSyncSettings()) { setSyncStatus('idle'); return; }
+async function pullFromServer(showToastOnSuccess){
+  if(!hasSyncSettings()){ setSyncStatus('idle'); return; }
   setSyncStatus('syncing');
-  try {
-    const data = await apiGet();
-    state.projects = data.projects || [];
-    state.loaded = true;
-    cacheLocally(state.projects);
-    setSyncStatus('ok', data.updatedAt);
-    render();
-    if (showToastOnSuccess) showToast('已同步最新数据');
-  } catch (e) {
-    const cache = readCache();
-    if (cache) { state.projects = cache.projects; state.loaded = true; }
-    else if (!state.loaded) { state.projects = []; state.loaded = true; }
-    setSyncStatus('offline');
-    render();
+  try{
+    const data=await apiGet();
+    state.projects=data.projects||[]; state.loaded=true; cacheLocally(state.projects);
+    setSyncStatus('ok', data.updatedAt); render(); if(showToastOnSuccess) showToast('已同步最新数据');
+  }catch(e){
+    const cache=readCache();
+    if(cache) { state.projects=cache.projects; state.loaded=true; }
+    else if(!state.loaded){ state.projects=[]; state.loaded=true; }
+    setSyncStatus('offline'); render();
   }
 }
-
-function scheduleAutoPush() {
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(pushToServer, 500); // 防抖：连续操作只发一次
-}
-
-async function pushToServer() {
-  cacheLocally(state.projects); // 本地缓存立刻更新，保证界面响应快、离线也不丢
-  if (!hasSyncSettings()) { setSyncStatus('idle'); return; }
+function scheduleAutoPush(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushToServer,500); }
+async function pushToServer(){
+  cacheLocally(state.projects);
+  if(!hasSyncSettings()){ setSyncStatus('idle'); return; }
   setSyncStatus('syncing');
-  try {
-    const res = await apiPut(state.projects);
-    setSyncStatus('ok', res.updatedAt);
-  } catch (e) {
-    setSyncStatus('offline');
-    showToast('同步失败，已保存在本地，联网后会自动重试');
-  }
+  try{ const res=await apiPut(state.projects); setSyncStatus('ok', res.updatedAt); }
+  catch(e){ setSyncStatus('offline'); showToast('同步失败，已保存在本地，联网后会自动重试'); }
+}
+async function saveData(){ scheduleAutoPush(); }
+function setSyncStatus(status, updatedAt){
+  syncStatus=status;
+  const dot=document.getElementById('connDot');
+  const text=document.getElementById('connText');
+  if(!dot) return;
+  if(status==='syncing'){ dot.className='dot busy'; text.textContent='同步中…'; }
+  else if(status==='ok'){ dot.className='dot ok'; text.textContent='已同步'+(updatedAt?'（'+relTime(updatedAt)+'）':''); }
+  else if(status==='offline'){ dot.className='dot warn'; text.textContent='离线 · 显示本地缓存'; }
+  else if(status==='idle'){ dot.className='dot idle'; text.textContent=hasSyncSettings()?'未连接':'本地模式 · 未设置同步'; }
+  else{ dot.className='dot off'; text.textContent='未连接'; }
+}
+function showOnboarding(prefillError){ openSyncSettings(prefillError); }
+async function connectAndEnter(){
+  const url=document.getElementById('ob-url')?.value.trim()||document.getElementById('st-url')?.value.trim();
+  const token=document.getElementById('ob-token')?.value.trim()||document.getElementById('st-token')?.value.trim();
+  if(!url||!token){ showToast('请填写完整的 Worker 地址和密钥'); return; }
+  settings={url,token};
+  try{ await apiGet(); saveSettings(settings); showToast('已连接并同步'); await pullFromServer(false); }
+  catch(e){ const errBox=document.getElementById('st-error')||document.getElementById('onboardError'); if(errBox){ errBox.textContent='连接失败：'+e.message; errBox.classList.remove('hidden'); } }
 }
 
-async function saveData() {
-  scheduleAutoPush();
+function openSyncSettings(prefillError){
+  settingsTab=hasSyncSettings()?'sync':'general';
+  renderSettingsDrawer(prefillError); openOverlay();
+  setTimeout(()=>{ if(window.ApxLiquidGlass) window.ApxLiquidGlass.instances.forEach(inst=>inst.markChanged(document.getElementById('drawer'))); },80);
 }
-
-function setSyncStatus(status, updatedAt) {
-  syncStatus = status;
-  const dot = document.getElementById('connDot');
-  const text = document.getElementById('connText');
-  if (!dot) return;
-  if (status === 'syncing') { dot.className = 'dot busy'; text.textContent = '同步中…'; }
-  else if (status === 'ok') { dot.className = 'dot ok'; text.textContent = '已同步' + (updatedAt ? '（' + relTime(updatedAt) + '）' : ''); }
-  else if (status === 'offline') { dot.className = 'dot warn'; text.textContent = '离线 · 显示本地缓存，联网后会自动重试'; }
-  else if (status === 'idle') { dot.className = 'dot idle'; text.textContent = hasSyncSettings() ? '未连接' : '本地模式 · 未设置同步，可在设置中启用'; }
-  else { dot.className = 'dot off'; text.textContent = '未连接'; }
-}
-
-// ---------- onboarding 保留兼容，但不再拦截 ----------
-function showOnboarding(prefillError) {
-  openSyncSettings(prefillError);
-}
-
-async function connectAndEnter() {
-  // 兼容旧按钮，直接转到设置保存
-  const url = document.getElementById('ob-url')?.value.trim() || document.getElementById('st-url')?.value.trim();
-  const token = document.getElementById('ob-token')?.value.trim() || document.getElementById('st-token')?.value.trim();
-  if (!url || !token) { showToast('请填写完整的 Worker 地址和密钥'); return; }
-  settings = { url, token };
-  try {
-    await apiGet();
-    saveSettings(settings);
-    showToast('已连接并同步');
-    await pullFromServer(false);
-  } catch (e) {
-    const errBox = document.getElementById('st-error') || document.getElementById('onboardError');
-    if (errBox) { errBox.textContent = '连接失败：' + e.message; errBox.classList.remove('hidden'); }
-  }
-}
-
-// ---------- Settings Drawer (本机完整 + 同步可选) ----------
-function openSyncSettings(prefillError) {
-  settingsTab = hasSyncSettings() ? 'sync' : 'general';
-  renderSettingsDrawer(prefillError);
-  openOverlay();
-  setTimeout(() => { if (window.ApxLiquidGlass) ApxLiquidGlass.instances.forEach(inst => inst.markChanged(document.getElementById('drawer'))); }, 80);
-}
-function renderSettingsDrawer(prefillError) {
-  const drawer = document.getElementById('drawer');
-  const hasSync = hasSyncSettings();
-  const cache = readCache();
-  const localCount = (cache?.projects || state.projects || []).length;
-  drawer.innerHTML = `
-    <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">设置</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
-    <div class="settings-tabs">
-      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general">通用</button>
-      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync">同步</button>
+function renderSettingsDrawer(prefillError){
+  const drawer=document.getElementById('drawer');
+  drawer.setAttribute('data-liquid-glass',''); drawer.setAttribute('data-lg-preset','regular');
+  const hasSync=hasSyncSettings();
+  const cache=readCache(); const localCount=(cache?.projects||state.projects||[]).length;
+  drawer.innerHTML=`
+    <div class="drawer-head" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <h2 style="font-size:20px;font-weight:600;letter-spacing:-0.02em;margin:0;">设置</h2><button class="drawer-close" id="closeBtn" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--apx-muted);">×</button>
+    </div>
+    <div class="settings-tabs" style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--apx-hairline);padding-bottom:12px;">
+      <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="font-size:12px;padding:7px 12px;border-radius:9999px;border:1px solid var(--apx-hairline);background:${settingsTab==='general'?'var(--apx-ink)':'#fff'};color:${settingsTab==='general'?'#fff':'var(--apx-muted)'};cursor:pointer;">通用</button>
+      <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="font-size:12px;padding:7px 12px;border-radius:9999px;border:1px solid var(--apx-hairline);background:${settingsTab==='sync'?'var(--apx-ink)':'#fff'};color:${settingsTab==='sync'?'#fff':'var(--apx-muted)'};cursor:pointer;">同步</button>
     </div>
     <div id="settingsBody"></div>
   `;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
-  drawer.querySelectorAll('.settings-tab').forEach(btn => btn.addEventListener('click', () => { settingsTab = btn.dataset.tab; renderSettingsDrawer(); }));
-
-  const body = document.getElementById('settingsBody');
-  if (settingsTab === 'general') {
-    body.innerHTML = `
-      <div class="field"><label>本机存储</label>
-        <div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，数据仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div>
-      </div>
-      <div class="field"><label>关于</label>
-        <div class="hint">Agent Workbench · Tauri 三端 + Cloudflare 可选同步。同步开启后：打开/切回窗口/每 60 秒自动拉取，后台推送防抖 500ms。</div>
-      </div>
-      <div class="settings-foot">
-        <button class="btn btn-ghost" id="goSyncBtn" style="flex:1;">去设置同步 →</button>
-      </div>
+  drawer.querySelectorAll('.settings-tab').forEach(btn=>btn.addEventListener('click',()=>{ settingsTab=btn.dataset.tab; renderSettingsDrawer(); }));
+  const body=document.getElementById('settingsBody');
+  if(settingsTab==='general'){
+    body.innerHTML=`
+      <div class="field"><label>本机存储</label><div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，数据仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div></div>
+      <div class="field"><label>关于</label><div style="font-size:12px;color:var(--apx-muted);line-height:1.6;margin-top:4px;">Agent Workbench · Tauri 三端 + Cloudflare 可选同步。同步开启后：打开/切回窗口/每 60 秒自动拉取，后台推送防抖 500ms。</div></div>
+      <div style="display:flex;gap:8px;margin-top:18px;"><button class="apx-btn apx-btn-utility" id="goSyncBtn" style="flex:1;">去设置同步 →</button></div>
     `;
-    document.getElementById('goSyncBtn').addEventListener('click', () => { settingsTab='sync'; renderSettingsDrawer(); });
+    document.getElementById('goSyncBtn').addEventListener('click',()=>{ settingsTab='sync'; renderSettingsDrawer(); });
   } else {
-    body.innerHTML = `
-      <div class="error-box hidden" id="st-error">${prefillError ? prefillError : ''}</div>
-      <div class="field">
-        <label>Worker 地址</label>
-        <input type="text" class="mono" id="st-url" placeholder="https://agent-workbench-sync.xxx.workers.dev" value="${hasSync ? esc(settings.url) : ''}">
-      </div>
-      <div class="field">
-        <label>同步密钥（X-Sync-Token）</label>
-        <input type="password" class="mono" id="st-token" placeholder="部署时设置的密钥" value="${hasSync ? esc(settings.token) : ''}">
-        <div class="hint">密钥仅存本机，不会发往除 Worker 外的任何地方。留空即视为关闭同步。</div>
-      </div>
-      <div class="sync-preview">
-        状态：${hasSync ? (syncStatus==='ok'?'已同步':'已配置，未连接') : '未设置（本地模式）'}<br>
-        本机缓存：${localCount} 个项目 · 同步策略：整体覆盖（后保存覆盖先保存，单用户场景已足够）
-      </div>
-      <div class="settings-foot">
-        <button class="btn" id="st-save" style="flex:1;">${hasSync ? '保存并同步' : '启用同步'}</button>
-        <button class="btn btn-ghost" id="st-test">测试连接</button>
-      </div>
-      ${hasSync ? `<button class="btn btn-ghost" id="st-disable" style="width:100%;margin-top:10px;">断开同步（保留本地数据）</button>` : ``}
-      <div style="margin-top:18px;" class="hint">提示：三台设备填同一组地址+密钥即可互相同步；断网时正常用，联网后自动补推。</div>
+    body.innerHTML=`
+      <div class="error-box hidden" id="st-error" style="background:#FBF1DF;color:#B4432F;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:16px;">${prefillError?prefillError:''}</div>
+      <div class="field" style="margin-bottom:14px;"><label>Worker 地址</label><input type="text" class="mono" id="st-url" placeholder="https://agent-workbench-sync.xxx.workers.dev" value="${hasSync?esc(settings.url):''}" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);font-size:13px;"></div>
+      <div class="field" style="margin-bottom:14px;"><label>同步密钥（X-Sync-Token）</label><input type="password" class="mono" id="st-token" placeholder="部署时设置的密钥" value="${hasSync?esc(settings.token):''}" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);font-size:13px;"><div style="font-size:11px;color:var(--apx-muted);margin-top:4px;">密钥仅存本机，不会发往除 Worker 外的任何地方。留空即视为关闭同步。</div></div>
+      <div class="sync-preview">状态：${hasSync?(syncStatus==='ok'?'已同步':'已配置，未连接'):'未设置（本地模式）'}<br>本机缓存：${localCount} 个项目 · 整体覆盖（后保存覆盖先保存）</div>
+      <div style="display:flex;gap:8px;margin-top:14px;"><button class="apx-btn apx-btn-primary" id="st-save" style="flex:1;">${hasSync?'保存并同步':'启用同步'}</button><button class="apx-btn" id="st-test" style="background:#fff;border:1px solid var(--apx-hairline);color:var(--apx-ink);">测试连接</button></div>
+      ${hasSync?`<button class="apx-btn" id="st-disable" style="width:100%;margin-top:10px;background:#fff;border:1px solid var(--apx-hairline);color:var(--apx-ink);">断开同步（保留本地数据）</button>`:``}
+      <div style="font-size:11px;color:var(--apx-muted);margin-top:12px;">提示：三台设备填同一组地址+密钥即可互相同步；断网时正常用，联网后自动补推。</div>
     `;
-    if (prefillError) document.getElementById('st-error').classList.remove('hidden');
-    document.getElementById('st-save').addEventListener('click', async () => {
-      const url = document.getElementById('st-url').value.trim();
-      const token = document.getElementById('st-token').value.trim();
-      const errBox = document.getElementById('st-error');
-      if (!url && !token) { clearSyncSettings(); closeOverlay(); showToast('已切换为本地模式'); return; }
-      if (!url || !token) { errBox.textContent = '请同时填写地址和密钥，或同时留空以关闭同步'; errBox.classList.remove('hidden'); return; }
-      settings = { url, token };
-      const btn = document.getElementById('st-save'); btn.disabled = true; btn.textContent = '连接中…';
-      try {
-        await apiGet();
-        saveSettings(settings);
-        errBox.classList.add('hidden');
-        showToast('同步已启用');
-        await pullFromServer(false);
-        render();
-        closeOverlay();
-      } catch (e) {
-        errBox.textContent = '连接失败：' + e.message; errBox.classList.remove('hidden');
-      } finally { btn.disabled = false; btn.textContent = hasSyncSettings() ? '保存并同步' : '启用同步'; }
+    if(prefillError) document.getElementById('st-error').classList.remove('hidden');
+    document.getElementById('st-save').addEventListener('click', async()=>{
+      const url=document.getElementById('st-url').value.trim();
+      const token=document.getElementById('st-token').value.trim();
+      const errBox=document.getElementById('st-error');
+      if(!url && !token){ clearSyncSettings(); closeOverlay(); showToast('已切换为本地模式'); return; }
+      if(!url || !token){ errBox.textContent='请同时填写地址和密钥，或同时留空以关闭同步'; errBox.classList.remove('hidden'); return; }
+      settings={url,token}; const btn=document.getElementById('st-save'); btn.disabled=true; btn.textContent='连接中…';
+      try{ await apiGet(); saveSettings(settings); errBox.classList.add('hidden'); showToast('同步已启用'); await pullFromServer(false); render(); closeOverlay(); }
+      catch(e){ errBox.textContent='连接失败：'+e.message; errBox.classList.remove('hidden'); }
+      finally{ btn.disabled=false; btn.textContent=hasSyncSettings()?'保存并同步':'启用同步'; }
     });
-    document.getElementById('st-test').addEventListener('click', async () => {
-      const url = document.getElementById('st-url').value.trim();
-      const token = document.getElementById('st-token').value.trim();
-      const errBox = document.getElementById('st-error');
-      if (!url || !token) { errBox.textContent = '请先填写地址和密钥'; errBox.classList.remove('hidden'); return; }
-      const prev = settings; settings = { url, token };
-      try { await apiGet(); errBox.textContent = '连接成功 ✓'; errBox.style.color = 'var(--live)'; errBox.classList.remove('hidden'); }
-      catch (e) { errBox.textContent = '测试失败：' + e.message; errBox.style.color = 'var(--danger)'; errBox.classList.remove('hidden'); }
-      finally { settings = prev; if (!hasSyncSettings()) settings = null; setTimeout(()=>{ errBox.classList.add('hidden'); errBox.style.color=''; }, 2200); }
+    document.getElementById('st-test').addEventListener('click', async()=>{
+      const url=document.getElementById('st-url').value.trim();
+      const token=document.getElementById('st-token').value.trim();
+      const errBox=document.getElementById('st-error');
+      if(!url||!token){ errBox.textContent='请先填写地址和密钥'; errBox.classList.remove('hidden'); return; }
+      const prev=settings; settings={url,token};
+      try{ await apiGet(); errBox.textContent='连接成功 ✓'; errBox.style.color='#2F8F5D'; errBox.classList.remove('hidden'); }
+      catch(e){ errBox.textContent='测试失败：'+e.message; errBox.style.color='#B4432F'; errBox.classList.remove('hidden'); }
+      finally{ settings=prev; if(!hasSyncSettings()) settings=null; setTimeout(()=>{ errBox.classList.add('hidden'); errBox.style.color=''; },2200); }
     });
-    const dis = document.getElementById('st-disable');
-    if (dis) dis.addEventListener('click', () => {
-      if (!confirm('确定断开同步？本地数据会保留，仅清除地址和密钥。')) return;
-      clearSyncSettings(); renderSettingsDrawer(); showToast('已断开同步，保留本地数据');
-    });
-    // 兼容旧 onboarding 按钮
-    const obBtn = document.getElementById('ob-connect');
-    if (obBtn) obBtn.onclick = () => {
-      const url = document.getElementById('ob-url').value.trim();
-      const token = document.getElementById('ob-token').value.trim();
-      document.getElementById('st-url').value = url;
-      document.getElementById('st-token').value = token;
-      document.getElementById('st-save').click();
-    };
+    const dis=document.getElementById('st-disable');
+    if(dis) dis.addEventListener('click',()=>{ if(!confirm('确定断开同步？本地数据会保留，仅清除地址和密钥。')) return; clearSyncSettings(); renderSettingsDrawer(); showToast('已断开同步，保留本地数据'); });
   }
 }
 
-// ---------- helpers ----------
-function uid(prefix) { return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-function stageInfo(key) { return STAGES.find(s => s.key === key) || STAGES[0]; }
-function stageIndex(key) { return STAGES.findIndex(s => s.key === key); }
-function esc(str) { const d = document.createElement('div'); d.textContent = str ?? ''; return d.innerHTML; }
-function relTime(iso) {
-  if (!iso) return '';
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return '刚刚';
-  if (min < 60) return min + ' 分钟前';
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return hr + ' 小时前';
-  const day = Math.floor(hr / 24);
-  if (day < 30) return day + ' 天前';
+function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function stageInfo(key){ return STAGES.find(s=>s.key===key)||STAGES[0]; }
+function stageIndex(key){ return STAGES.findIndex(s=>s.key===key); }
+function esc(str){ const d=document.createElement('div'); d.textContent=str??''; return d.innerHTML; }
+function relTime(iso){
+  if(!iso) return '';
+  const diff=Date.now()-new Date(iso).getTime();
+  const min=Math.floor(diff/60000);
+  if(min<1) return '刚刚';
+  if(min<60) return min+' 分钟前';
+  const hr=Math.floor(min/60);
+  if(hr<24) return hr+' 小时前';
+  const day=Math.floor(hr/24);
+  if(day<30) return day+' 天前';
   return new Date(iso).toLocaleDateString('zh-CN');
 }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
   clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(() => t.classList.remove('show'), 2200);
+  showToast._timer=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-// ---------- render: stats + chips ----------
-function renderStats() {
-  const el = document.getElementById('stats');
-  const counts = {}; STAGES.forEach(s => counts[s.key] = 0);
-  let paused = 0;
-  state.projects.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; if (p.paused) paused++; });
-  el.innerHTML = STAGES.map(s => `<div class="stat-pill">${s.label} <b>${counts[s.key] || 0}</b></div>`).join('')
-    + `<div class="stat-pill">已暂停 <b>${paused}</b></div>`;
+function renderStats(){
+  const el=document.getElementById('sidebarStats');
+  if(!el) return;
+  const counts={}; STAGES.forEach(s=>counts[s.key]=0);
+  let paused=0;
+  state.projects.forEach(p=>{ counts[p.stage]=(counts[p.stage]||0)+1; if(p.paused) paused++; });
+  // 侧栏统计以小字展示
+  el.innerHTML=`<div style="font-size:11px;color:var(--apx-muted);padding:6px 4px;">${STAGES.map(s=>`${s.label} ${counts[s.key]||0}`).join(' · ')} · 已暂停 ${paused}</div>`;
+  // 同步渲染侧栏导航
+  renderSidebarNav();
 }
-function renderChips() {
-  const el = document.getElementById('filterChips');
-  const all = [{ key: 'all', label: '全部' }, ...STAGES, { key: 'paused', label: '已暂停' }];
-  el.innerHTML = all.map(s => `<button class="chip ${state.filterStage === s.key ? 'active' : ''}" data-stage="${s.key}">${s.label}</button>`).join('');
-  el.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', () => { state.filterStage = btn.dataset.stage; render(); }));
+function renderSidebarNav(){
+  const el=document.getElementById('sidebarNav');
+  if(!el) return;
+  const counts={}; STAGES.forEach(s=>counts[s.key]=0);
+  state.projects.forEach(p=>{ counts[p.stage]=(counts[p.stage]||0)+1; });
+  const pausedCount=state.projects.filter(p=>p.paused).length;
+  const total=state.projects.length;
+  const items=[{key:'all',label:'全部',count:total},{...STAGES.map(s=>({key:s.key,label:s.label,count:counts[s.key]||0}))}.flat(),{key:'paused',label:'已暂停',count:pausedCount}];
+  // 扁平化
+  const flat=[{key:'all',label:'全部',count:total},...STAGES.map(s=>({key:s.key,label:s.label,count:counts[s.key]||0})),{key:'paused',label:'已暂停',count:pausedCount}];
+  el.innerHTML=flat.map(s=>`<div class="sidebar-item ${state.filterStage===s.key?'active':''}" data-stage="${s.key}"><span>${s.label}</span><span class="count">${s.count}</span></div>`).join('');
+  el.querySelectorAll('.sidebar-item').forEach(btn=>btn.addEventListener('click',()=>{ state.filterStage=btn.dataset.stage; render(); }));
 }
-
-function filteredProjects() {
+function renderChips(){
+  // 侧栏已接管筛选，此处隐藏或同步
+  const el=document.getElementById('filterChips');
+  if(!el) return;
+  el.innerHTML='';
+}
+function filteredProjects(){
   return state.projects
-    .filter(p => state.filterStage === 'paused' ? p.paused : (state.filterStage === 'all' ? true : p.stage === state.filterStage))
-    .filter(p => {
-      if (!state.search) return true;
-      const q = state.search.toLowerCase();
-      return p.name.toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q));
+    .filter(p=>state.filterStage==='paused'?p.paused:(state.filterStage==='all'?true:p.stage===state.filterStage))
+    .filter(p=>{
+      if(!state.search) return true;
+      const q=state.search.toLowerCase();
+      return p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q));
     })
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    .sort((a,b)=> new Date(b.updatedAt)-new Date(a.updatedAt));
 }
-
-function renderGrid() {
-  const el = document.getElementById('gridArea');
-  const list = filteredProjects();
-  if (state.projects.length === 0) {
-    el.innerHTML = `<div class="empty"><h3>还没有项目</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来。</p><button class="btn" id="emptyAddBtn">+ 新建项目</button></div>`;
-    document.getElementById('emptyAddBtn').addEventListener('click', () => openCreateModal());
+function renderGrid(){
+  const el=document.getElementById('gridArea');
+  const list=filteredProjects();
+  if(state.projects.length===0){
+    el.innerHTML=`<div class="empty"><h3>还没有项目</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来。</p><button class="apx-btn apx-btn-primary" id="emptyAddBtn">+ 新建项目</button></div>`;
+    document.getElementById('emptyAddBtn').addEventListener('click',()=>openCreateModal());
     return;
   }
-  if (list.length === 0) {
-    el.innerHTML = `<div class="empty"><h3>没有匹配的项目</h3><p>试试换个筛选条件或搜索词。</p></div>`;
+  if(list.length===0){
+    el.innerHTML=`<div class="empty"><h3>没有匹配的项目</h3><p>试试换个筛选条件或搜索词。</p></div>`;
     return;
   }
-  el.innerHTML = `<div class="grid">${list.map(cardHtml).join('')}</div>`;
-  list.forEach(p => document.getElementById('card-' + p.id).addEventListener('click', () => openDetail(p.id)));
+  el.innerHTML=`<div class="grid">${list.map(cardHtml).join('')}</div>`;
+  list.forEach(p=>document.getElementById('card-'+p.id).addEventListener('click',()=>openDetail(p.id)));
 }
-
-function cardHtml(p) {
-  const s = stageInfo(p.stage);
-  const idx = stageIndex(p.stage);
-  const promptCount = (p.prompts || []).length;
+function cardHtml(p){
+  const s=stageInfo(p.stage);
+  const idx=stageIndex(p.stage);
+  const promptCount=(p.prompts||[]).length;
   return `
-  <div class="card" id="card-${p.id}">
-    ${p.paused ? '<div class="paused-ribbon">暂停</div>' : ''}
+  <div class="card" id="card-${p.id}" style="position:relative; overflow:hidden;">
+    ${p.paused?'<div class="paused-ribbon">暂停</div>':''}
     <div class="card-top"><div class="card-name">${esc(p.name)}</div><div class="badge" style="background:${s.bg};color:${s.color}">${s.label}</div></div>
-    <p class="card-desc">${esc(p.description) || '暂无简介'}</p>
-    ${(p.tags && p.tags.length) ? `<div class="tag-row">${p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    <p class="card-desc">${esc(p.description)||'暂无简介'}</p>
+    ${(p.tags&&p.tags.length)?`<div class="tag-row">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
     <div class="gauge">
-      ${STAGES.map((st, i) => `
-        <div class="gauge-dot" style="background:${i <= idx ? s.color : 'var(--border)'}"></div>
-        ${i < STAGES.length - 1 ? `<div class="gauge-line" style="background:${i < idx ? s.color : 'var(--border)'}"></div>` : ''}
+      ${STAGES.map((st,i)=>`
+        <div class="gauge-dot" style="background:${i<=idx?s.color:'var(--apx-hairline)'}"></div>
+        ${i<STAGES.length-1?`<div class="gauge-line" style="background:${i<idx?s.color:'var(--apx-hairline)'}"></div>`:''}
       `).join('')}
-      <span class="gauge-label">${idx + 1}/${STAGES.length}</span>
+      <span class="gauge-label">${idx+1}/${STAGES.length}</span>
     </div>
     <div class="card-foot"><span>${promptCount} 条 Prompt</span><span>更新于 ${relTime(p.updatedAt)}</span></div>
   </div>`;
 }
+function render(){ if(!state.loaded) return; renderStats(); renderChips(); renderGrid(); }
 
-function render() { if (!state.loaded) return; renderStats(); renderChips(); renderGrid(); }
-
-// ---------- create project ----------
-function openCreateModal() {
-  const drawer = document.getElementById('drawer');
-  // 保留同步抽屉的 T3 标记
+function openCreateModal(){
+  const drawer=document.getElementById('drawer');
   drawer.setAttribute('data-liquid-glass',''); drawer.setAttribute('data-lg-preset','regular');
-  drawer.innerHTML = `
-    <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">新建项目</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
+  drawer.innerHTML=`
+    <div class="drawer-head" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;"><h2 style="font-size:19px;font-weight:600;letter-spacing:-0.02em;margin:0;">新建项目</h2><button class="drawer-close" id="closeBtn" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--apx-muted);">×</button></div>
     <div class="field"><label>项目名称</label><input type="text" id="f-name" placeholder="例如：客服自动回复 Agent"></div>
     <div class="field"><label>简介</label><textarea id="f-desc" rows="3" placeholder="这个 Agent 是做什么的…"></textarea></div>
-    <div class="field-row">
-      <div class="field"><label>阶段</label><select id="f-stage">${STAGES.map(s => `<option value="${s.key}">${s.label}</option>`).join('')}</select></div>
-      <div class="field"><label>标签（逗号分隔）</label><input type="text" id="f-tags" placeholder="客服, GPT-4, 内部工具"></div>
-    </div>
-    <button class="btn" id="saveNewBtn" style="width:100%;margin-top:6px;">创建项目</button>`;
+    <div class="field-row" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>阶段</label><select id="f-stage">${STAGES.map(s=>`<option value="${s.key}">${s.label}</option>`).join('')}</select></div><div class="field" style="flex:1;"><label>标签（逗号分隔）</label><input type="text" id="f-tags" placeholder="客服, GPT-4, 内部工具"></div></div>
+    <button class="apx-btn apx-btn-primary" id="saveNewBtn" style="width:100%;margin-top:10px;">创建项目</button>`;
   openOverlay();
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
   document.getElementById('f-name').focus();
-  document.getElementById('saveNewBtn').addEventListener('click', () => {
-    const name = document.getElementById('f-name').value.trim();
-    if (!name) { showToast('请填写项目名称'); return; }
-    const tags = document.getElementById('f-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-    const now = new Date().toISOString();
-    state.projects.push({
-      id: uid('p'), name, description: document.getElementById('f-desc').value.trim(),
-      stage: document.getElementById('f-stage').value, paused: false, tags, prompts: [],
-      createdAt: now, updatedAt: now,
-    });
+  document.getElementById('saveNewBtn').addEventListener('click',()=>{
+    const name=document.getElementById('f-name').value.trim();
+    if(!name){ showToast('请填写项目名称'); return; }
+    const tags=document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+    const now=new Date().toISOString();
+    state.projects.push({id:uid('p'),name,description:document.getElementById('f-desc').value.trim(),stage:document.getElementById('f-stage').value,paused:false,tags,prompts:[],createdAt:now,updatedAt:now});
     saveData(); closeOverlay(); render(); showToast('项目已创建');
   });
 }
-
-// ---------- detail drawer ----------
-function openDetail(id) { const p = state.projects.find(x => x.id === id); if (!p) return; renderDetail(p); openOverlay(); }
-
-function renderDetail(p) {
-  const drawer = document.getElementById('drawer');
+function openDetail(id){ const p=state.projects.find(x=>x.id===id); if(!p) return; renderDetail(p); openOverlay(); }
+function renderDetail(p){
+  const drawer=document.getElementById('drawer');
   drawer.setAttribute('data-liquid-glass',''); drawer.setAttribute('data-lg-preset','regular');
-  drawer.innerHTML = `
-    <div class="drawer-head"><h2 style="font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;">项目详情</h2><button class="drawer-close" id="closeBtn">&times;</button></div>
+  drawer.innerHTML=`
+    <div class="drawer-head" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;"><h2 style="font-size:19px;font-weight:600;letter-spacing:-0.02em;margin:0;">项目详情</h2><button class="drawer-close" id="closeBtn" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--apx-muted);">×</button></div>
     <div class="field"><label>项目名称</label><input type="text" id="d-name" value="${esc(p.name)}"></div>
     <div class="field"><label>简介</label><textarea id="d-desc" rows="3">${esc(p.description)}</textarea></div>
-    <div class="field-row">
-      <div class="field"><label>阶段</label><select id="d-stage">${STAGES.map(s => `<option value="${s.key}" ${s.key === p.stage ? 'selected' : ''}>${s.label}</option>`).join('')}</select></div>
-      <div class="field"><label>标签（逗号分隔）</label><input type="text" id="d-tags" value="${esc((p.tags || []).join(', '))}"></div>
-    </div>
-    <div class="checkbox-row"><input type="checkbox" id="d-paused" ${p.paused ? 'checked' : ''}><label for="d-paused" style="margin:0;text-transform:none;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;letter-spacing:0;">标记为暂停</label></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn" id="saveDetailBtn" style="flex:1;">保存修改</button>
-      <button class="btn btn-danger" id="deleteProjectBtn">删除项目</button>
-    </div>
-    <hr class="divider">
-    <div class="section-head"><h3>Prompt 版本 (${(p.prompts || []).length})</h3><button class="btn btn-ghost btn-sm" id="addPromptBtn">+ 添加 Prompt</button></div>
+    <div class="field-row" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>阶段</label><select id="d-stage">${STAGES.map(s=>`<option value="${s.key}" ${s.key===p.stage?'selected':''}>${s.label}</option>`).join('')}</select></div><div class="field" style="flex:1;"><label>标签（逗号分隔）</label><input type="text" id="d-tags" value="${esc((p.tags||[]).join(', '))}"></div></div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--apx-muted);margin-bottom:16px;"><input type="checkbox" id="d-paused" ${p.paused?'checked':''}><label for="d-paused" style="margin:0;">标记为暂停</label></div>
+    <div style="display:flex;gap:8px;"><button class="apx-btn apx-btn-primary" id="saveDetailBtn" style="flex:1;">保存修改</button><button class="apx-btn" id="deleteProjectBtn" style="background:#fff;border:1px solid #e0e0e0;color:#B4432F;">删除项目</button></div>
+    <hr style="border:0;border-top:1px solid var(--apx-hairline);margin:18px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:14px;font-weight:600;margin:0;">Prompt 版本 (${(p.prompts||[]).length})</h3><button class="apx-btn" id="addPromptBtn" style="background:#fff;border:1px solid var(--apx-hairline);font-size:12px;min-height:32px;">+ 添加 Prompt</button></div>
     <div id="promptFormSlot"></div>
     <div id="promptList">${renderPromptList(p)}</div>`;
   document.getElementById('closeBtn').addEventListener('click', closeOverlay);
-  document.getElementById('saveDetailBtn').addEventListener('click', () => saveDetailFields(p.id));
-  document.getElementById('deleteProjectBtn').addEventListener('click', () => deleteProject(p.id));
-  document.getElementById('addPromptBtn').addEventListener('click', () => showPromptForm(p.id, null));
+  document.getElementById('saveDetailBtn').addEventListener('click',()=>saveDetailFields(p.id));
+  document.getElementById('deleteProjectBtn').addEventListener('click',()=>deleteProject(p.id));
+  document.getElementById('addPromptBtn').addEventListener('click',()=>showPromptForm(p.id,null));
   bindPromptListEvents(p.id);
 }
-
-function renderPromptList(p) {
-  const prompts = (p.prompts || []).slice().sort((a, b) => b.version - a.version);
-  if (prompts.length === 0) return `<p style="color:var(--ink-soft);font-size:13.5px;">还没有添加 Prompt。</p>`;
-  return prompts.map(pr => `
-    <div class="prompt-card" data-prompt-id="${pr.id}">
-      <div class="prompt-top">
-        <div><span class="prompt-title">${esc(pr.title)}</span>${pr.isCurrent ? '<span class="current-badge" style="margin-left:6px;">当前版本</span>' : ''}</div>
-        <span class="prompt-meta">v${pr.version} · ${relTime(pr.createdAt)}</span>
+function renderPromptList(p){
+  const prompts=(p.prompts||[]).slice().sort((a,b)=>b.version-a.version);
+  if(prompts.length===0) return `<p style="color:var(--apx-muted);font-size:13px;">还没有添加 Prompt。</p>`;
+  return prompts.map(pr=>`
+    <div class="prompt-card" data-prompt-id="${pr.id}" style="background:#fff;border:1px solid var(--apx-hairline);border-radius:12px;padding:12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <div><span style="font-weight:600;font-size:13px;">${esc(pr.title)}</span>${pr.isCurrent?'<span style="margin-left:6px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:9999px;background:#E3F3EA;color:#2F8F5D;">当前版本</span>':''}</div>
+        <span style="font-size:11px;color:var(--apx-muted);">v${pr.version} · ${relTime(pr.createdAt)}</span>
       </div>
-      <div class="prompt-content">${esc(pr.content)}</div>
-      ${pr.notes ? `<div class="prompt-notes">备注：${esc(pr.notes)}</div>` : ''}
-      <div class="prompt-actions">
-        ${!pr.isCurrent ? `<button class="btn btn-ghost btn-sm" data-act="current">设为当前版本</button>` : ''}
-        <button class="btn btn-ghost btn-sm" data-act="edit">编辑</button>
-        <button class="btn btn-ghost btn-sm" data-act="delete">删除</button>
+      <div style="background:var(--apx-parchment);border:1px solid #e0e0e0;border-radius:8px;padding:9px 10px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:160px;overflow:auto;margin-bottom:8px;">${esc(pr.content)}</div>
+      ${pr.notes?`<div style="font-size:12px;color:var(--apx-muted);margin-bottom:8px;">备注：${esc(pr.notes)}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${!pr.isCurrent?`<button class="apx-btn" data-act="current" style="background:#fff;border:1px solid var(--apx-hairline);font-size:12px;min-height:32px;">设为当前版本</button>`:''}
+        <button class="apx-btn" data-act="edit" style="background:#fff;border:1px solid var(--apx-hairline);font-size:12px;min-height:32px;">编辑</button>
+        <button class="apx-btn" data-act="delete" style="background:#fff;border:1px solid var(--apx-hairline);font-size:12px;min-height:32px;">删除</button>
       </div>
     </div>`).join('');
 }
-
-function bindPromptListEvents(projectId) {
-  const container = document.getElementById('promptList');
-  container.querySelectorAll('.prompt-card').forEach(card => {
-    const promptId = card.dataset.promptId;
-    card.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const act = btn.dataset.act;
-        if (act === 'current') setCurrentPrompt(projectId, promptId);
-        else if (act === 'edit') { const p = state.projects.find(x => x.id === projectId); showPromptForm(projectId, p.prompts.find(x => x.id === promptId)); }
-        else if (act === 'delete') deletePrompt(projectId, promptId);
+function bindPromptListEvents(projectId){
+  const container=document.getElementById('promptList');
+  container.querySelectorAll('.prompt-card').forEach(card=>{
+    const promptId=card.dataset.promptId;
+    card.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const act=btn.dataset.act;
+        if(act==='current') setCurrentPrompt(projectId,promptId);
+        else if(act==='edit'){ const p=state.projects.find(x=>x.id===projectId); showPromptForm(projectId,p.prompts.find(x=>x.id===promptId)); }
+        else if(act==='delete') deletePrompt(projectId,promptId);
       });
     });
   });
 }
-
-function showPromptForm(projectId, existing) {
-  const slot = document.getElementById('promptFormSlot');
-  const p = state.projects.find(x => x.id === projectId);
-  const nextVersion = existing ? existing.version : (Math.max(0, ...(p.prompts || []).map(pr => pr.version)) + 1);
-  slot.innerHTML = `
-    <div class="form-inline">
-      <div class="field"><label>标题</label><input type="text" class="mono" id="pf-title" value="${existing ? esc(existing.title) : ''}" placeholder="例如：系统提示词 v${nextVersion}"></div>
-      <div class="field-row"><div class="field"><label>版本号</label><input type="text" id="pf-version" value="${nextVersion}"></div></div>
-      <div class="field"><label>Prompt 内容</label><textarea class="mono" id="pf-content" rows="6" placeholder="在这里写下 / 粘贴 prompt 内容…">${existing ? esc(existing.content) : ''}</textarea></div>
-      <div class="field"><label>备注</label><input type="text" id="pf-notes" value="${existing ? esc(existing.notes || '') : ''}" placeholder="这版改了什么、效果如何…"></div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-sm" id="pf-save" style="flex:1;">${existing ? '保存修改' : '添加'}</button>
-        <button class="btn btn-ghost btn-sm" id="pf-cancel">取消</button>
-      </div>
+function showPromptForm(projectId, existing){
+  const slot=document.getElementById('promptFormSlot');
+  const p=state.projects.find(x=>x.id===projectId);
+  const nextVersion=existing?existing.version:(Math.max(0,...(p.prompts||[]).map(pr=>pr.version))+1);
+  slot.innerHTML=`
+    <div style="background:#fff;border:1px dashed var(--apx-muted);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div class="field"><label>标题</label><input type="text" id="pf-title" value="${existing?esc(existing.title):''}" placeholder="例如：系统提示词 v${nextVersion}" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);"></div>
+      <div class="field"><label>版本号</label><input type="text" id="pf-version" value="${nextVersion}" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);"></div>
+      <div class="field"><label>Prompt 内容</label><textarea id="pf-content" rows="6" placeholder="在这里写下 / 粘贴 prompt 内容…" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);font-family:monospace;">${existing?esc(existing.content):''}</textarea></div>
+      <div class="field"><label>备注</label><input type="text" id="pf-notes" value="${existing?esc(existing.notes||''):''}" placeholder="这版改了什么、效果如何…" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--apx-hairline);"></div>
+      <div style="display:flex;gap:8px;"><button class="apx-btn apx-btn-primary" id="pf-save" style="flex:1;">${existing?'保存修改':'添加'}</button><button class="apx-btn" id="pf-cancel" style="background:#fff;border:1px solid var(--apx-hairline);">取消</button></div>
     </div>`;
-  document.getElementById('pf-cancel').addEventListener('click', () => { slot.innerHTML = ''; });
-  document.getElementById('pf-save').addEventListener('click', () => {
-    const title = document.getElementById('pf-title').value.trim();
-    const content = document.getElementById('pf-content').value.trim();
-    if (!title || !content) { showToast('标题和内容都要填写'); return; }
-    const version = parseFloat(document.getElementById('pf-version').value) || nextVersion;
-    const notes = document.getElementById('pf-notes').value.trim();
-    const proj = state.projects.find(x => x.id === projectId);
-    if (existing) { Object.assign(existing, { title, content, version, notes }); }
-    else {
-      proj.prompts = proj.prompts || [];
-      proj.prompts.push({ id: uid('pr'), title, content, version, notes, isCurrent: proj.prompts.length === 0, createdAt: new Date().toISOString() });
-    }
-    proj.updatedAt = new Date().toISOString();
-    saveData(); slot.innerHTML = '';
-    document.getElementById('promptList').innerHTML = renderPromptList(proj);
+  document.getElementById('pf-cancel').addEventListener('click',()=>{ slot.innerHTML=''; });
+  document.getElementById('pf-save').addEventListener('click',()=>{
+    const title=document.getElementById('pf-title').value.trim();
+    const content=document.getElementById('pf-content').value.trim();
+    if(!title||!content){ showToast('标题和内容都要填写'); return; }
+    const version=parseFloat(document.getElementById('pf-version').value)||nextVersion;
+    const notes=document.getElementById('pf-notes').value.trim();
+    const proj=state.projects.find(x=>x.id===projectId);
+    if(existing){ Object.assign(existing,{title,content,version,notes}); }
+    else{ proj.prompts=proj.prompts||[]; proj.prompts.push({id:uid('pr'),title,content,version,notes,isCurrent:proj.prompts.length===0,createdAt:new Date().toISOString()}); }
+    proj.updatedAt=new Date().toISOString();
+    saveData(); slot.innerHTML='';
+    document.getElementById('promptList').innerHTML=renderPromptList(proj);
     bindPromptListEvents(projectId);
-    document.querySelector('.section-head h3').textContent = `Prompt 版本 (${proj.prompts.length})`;
-    render(); showToast(existing ? 'Prompt 已更新' : 'Prompt 已添加');
+    document.querySelector('#drawer h3').textContent=`Prompt 版本 (${proj.prompts.length})`;
+    render(); showToast(existing?'Prompt 已更新':'Prompt 已添加');
   });
 }
-
-function setCurrentPrompt(projectId, promptId) {
-  const p = state.projects.find(x => x.id === projectId);
-  p.prompts.forEach(pr => pr.isCurrent = (pr.id === promptId));
-  p.updatedAt = new Date().toISOString();
+function setCurrentPrompt(projectId,promptId){
+  const p=state.projects.find(x=>x.id===projectId);
+  p.prompts.forEach(pr=>pr.isCurrent=(pr.id===promptId));
+  p.updatedAt=new Date().toISOString();
   saveData();
-  document.getElementById('promptList').innerHTML = renderPromptList(p);
+  document.getElementById('promptList').innerHTML=renderPromptList(p);
   bindPromptListEvents(projectId); render();
 }
-
-function deletePrompt(projectId, promptId) {
-  if (!confirm('确定删除这条 Prompt 吗？')) return;
-  const p = state.projects.find(x => x.id === projectId);
-  p.prompts = p.prompts.filter(pr => pr.id !== promptId);
-  if (p.prompts.length && !p.prompts.some(pr => pr.isCurrent)) p.prompts[0].isCurrent = true;
-  p.updatedAt = new Date().toISOString();
+function deletePrompt(projectId,promptId){
+  if(!confirm('确定删除这条 Prompt 吗？')) return;
+  const p=state.projects.find(x=>x.id===projectId);
+  p.prompts=p.prompts.filter(pr=>pr.id!==promptId);
+  if(p.prompts.length&&!p.prompts.some(pr=>pr.isCurrent)) p.prompts[0].isCurrent=true;
+  p.updatedAt=new Date().toISOString();
   saveData();
-  document.getElementById('promptList').innerHTML = renderPromptList(p);
+  document.getElementById('promptList').innerHTML=renderPromptList(p);
   bindPromptListEvents(projectId); render(); showToast('已删除');
 }
-
-function saveDetailFields(id) {
-  const p = state.projects.find(x => x.id === id);
-  p.name = document.getElementById('d-name').value.trim() || p.name;
-  p.description = document.getElementById('d-desc').value.trim();
-  p.stage = document.getElementById('d-stage').value;
-  p.tags = document.getElementById('d-tags').value.split(',').map(t => t.trim()).filter(Boolean);
-  p.paused = document.getElementById('d-paused').checked;
-  p.updatedAt = new Date().toISOString();
+function saveDetailFields(id){
+  const p=state.projects.find(x=>x.id===id);
+  p.name=document.getElementById('d-name').value.trim()||p.name;
+  p.description=document.getElementById('d-desc').value.trim();
+  p.stage=document.getElementById('d-stage').value;
+  p.tags=document.getElementById('d-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  p.paused=document.getElementById('d-paused').checked;
+  p.updatedAt=new Date().toISOString();
   saveData(); render(); showToast('已保存');
 }
-
-function deleteProject(id) {
-  if (!confirm('确定删除整个项目吗？这会同时删除它下面的所有 Prompt，且无法恢复。')) return;
-  state.projects = state.projects.filter(p => p.id !== id);
+function deleteProject(id){
+  if(!confirm('确定删除整个项目吗？这会同时删除它下面的所有 Prompt，且无法恢复。')) return;
+  state.projects=state.projects.filter(p=>p.id!==id);
   saveData(); closeOverlay(); render(); showToast('项目已删除');
 }
-
-// ---------- overlay ----------
-function openOverlay() { document.getElementById('overlay').classList.add('show'); setTimeout(()=>{ if (window.ApxLiquidGlass) window.ApxLiquidGlass.instances.forEach(i=>i.markChanged(document.getElementById('drawer')))},80); }
-function closeOverlay() { document.getElementById('overlay').classList.remove('show'); }
-document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeOverlay(); });
-
-// ---------- top-level bindings ----------
-document.getElementById('ob-connect').addEventListener('click', connectAndEnter);
-document.getElementById('addProjectBtn').addEventListener('click', () => openCreateModal());
-document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; render(); });
-document.getElementById('syncNowBtn').addEventListener('click', () => {
-  if (!hasSyncSettings()) { openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; }
-  pullFromServer(true);
-});
-document.getElementById('settingsBtn').addEventListener('click', () => openSyncSettings());
-
-// 窗口重新获得焦点时自动拉取一次（仅当已启用同步）
-window.addEventListener('focus', () => { if (hasSyncSettings() && state.loaded) pullFromServer(false); });
-// 每 60 秒轮询一次（仅当已启用同步）
-setInterval(() => { if (hasSyncSettings() && state.loaded) pullFromServer(false); }, 60000);
-
-// ---------- boot — 本机完整可用，同步仅后台可选 ----------
-(async function boot() {
-  settings = loadSettings();
-  // 本机优先：无论是否配置同步，立即展示本机数据
-  const cache = readCache();
-  if (cache && Array.isArray(cache.projects)) {
-    state.projects = cache.projects;
-  } else {
-    state.projects = [];
-  }
-  state.loaded = true;
-  document.getElementById('appRoot').classList.remove('hidden');
-  document.getElementById('onboardScreen').classList.add('hidden');
+function openOverlay(){ document.getElementById('overlay').classList.add('show'); setTimeout(()=>{ if(window.ApxLiquidGlass) window.ApxLiquidGlass.instances.forEach(i=>i.markChanged(document.getElementById('drawer')))},80); }
+function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click',(e)=>{ if(e.target.id==='overlay') closeOverlay(); });
+document.getElementById('addProjectBtn').addEventListener('click',()=>openCreateModal());
+document.getElementById('searchInput').addEventListener('input',(e)=>{ state.search=e.target.value; render(); });
+document.getElementById('syncNowBtn').addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
+document.getElementById('settingsBtn').addEventListener('click',()=>openSyncSettings());
+window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
+setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
+(async function boot(){
+  settings=loadSettings();
+  const cache=readCache();
+  if(cache&&Array.isArray(cache.projects)){ state.projects=cache.projects; } else { state.projects=[]; }
+  state.loaded=true;
+  // 主应用始终可见
+  document.getElementById('lgScene').classList.remove('hidden');
   render();
-  if (hasSyncSettings()) {
-    setSyncStatus('syncing');
-    await pullFromServer(false);
-  } else {
-    setSyncStatus('idle');
-  }
-  // T3 液态玻璃初始化（保留现配色，仅功能层）
-  if (window.ApxLiquidGlass && document.getElementById('lgScene')) {
-    try {
+  if(hasSyncSettings()){ setSyncStatus('syncing'); await pullFromServer(false); } else { setSyncStatus('idle'); }
+  if(window.ApxLiquidGlass && document.getElementById('lgScene')){
+    try{
       await window.ApxLiquidGlass.applyAll();
-      // 轻度调优：本机纸纹背景需要稍强折射以可见
-      const bar = document.getElementById('connectBar');
-      const drawer = document.getElementById('drawer');
-      if (bar && bar._lg) window.ApxLiquidGlass.instances[0]?.updateConfig(bar, { blur: 0.22, refraction: 0.95, chroma: 0.08 });
-      if (drawer && drawer._lg) window.ApxLiquidGlass.instances[0]?.updateConfig(drawer, { blur: 0.26, refraction: 0.9, chroma: 0.06 });
-    } catch (e) { console.warn('[glass] T3 init fail, fallback to CSS', e); }
+      const bar=document.getElementById('sidebar');
+      const drawer=document.getElementById('drawer');
+      const topbar=document.getElementById('topbar');
+      const inst=window.ApxLiquidGlass.instances[0];
+      if(inst && bar && bar._lg) inst.updateConfig(bar,{ blur:0.28, refraction:0.95, chroma:0.08 });
+      if(inst && drawer && drawer._lg) inst.updateConfig(drawer,{ blur:0.26, refraction:0.9, chroma:0.06 });
+    }catch(e){ console.warn('[glass] T3 init fallback',e); }
   }
 })();
 </script>

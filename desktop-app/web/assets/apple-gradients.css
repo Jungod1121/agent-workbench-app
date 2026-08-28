@@ -1,0 +1,125 @@
+/* ============================================================
+   apple-gradients.css — 14 组苹果渐变色板
+   ============================================================
+   用法：<link rel="stylesheet" href="apple-gradients.css">
+   1) 给任意容器加 .apx-grad-g1 … .apx-grad-g14，
+      其内部元素即可使用变量：
+        var(--apx-grad-1) … var(--apx-grad-4)（缺省回退 --apx-grad-2）
+        var(--apx-grad-text)：完整 135° 渐变文字
+        var(--apx-grad-bg)：渐变背景
+        var(--apx-grad-deep)：深底版渐变
+   2) 工具类：
+      .apx-grad-text-1 … -14：渐变文字（背景裁剪）
+      .apx-grad-bg-1 … -14：渐变背景块
+   来源：references/gradient-palette.md
+   ============================================================ */
+
+/* G1 嘿 Siri · AI 彩虹 */
+.apx-grad-g1 { --apx-grad-1:#FD9F59; --apx-grad-2:#F487A3; --apx-grad-3:#C488C8; --apx-grad-4:#81C4FD;
+  --apx-grad-deep: linear-gradient(135deg,#FFB35C,#FF8FA8,#D49BDB,#8FD0FF); }
+
+/* G2 高能猛进 · 性能撞色 */
+.apx-grad-g2 { --apx-grad-1:#F06620; --apx-grad-2:#EEB355; --apx-grad-3:#164BC5; --apx-grad-4:#7BAED1;
+  --apx-grad-deep: linear-gradient(135deg,#FF7A33,#F6C25C,#3A6BE0,#9CC7E8); }
+
+/* G3 神通妙彩 · 梦幻光谱 */
+.apx-grad-g3 { --apx-grad-1:#A07AC7; --apx-grad-2:#8580C7; --apx-grad-3:#7189BC; --apx-grad-4:#659955;
+  --apx-grad-deep: linear-gradient(135deg,#B892E0,#9A96E0,#8BA2D9,#7FB36E); }
+
+/* G4 超拉风 · 深海科技 */
+.apx-grad-g4 { --apx-grad-1:#024F97; --apx-grad-2:#1D6EB6; --apx-grad-3:#1D6EB6; --apx-grad-4:#1D6EB6;
+  --apx-grad-deep: linear-gradient(180deg,#0A6BC0,#3C92D6); }
+
+/* G5 极致轻薄 · 高级灰 */
+.apx-grad-g5 { --apx-grad-1:#4E5D68; --apx-grad-2:#647582; --apx-grad-3:#929FAB; --apx-grad-4:#929FAB;
+  --apx-grad-deep: linear-gradient(135deg,#7C8B97,#9CA9B4,#C3CDD5); }
+
+/* G6 美美写照 · 影像粉紫 */
+.apx-grad-g6 { --apx-grad-1:#8846AA; --apx-grad-2:#B93886; --apx-grad-3:#B93886; --apx-grad-4:#B93886;
+  --apx-grad-deep: linear-gradient(135deg,#A55FC4,#D15AA0); }
+
+/* G7 都来看我 · 社交热力 */
+.apx-grad-g7 { --apx-grad-1:#398FFE; --apx-grad-2:#7F50F3; --apx-grad-3:#E6529F; --apx-grad-4:#F66941;
+  --apx-grad-deep: linear-gradient(135deg,#398FFE,#7F50F3,#E6529F,#F66941); }
+
+/* G8 彩虹 hello · 1984 经典（分段使用：黄绿/红橙/紫蓝） */
+.apx-grad-g8 { --apx-grad-1:#C9D54F; --apx-grad-2:#E6CA45; --apx-grad-3:#DC5849; --apx-grad-4:#3968B9;
+  --apx-grad-deep: linear-gradient(135deg,#C9D54F,#E6CA45,#DC5849,#E87753,#905DB0,#3968B9); }
+
+/* G9 极光智能 · Aurora */
+.apx-grad-g9 { --apx-grad-1:#2DD4BF; --apx-grad-2:#4F8DF9; --apx-grad-3:#A78BFA; --apx-grad-4:#A78BFA;
+  --apx-grad-deep: linear-gradient(135deg,#34E3C8,#6BA5FF,#C3A6FF); }
+
+/* G10 落日影像 · Golden Hour */
+.apx-grad-g10 { --apx-grad-1:#FFB86B; --apx-grad-2:#FF7A8A; --apx-grad-3:#B76BE8; --apx-grad-4:#B76BE8;
+  --apx-grad-deep: linear-gradient(135deg,#FFB86B,#FF7A8A,#B76BE8); }
+
+/* G11 森林 · 环境/碳中和 */
+.apx-grad-g11 { --apx-grad-1:#86C98D; --apx-grad-2:#3E9B7A; --apx-grad-3:#1B6B5E; --apx-grad-4:#1B6B5E;
+  --apx-grad-deep: linear-gradient(135deg,#9CDBA4,#57B190,#2C8A78); }
+
+/* G12 暖金 · 金色奢感 */
+.apx-grad-g12 { --apx-grad-1:#F5D9A8; --apx-grad-2:#E8B87C; --apx-grad-3:#C98A4B; --apx-grad-4:#C98A4B;
+  --apx-grad-deep: linear-gradient(135deg,#FFE7BD,#F2C78E,#DBA15E); }
+
+/* G13 冰蓝 · 轻盈天空 */
+.apx-grad-g13 { --apx-grad-1:#BFE3FF; --apx-grad-2:#8FC7F7; --apx-grad-3:#5AA2E8; --apx-grad-4:#5AA2E8;
+  --apx-grad-deep: linear-gradient(135deg,#C9EAFF,#A5D4FB,#7DB8F0); }
+
+/* G14 霓虹夜 · 深色舞台 */
+.apx-grad-g14 { --apx-grad-1:#0A84FF; --apx-grad-2:#5E5CE6; --apx-grad-3:#BF5AF2; --apx-grad-4:#BF5AF2;
+  --apx-grad-deep: linear-gradient(135deg,#0A84FF,#5E5CE6,#BF5AF2); }
+
+/* 通用变量（任意渐变组注入后可用） */
+.apx-grad-g1, .apx-grad-g2, .apx-grad-g3, .apx-grad-g4, .apx-grad-g5,
+.apx-grad-g6, .apx-grad-g7, .apx-grad-g8, .apx-grad-g9, .apx-grad-g10,
+.apx-grad-g11, .apx-grad-g12, .apx-grad-g13, .apx-grad-g14 {
+  --apx-grad-text: linear-gradient(135deg, var(--apx-grad-1), var(--apx-grad-2),
+                    var(--apx-grad-3, var(--apx-grad-2)), var(--apx-grad-4, var(--apx-grad-2)));
+  --apx-grad-bg: var(--apx-grad-text);
+}
+
+/* 工具类：渐变文字（1–14 组） */
+.apx-grad-text-1, .apx-grad-text-2, .apx-grad-text-3, .apx-grad-text-4,
+.apx-grad-text-5, .apx-grad-text-6, .apx-grad-text-7, .apx-grad-text-8,
+.apx-grad-text-9, .apx-grad-text-10, .apx-grad-text-11, .apx-grad-text-12,
+.apx-grad-text-13, .apx-grad-text-14 {
+  font-weight: 700;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.apx-grad-text-1  { background-image: linear-gradient(135deg,#FD9F59,#F487A3,#C488C8,#81C4FD); }
+.apx-grad-text-2  { background-image: linear-gradient(135deg,#F06620,#EEB355,#164BC5,#7BAED1); }
+.apx-grad-text-3  { background-image: linear-gradient(135deg,#A07AC7,#8580C7,#7189BC,#659955); }
+.apx-grad-text-4  { background-image: linear-gradient(180deg,#024F97,#1D6EB6); }
+.apx-grad-text-5  { background-image: linear-gradient(135deg,#4E5D68,#647582,#929FAB); }
+.apx-grad-text-6  { background-image: linear-gradient(135deg,#8846AA,#B93886); }
+.apx-grad-text-7  { background-image: linear-gradient(135deg,#398FFE,#7F50F3,#E6529F,#F66941); }
+.apx-grad-text-8  { background-image: linear-gradient(135deg,#C9D54F,#E6CA45,#DC5849,#E87753,#905DB0,#3968B9); }
+.apx-grad-text-9  { background-image: linear-gradient(135deg,#2DD4BF,#4F8DF9,#A78BFA); }
+.apx-grad-text-10 { background-image: linear-gradient(135deg,#FFB86B,#FF7A8A,#B76BE8); }
+.apx-grad-text-11 { background-image: linear-gradient(135deg,#86C98D,#3E9B7A,#1B6B5E); }
+.apx-grad-text-12 { background-image: linear-gradient(135deg,#F5D9A8,#E8B87C,#C98A4B); }
+.apx-grad-text-13 { background-image: linear-gradient(135deg,#BFE3FF,#8FC7F7,#5AA2E8); }
+.apx-grad-text-14 { background-image: linear-gradient(135deg,#0A84FF,#5E5CE6,#BF5AF2); }
+
+/* 工具类：渐变背景块（1–14 组） */
+.apx-grad-bg-1, .apx-grad-bg-2, .apx-grad-bg-3, .apx-grad-bg-4,
+.apx-grad-bg-5, .apx-grad-bg-6, .apx-grad-bg-7, .apx-grad-bg-8,
+.apx-grad-bg-9, .apx-grad-bg-10, .apx-grad-bg-11, .apx-grad-bg-12,
+.apx-grad-bg-13, .apx-grad-bg-14 { border: 0; }
+.apx-grad-bg-1  { background: linear-gradient(135deg,#FD9F59,#F487A3,#C488C8,#81C4FD); }
+.apx-grad-bg-2  { background: linear-gradient(135deg,#F06620,#EEB355,#164BC5,#7BAED1); }
+.apx-grad-bg-3  { background: linear-gradient(135deg,#A07AC7,#8580C7,#7189BC,#659955); }
+.apx-grad-bg-4  { background: linear-gradient(180deg,#024F97,#1D6EB6); }
+.apx-grad-bg-5  { background: linear-gradient(135deg,#4E5D68,#647582,#929FAB); }
+.apx-grad-bg-6  { background: linear-gradient(135deg,#8846AA,#B93886); }
+.apx-grad-bg-7  { background: linear-gradient(135deg,#398FFE,#7F50F3,#E6529F,#F66941); }
+.apx-grad-bg-8  { background: linear-gradient(135deg,#C9D54F,#E6CA45,#DC5849,#E87753,#905DB0,#3968B9); }
+.apx-grad-bg-9  { background: linear-gradient(135deg,#2DD4BF,#4F8DF9,#A78BFA); }
+.apx-grad-bg-10 { background: linear-gradient(135deg,#FFB86B,#FF7A8A,#B76BE8); }
+.apx-grad-bg-11 { background: linear-gradient(135deg,#86C98D,#3E9B7A,#1B6B5E); }
+.apx-grad-bg-12 { background: linear-gradient(135deg,#F5D9A8,#E8B87C,#C98A4B); }
+.apx-grad-bg-13 { background: linear-gradient(135deg,#BFE3FF,#8FC7F7,#5AA2E8); }
+.apx-grad-bg-14 { background: linear-gradient(135deg,#0A84FF,#5E5CE6,#BF5AF2); }
