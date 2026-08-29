@@ -215,10 +215,10 @@ export default function App() {
         </header>
 
         {/* 内容区 */}
-        <main style={{ padding: '16px 24px 24px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 12px' }}>
+        <main style={{ padding: '8px 24px 24px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 20px' }}>
             <StagePillNav chips={chips} value={filterStage} onChange={(k) => { setFilterStage(k); setPage(1); }} counts={counts} />
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', alignSelf: 'center', lineHeight: 1, gap: 8, fontSize: 12, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
               <span
                 style={{
                   width: 12,
