@@ -7,7 +7,6 @@ import { useFilteredProjects, useStageChips } from '@/hooks/useFilteredProjects'
 import { usePagination } from '@/hooks/usePagination';
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
 import { useTheme } from '@/hooks/useTheme';
-import { useLanguage } from '@/hooks/useLanguage';
 import { useSync } from '@/hooks/useSync';
 import { useWindowBlurDim } from '@/hooks/useWindowBlurDim';
 import { apiGet } from '@/lib/api/sync';
@@ -27,7 +26,6 @@ export default function App() {
   const { t } = useTranslation();
   const { projects, persist } = useProjects();
   const { theme, setTheme } = useTheme();
-  const { lang, setLang, langs } = useLanguage();
   const sync = useSync(projects, persist);
   useWindowBlurDim();
 
@@ -188,35 +186,11 @@ export default function App() {
               }}
             />
             <Button variant="primary" data-tauri-no-drag onClick={() => setCreateOpen(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14"><path d="M12 5v14M5 12h14" /></svg>
               {t('app.new')}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              data-tauri-no-drag
-              aria-label={t('app.lang')}
-              title={t('app.lang')}
-              onClick={() => {
-                const idx = langs.findIndex((l) => l.code === lang);
-                const next = langs[(idx + 1) % langs.length];
-                setLang(next.code);
-                showToast(next.label);
-              }}
-            >
-              🌐
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              data-tauri-no-drag
-              aria-label={t('app.theme')}
-              title={t('app.theme')}
-              onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
-            >
-              {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '🖥'}
-            </Button>
             <Button variant="ghost" size="icon" data-tauri-no-drag aria-label={t('app.settings')} title={t('app.settings')} onClick={() => setSettingsOpen(true)}>
-              ⚙
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.10a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3" /></svg>
             </Button>
           </div>
         </header>
