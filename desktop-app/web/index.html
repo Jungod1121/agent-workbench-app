@@ -65,6 +65,12 @@
   .dark .stage-pill,.dark #addProjectBtn{background-color:rgba(255,255,255,0.12)}
   .dark .usage-bar{background:rgba(22,22,23,0.95)}
 }
+/* WKWebView 合成层预建（实测有效：冷启动首帧正确的关键） */
+.topbar,.usage-bar,.drawer-head,
+.dark .stage-pill,.dark #addProjectBtn{
+  will-change:backdrop-filter,transform;
+  transform:translateZ(0);
+}
 *{box-sizing:border-box}
 html{font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5}
 body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); font-size:14px}
@@ -189,7 +195,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 
 /* 全屏设置：仿 CC Switch Dialog variant fullscreen + App.tsx currentView=settings */
 .overlay{position:fixed; inset:0; background:hsl(var(--background)); display:none; flex-direction:column; z-index:50; padding:0}
-.overlay.show{display:flex; animation: overlayIn .2s ease}
+.overlay.show{display:flex}
 @keyframes overlayIn{ from{opacity:0} to{opacity:1} }
 .drawer{
   flex:1; width:100%; height:100%; overflow:hidden; display:flex; flex-direction:column;
@@ -608,9 +614,8 @@ function renderSettingsDrawer(prefillError){
         <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="background:${settingsTab==='usage'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.08)':''}">Usage</button>
         <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="background:${settingsTab==='about'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.08)':''}">About</button>
       </div>
-      <div id="settingsBody" style="animation: settingsIn 0.3s ease"></div>
+      <div id="settingsBody"></div>
     </div>
-    <style>@keyframes settingsIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }</style>
   `;
   const backBtn=document.getElementById('settingsBack');
   if(backBtn) backBtn.addEventListener('click', closeOverlay);
@@ -1646,7 +1651,6 @@ function closeOverlay(){
     });
   }
 }
-function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
 function updateSearchClear(){
   const inp=document.getElementById('searchInput');
   const btn=document.getElementById('searchClear');
