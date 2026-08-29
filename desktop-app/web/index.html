@@ -139,8 +139,8 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .badge{font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; flex-shrink:0; border:1px solid transparent}
 .list-meta{font-size:11px; color:hsl(var(--muted-foreground)); text-align:right; flex-shrink:0; display:flex; flex-direction:column; gap:2px; align-items:flex-end}
 .gauge{display:flex; align-items:center; gap:6px}
-.gauge-dot{width:8px; height:8px; border-radius:50%; background:hsl(var(--border)); flex-shrink:0; transition:background .2s, box-shadow .2s}
-.gauge-line{width:16px; height:2px; border-radius:1px; background:hsl(var(--border)); flex-shrink:0; transition:background .2s}
+.gauge-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0}
+.gauge-line{width:16px; height:3px; border-radius:1.5px; flex-shrink:0}
 .gauge-label{font-size:11px; font-weight:600; letter-spacing:-0.01em; white-space:nowrap; margin-left:6px}
 .empty{text-align:center; padding:48px 20px; color:hsl(var(--muted-foreground)); border:1px dashed hsl(var(--border)); border-radius:12px; background:hsl(var(--muted) / 0.3)}
 .empty h3{font-size:16px; font-weight:600; color:hsl(var(--foreground)); margin:0 0 8px}
@@ -174,10 +174,15 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .drawer-body{flex:1; overflow-y:auto; overflow-x:hidden; padding:24px; padding-right:16px}
 .drawer-body::-webkit-scrollbar{width:6px}
 .drawer-body::-webkit-scrollbar-thumb{background:hsl(var(--border)); border-radius:9999px}
-.settings-tabs{display:flex; gap:4px; margin-bottom:16px; padding:4px; background:hsl(var(--muted)); border-radius:8px}
-.settings-tab{flex:1; font-size:12px; font-weight:500; padding:8px 12px; border-radius:6px; border:0; background:transparent; color:hsl(var(--muted-foreground)); cursor:pointer}
-.settings-tab.active{background:hsl(var(--background)); color:hsl(var(--foreground)); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06)}
+.settings-tabs{display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:4px; margin-bottom:24px; padding:4px; background:hsl(var(--muted)); border-radius:10px; border:0}
+.settings-tab{min-height:34px; font-size:13px; font-weight:500; padding:8px 10px; border-radius:7px; border:0; background:transparent; color:hsl(var(--muted-foreground)); cursor:pointer; opacity:.6; transition: opacity .15s, background .15s}
+.settings-tab:hover{opacity:1; background:hsl(var(--muted) / 0.6)}
+.settings-tab.active{background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); opacity:1; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.08)}
 .sync-preview{font-size:11px; line-height:1.6; color:hsl(var(--muted-foreground)); background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:8px; padding:10px 12px; margin-top:8px}
+.settings-stack{display:flex; flex-direction:column; gap:12px}
+.settings-card{background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:12px; padding:16px}
+.settings-card-title{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; margin:0 0 4px}
+.settings-card-desc{font-size:11px; color:hsl(var(--muted-foreground)); margin:0 0 12px}
 .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:hsl(var(--foreground)); color:hsl(var(--background)); padding:10px 16px; border-radius:9999px; font-size:12px; font-weight:500; z-index:100; opacity:0; pointer-events:none; transition: opacity .2s, transform .2s}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px)}
 .ctx-item{padding:8px 12px; border-radius:6px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px; color:hsl(var(--foreground))}
@@ -188,10 +193,13 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .prompt-card pre{background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:6px; padding:8px; font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:140px; overflow:auto; margin:0 0 8px}
 
 /* usage 板（18 轻量） */
-.usage-bar{display:flex; gap:12px; margin-bottom:16px; padding:12px 16px; background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.usage-bar{display:flex; gap:12px; align-items:center; margin-bottom:16px; padding:12px 16px; background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,0.04)}
 .usage-stat{flex:1; text-align:center}
 .usage-stat b{font-size:18px; font-weight:600}
 .usage-stat span{font-size:11px; color:hsl(var(--muted-foreground))}
+.usage-palette{display:flex; align-items:center; gap:5px; margin-left:auto; padding-left:12px}
+.usage-palette span{width:10px; height:10px; border-radius:50%; flex-shrink:0}
+.usage-palette em{font-style:normal; font-size:10px; color:hsl(var(--muted-foreground)); margin-left:4px; white-space:nowrap}
 
 @media (max-width: 860px){
   .topbar{padding:0 12px; gap:8px}
@@ -244,6 +252,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
         <div class="usage-stat"><b id="usagePrompts">0</b><br><span>Prompts</span></div>
         <div class="usage-stat"><b id="usageLive">0</b><br><span>已上线</span></div>
         <div class="usage-stat"><b id="usageProxy">●</b><br><span>代理</span></div>
+        <div class="usage-palette" id="usagePalette" title="阶段配色自检"><span style="background:#d97706"></span><span style="background:#2563eb"></span><span style="background:#7c3aed"></span><span style="background:#059669"></span><em id="buildTag">v0.1.5</em></div>
       </div>
 
       <div class="toolbar">
@@ -521,13 +530,13 @@ function renderSettingsDrawer(prefillError){
       </div>
     </div>
     <div class="drawer-body">
-      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:12px; margin-bottom:24px; border:1px solid hsl(var(--border))">
-        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.general')}</button>
-        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.sync')}</button>
-        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.proxy')}</button>
-        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='icons'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.icons')}</button>
-        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='usage'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">Usage</button>
-        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='about'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">About</button>
+      <div class="settings-tabs" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr))">
+        <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="background:${settingsTab==='general'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.general')}</button>
+        <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="background:${settingsTab==='sync'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.sync')}</button>
+        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="background:${settingsTab==='proxy'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.proxy')}</button>
+        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="background:${settingsTab==='icons'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.icons')}</button>
+        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="background:${settingsTab==='usage'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.08)':''}">Usage</button>
+        <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="background:${settingsTab==='about'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.08)':''}">About</button>
       </div>
       <div id="settingsBody" style="animation: settingsIn 0.3s ease"></div>
     </div>
@@ -541,7 +550,10 @@ function renderSettingsDrawer(prefillError){
   const body=document.getElementById('settingsBody');
   if(settingsTab==='general'){
     body.innerHTML=`
-      <div class="field"><label>${t('settings.language')}</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">${t('settings.languageHint')}</p>
+      <div class="settings-stack">
+      <div class="settings-card">
+        <p class="settings-card-title">${t('settings.language')}</p>
+        <p class="settings-card-desc">${t('settings.languageHint')}</p>
         <div class="inline-flex gap-1 rounded-md border border-border bg-background p-1" style="display:inline-flex; gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border))">
           <button class="btn ${currentLang==='zh'?'btn-primary':'btn-secondary'}" data-lang="zh" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionChinese')}</button>
           <button class="btn ${currentLang==='zh-TW'?'btn-primary':'btn-secondary'}" data-lang="zh-TW" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionTraditionalChinese')}</button>
@@ -549,16 +561,25 @@ function renderSettingsDrawer(prefillError){
           <button class="btn ${currentLang==='ja'?'btn-primary':'btn-secondary'}" data-lang="ja" style="min-width:84px; min-height:32px; font-size:12px; padding:6px 10px">${t('settings.languageOptionJapanese')}</button>
         </div>
       </div>
-      <div class="field"><label>${t('settings.theme')}</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">${t('settings.themeHint')}</p>
+      <div class="settings-card">
+        <p class="settings-card-title">${t('settings.theme')}</p>
+        <p class="settings-card-desc">${t('settings.themeHint')}</p>
         <div class="inline-flex gap-1 rounded-md border border-border bg-background p-1" style="display:inline-flex; gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:8px; border:1px solid hsl(var(--border))">
           <button class="btn ${currentTheme==='light'?'btn-primary':'btn-secondary'}" data-theme="light" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">☀️ ${t('settings.themeLight')}</button>
           <button class="btn ${currentTheme==='dark'?'btn-primary':'btn-secondary'}" data-theme="dark" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">🌙 ${t('settings.themeDark')}</button>
           <button class="btn ${currentTheme==='system'?'btn-primary':'btn-secondary'}" data-theme="system" style="min-width:96px; min-height:32px; font-size:12px; padding:6px 10px">🖥️ ${t('settings.themeSystem')}</button>
         </div>
       </div>
-      <div class="field"><label>本机存储</label><div class="sync-preview">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div></div>
-      <div class="field"><label>本机代理 · 真服务（W2）</label><div class="sync-preview" id="proxy-mini-status">加载中…</div><button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">切换代理</button></div>
-      <div style="display:flex;gap:8px;margin-top:16px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button><button class="btn btn-secondary" id="goProxyBtn" style="flex:1;">去代理设置 →</button></div>
+      <div class="settings-card">
+        <p class="settings-card-title">本机存储</p>
+        <div class="sync-preview" style="margin-top:0">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div>
+      </div>
+      <div class="settings-card">
+        <p class="settings-card-title">本机代理 · 真服务（W2）</p>
+        <div class="sync-preview" style="margin-top:0" id="proxy-mini-status">加载中…</div><button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">切换代理</button>
+      </div>
+      <div style="display:flex;gap:8px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button><button class="btn btn-secondary" id="goProxyBtn" style="flex:1;">去代理设置 →</button></div>
+      </div>
     `;
     body.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=> setLanguage(b.dataset.lang)));
     body.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=> { applyTheme(b.dataset.theme); renderSettingsDrawer(); }));
