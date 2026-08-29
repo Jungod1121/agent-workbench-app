@@ -1,138 +1,25 @@
-use tauri::{Emitter, Manager, State};
+//! Agent Workbench — 应用装配层
+//! 只做：插件注册、命令注册、托盘/深链/窗口事件接线。
+//! 业务逻辑在 services/，SQL 在 database/，命令薄封装在 commands/。
+
+mod commands;
+mod database;
+mod services;
+
+use database::Database;
+use services::proxy_service::ProxyState;
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
-use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::StateFlags;
 
 #[cfg(target_os = "macos")]
 use tauri::image::Image;
 
-mod db;
-mod proxy;
-use db::{BackupInfo, Database, Project};
-use proxy::{ProxyState, ProxyStatus};
-
 const TRAY_ID: &str = "main-tray";
 
-struct AppState {
+pub struct AppState {
     db: Database,
-}
-
-// ---- Tauri commands: DB / backup (W1) ----
-#[tauri::command]
-fn get_projects(state: State<'_, AppState>) -> Result<Vec<Project>, String> {
-    state.db.get_all_projects()
-}
-
-#[tauri::command]
-fn save_projects(state: State<'_, AppState>, projects: Vec<Project>) -> Result<(), String> {
-    state.db.save_all_projects(projects)
-}
-
-#[tauri::command]
-fn backup_now(state: State<'_, AppState>, note: String) -> Result<String, String> {
-    state.db.backup_now(&note)
-}
-
-#[tauri::command]
-fn list_backups(state: State<'_, AppState>) -> Result<Vec<BackupInfo>, String> {
-    state.db.list_backups()
-}
-
-#[tauri::command]
-fn restore_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.db.restore_backup(&id)
-}
-
-#[tauri::command]
-fn delete_backup(state: State<'_, AppState>, id: String) -> Result<(), String> {
-    state.db.delete_backup(&id)
-}
-
-#[tauri::command]
-fn set_window_theme(theme: String) -> Result<(), String> {
-    log::info!("set_window_theme: {}", theme);
-    Ok(())
-}
-
-#[tauri::command]
-async fn open_external(app: tauri::AppHandle, url: String) -> Result<bool, String> {
-    log::info!("open_external called: {}", url);
-    let url = if url.starts_with("http://") || url.starts_with("https://") {
-        url
-    } else {
-        format!("https://{url}")
-    };
-    log::info!("open_external opening: {}", url);
-    let res = app
-        .opener()
-        .open_url(&url, None::<String>)
-        .map_err(|e| format!("打开链接失败: {e}"));
-    log::info!("open_external result: {:?}", res);
-    res?;
-    Ok(true)
-}
-
-#[tauri::command]
-fn report_frontend(msg: String) -> Result<(), String> {
-    log::info!("[frontend] {}", msg);
-    Ok(())
-}
-
-// 前端就绪握手：前端完成首帧渲染后直接调用（隐藏窗口下 WKWebView 不跑 rAF，
-// 不能等 rAF），此时 show 窗口；前端在 show 成功后再用双重 rAF 强制重绘一帧
-#[tauri::command]
-fn frontend_ready(window: tauri::WebviewWindow) -> Result<(), String> {
-    log::info!("frontend_ready received, showing window");
-    window.show().map_err(|e| e.to_string())?;
-    window.set_focus().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-// ---- W2: Proxy minimal (对标 CC Switch proxyApi) ----
-#[tauri::command]
-fn get_proxy_status(state: State<'_, ProxyState>) -> Result<ProxyStatus, String> {
-    Ok(state.get_status())
-}
-
-#[tauri::command]
-async fn start_proxy(state: State<'_, ProxyState>, upstream: String) -> Result<ProxyStatus, String> {
-    state.start(upstream).await
-}
-
-#[tauri::command]
-async fn stop_proxy(state: State<'_, ProxyState>) -> Result<(), String> {
-    state.stop().await
-}
-
-#[tauri::command]
-async fn set_proxy_upstream(state: State<'_, ProxyState>, upstream: String) -> Result<ProxyStatus, String> {
-    let st = state.get_status();
-    if st.is_running {
-        state.stop().await.ok();
-        state.start(upstream).await
-    } else {
-        state.set_upstream(upstream.clone());
-        Ok(state.get_status())
-    }
-}
-
-#[tauri::command]
-fn export_projects_to_file(path: String, projects: Vec<Project>) -> Result<(), String> {
-    let json = serde_json::to_string_pretty(&serde_json::json!({"projects": projects})).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-fn import_projects_from_file(path: String) -> Result<Vec<Project>, String> {
-    let s = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let v: serde_json::Value = serde_json::from_str(&s).map_err(|e| e.to_string())?;
-    let projects: Vec<Project> = v
-        .get("projects")
-        .and_then(|v| serde_json::from_value(v.clone()).ok())
-        .unwrap_or_default();
-    Ok(projects)
 }
 
 fn fallback_config_dir() -> std::path::PathBuf {
@@ -220,27 +107,27 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
-            get_projects,
-            save_projects,
-            backup_now,
-            list_backups,
-            restore_backup,
-            delete_backup,
-            set_window_theme,
-            open_external,
-            report_frontend,
-            frontend_ready,
-            get_proxy_status,
-            start_proxy,
-            stop_proxy,
-            set_proxy_upstream,
-            export_projects_to_file,
-            import_projects_from_file
+            commands::projects::get_projects,
+            commands::projects::save_projects,
+            commands::projects::export_projects_to_file,
+            commands::projects::import_projects_from_file,
+            commands::backup::backup_now,
+            commands::backup::list_backups,
+            commands::backup::restore_backup,
+            commands::backup::delete_backup,
+            commands::settings::set_window_theme,
+            commands::system::open_external,
+            commands::system::report_frontend,
+            commands::system::frontend_ready,
+            commands::proxy::get_proxy_status,
+            commands::proxy::start_proxy,
+            commands::proxy::stop_proxy,
+            commands::proxy::set_proxy_upstream
         ])
         .setup(|app| {
-            // W2: Proxy state
+            // Proxy state
             app.manage(ProxyState::default());
-            // ---- W1: SQLite 初始化（对标 CC Switch Database::init） ----
+            // ---- SQLite 初始化 ----
             {
                 let config_dir = app
                     .path()
@@ -253,10 +140,8 @@ pub fn run() {
                     }
                     Err(e) => {
                         log::error!("Database init failed: {e}");
-                        let tmp = std::env::temp_dir().join("agent-workbench-fallback.db");
-                        let fallback_dir = tmp.parent().unwrap().to_path_buf();
+                        let fallback_dir = std::env::temp_dir().join("agent-workbench");
                         let _ = std::fs::create_dir_all(&fallback_dir);
-                        // tmp 是文件路径，需要传其父目录
                         if let Ok(db) = Database::init(fallback_dir) {
                             app.manage(AppState { db });
                         }
@@ -373,9 +258,9 @@ pub fn run() {
                 let _ = tray_builder.build(app)?;
             }
 
-            // 窗口显示改为事件驱动：等待前端 frontend_ready（双重 rAF 后调用）再 show，
-            // 避免 WKWebView 在窗口隐藏期插入的 DOM 不参与首次合成（阶段条/排版首帧错乱）
-            // 兜底：4 秒内前端未就绪（JS 异常等极端情况）则强制显示，避免白屏假死
+            // 窗口显示改为事件驱动：等待前端 frontend_ready 再 show，
+            // 避免 WKWebView 在窗口隐藏期插入的 DOM 不参与首次合成。
+            // 兜底：4 秒内前端未就绪则强制显示，避免白屏假死。
             {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
