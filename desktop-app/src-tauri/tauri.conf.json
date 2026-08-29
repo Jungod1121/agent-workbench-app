@@ -10,7 +10,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Agent Workbench",
+        "title": "",
         "titleBarStyle": "Overlay",
         "width": 1180,
         "height": 800,

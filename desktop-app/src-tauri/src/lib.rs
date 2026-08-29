@@ -7,7 +7,6 @@ mod database;
 mod services;
 
 use database::Database;
-use services::proxy_service::ProxyState;
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -119,14 +118,8 @@ pub fn run() {
             commands::system::open_external,
             commands::system::report_frontend,
             commands::system::frontend_ready,
-            commands::proxy::get_proxy_status,
-            commands::proxy::start_proxy,
-            commands::proxy::stop_proxy,
-            commands::proxy::set_proxy_upstream
         ])
         .setup(|app| {
-            // Proxy state
-            app.manage(ProxyState::default());
             // ---- SQLite 初始化 ----
             {
                 let config_dir = app

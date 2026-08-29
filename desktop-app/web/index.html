@@ -84,9 +84,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .main{flex:1; min-width:0; display:flex; flex-direction:column; background:hsl(var(--background))}
 /* 12 顶高64 → 顶部悬浮岛（长条形，T0 磨砂 + 大圆角） */
 .topbar{
-  position:sticky; top:8px; z-index:10; height:56px;
+  position:fixed; top:34px; left:16px; right:16px; z-index:50; height:56px;
   display:flex; align-items:center; gap:12px;
-  margin:6px 16px 10px; padding:0 14px;
+  padding:0 14px;
   border-radius:18px;
   background:rgba(245,245,247,0.8);
   -webkit-backdrop-filter:saturate(180%) blur(20px);
@@ -149,7 +149,7 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .btn-icon:active{transform:scale(0.95)}
 
 /* 14 外密16 */
-.content{padding:16px 24px 24px; max-width:1200px; width:100%; margin:0 auto}
+.content{padding:72px 24px 24px; max-width:1200px; width:100%; margin:0 auto}
 .toolbar{display:flex; align-items:center; gap:12px; margin:0 0 12px}
 .toolbar .stage-pill-wrap{flex:1; min-width:0}
 .toolbar-count{font-size:12px; color:hsl(var(--muted-foreground)); margin-left:auto; flex-shrink:0; white-space:nowrap}
@@ -236,12 +236,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .usage-stat{flex:1; text-align:center}
 .usage-stat b{font-size:18px; font-weight:600}
 .usage-stat span{font-size:11px; color:hsl(var(--muted-foreground))}
-.usage-palette{display:flex; align-items:center; gap:5px; margin-left:auto; padding-left:12px}
-.usage-palette span{width:10px; height:10px; border-radius:50%; flex-shrink:0}
-.usage-palette em{font-style:normal; font-size:10px; color:hsl(var(--muted-foreground)); margin-left:4px; white-space:nowrap}
 
 @media (max-width: 860px){
-  .topbar{margin:6px 10px 10px; padding:0 10px; gap:8px}
+  .topbar{left:10px; right:10px; padding:0 10px; gap:8px}
   .topbar-search{width:140px; max-width:28vw}
   .stage-pill{max-width:100%}
   .content{padding:12px 12px 24px}
@@ -262,9 +259,8 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 <div class="app-shell">
   <div class="main" id="main">
     <div class="topbar" id="topbar">
-      <div class="topbar-left" id="topbarBrand" title="查看产品介绍 — 点击跳转">
+      <div class="topbar-left" id="topbarBrand">
         <div class="topbar-title" id="topbarTitle">Agent Workbench</div>
-        <span class="topbar-meta" id="topbarMeta"></span>
       </div>
       <div class="topbar-right">
         <div class="topbar-search">
@@ -284,8 +280,6 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
         <div class="usage-stat"><b id="usageTotal">0</b><br><span>项目</span></div>
         <div class="usage-stat"><b id="usagePrompts">0</b><br><span>Prompts</span></div>
         <div class="usage-stat"><b id="usageLive">0</b><br><span>已上线</span></div>
-        <div class="usage-stat"><b id="usageProxy">●</b><br><span>代理</span></div>
-        <div class="usage-palette" id="usagePalette" title="阶段配色自检"><span style="background:#d97706"></span><span style="background:#2563eb"></span><span style="background:#7c3aed"></span><span style="background:#059669"></span><em id="buildTag">v0.1.5</em></div>
       </div>
 
       <div class="toolbar">
@@ -489,10 +483,6 @@ async function dbBackupNow(note){ if(!dbAvailable()) return null; try{ return aw
 async function dbListBackups(){ if(!dbAvailable()) return []; try{ return await tauriInvoke('list_backups'); }catch(e){ return []; } }
 async function safetyBackup(note){ try{ const id=await dbBackupNow(note||'auto'); if(id) showToast('已备份 '+id); return id; }catch(e){ return null; } }
 // ---- W2: Proxy 真服务（对标 CC Switch proxyApi 2s 轮询） ----
-async function proxyGetStatus(){ if(!dbAvailable()) return {is_running:false, address:'', port:0, upstream: localStorage.getItem('proxy-upstream')||''}; try{ return await tauriInvoke('get_proxy_status'); }catch(e){ return {is_running: localStorage.getItem('proxy-enabled')==='1', address: '127.0.0.1:19840', port:19840, upstream: localStorage.getItem('proxy-upstream')||''}; } }
-async function proxyStart(upstream){ if(!dbAvailable()){ localStorage.setItem('proxy-enabled','1'); localStorage.setItem('proxy-upstream', upstream||''); return {is_running:true, upstream}; } try{ return await tauriInvoke('start_proxy', {upstream: upstream||''}); }catch(e){ throw e; } }
-async function proxyStop(){ if(!dbAvailable()){ localStorage.setItem('proxy-enabled','0'); return; } try{ return await tauriInvoke('stop_proxy'); }catch(e){ throw e; } }
-async function proxySetUpstream(upstream){ if(!dbAvailable()){ localStorage.setItem('proxy-upstream', upstream||''); return; } try{ return await tauriInvoke('set_proxy_upstream', {upstream}); }catch(e){ localStorage.setItem('proxy-upstream', upstream); } }
 async function showConflictDialog(remoteCount, localCount, remoteAt){
   return new Promise(resolve=>{
     const overlay=document.getElementById('overlay');
@@ -575,16 +565,7 @@ async function pushToServer(){
   catch(e){ setSyncStatus('offline'); showToast('同步失败，已保存在本地（SQLite+WAL），联网后会自动重试'); }
 }
 async function saveData(){ scheduleAutoPush(); }
-function setSyncStatus(status, updatedAt){
-  const el=document.getElementById('usageProxy');
-  if(el){
-    if(status==='syncing') el.textContent='⟳';
-    else if(status==='ok') el.textContent='●';
-    else if(status==='offline') el.textContent='○';
-    else el.textContent='●';
-    el.style.color=status==='ok'?'#059669':status==='offline'?'#d97706':'hsl(var(--muted-foreground))';
-  }
-}
+function setSyncStatus(){}
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
@@ -611,9 +592,6 @@ function renderSettingsDrawer(prefillError){
       <div class="settings-tabs" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr))">
         <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="background:${settingsTab==='general'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.general')}</button>
         <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="background:${settingsTab==='sync'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.sync')}</button>
-        <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="background:${settingsTab==='proxy'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.proxy')}</button>
-        <button class="settings-tab ${settingsTab==='icons'?'active':''}" data-tab="icons" style="background:${settingsTab==='icons'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='icons'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='icons'?'0 1px 2px rgba(0,0,0,0.08)':''}">${t('common.icons')}</button>
-        <button class="settings-tab ${settingsTab==='usage'?'active':''}" data-tab="usage" style="background:${settingsTab==='usage'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='usage'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='usage'?'0 1px 2px rgba(0,0,0,0.08)':''}">Usage</button>
         <button class="settings-tab ${settingsTab==='about'?'active':''}" data-tab="about" style="background:${settingsTab==='about'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='about'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='about'?'0 1px 2px rgba(0,0,0,0.08)':''}">About</button>
       </div>
       <div id="settingsBody"></div>
@@ -651,191 +629,11 @@ function renderSettingsDrawer(prefillError){
         <p class="settings-card-title">本机存储</p>
         <div class="sync-preview" style="margin-top:0">本地已保存 <b>${localCount}</b> 个项目，仅在当前设备。同步为可选项，未启用时所有操作均在本地完成，离线可用。</div>
       </div>
-      <div class="settings-card">
-        <p class="settings-card-title">本机代理 · 真服务（W2）</p>
-        <div class="sync-preview" style="margin-top:0" id="proxy-mini-status">加载中…</div><button class="btn btn-secondary" id="proxyToggle" style="min-height:32px; margin-top:8px">切换代理</button>
-      </div>
-      <div style="display:flex;gap:8px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button><button class="btn btn-secondary" id="goProxyBtn" style="flex:1;">去代理设置 →</button></div>
-      </div>
+      <div style="display:flex;gap:8px;"><button class="btn btn-secondary" id="goSyncBtn" style="flex:1;">去设置同步 →</button></div>
     `;
     body.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=> setLanguage(b.dataset.lang)));
     body.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=> { applyTheme(b.dataset.theme); renderSettingsDrawer(); }));
     document.getElementById('goSyncBtn').addEventListener('click',()=>{ settingsTab='sync'; renderSettingsDrawer(); });
-    document.getElementById('goProxyBtn').addEventListener('click',()=>{ settingsTab='proxy'; renderSettingsDrawer(); });
-    (async()=>{
-      const st=await proxyGetStatus();
-      const el=document.getElementById('proxy-mini-status');
-      if(el) el.innerHTML=`代理：<b style="color:${st.is_running?'#059669':'hsl(var(--muted-foreground))'}">${st.is_running?'运行中 '+esc(st.address):'未运行'}</b> · 上游 ${esc(st.upstream||'(未设)')} · 切换将启动/停止真服务`;
-      const btn=document.getElementById('proxyToggle');
-      if(btn) btn.textContent=st.is_running?'停止代理':'启动代理';
-    })();
-    document.getElementById('proxyToggle').addEventListener('click', async()=>{
-      const st=await proxyGetStatus();
-      if(st.is_running){ await proxyStop(); localStorage.setItem('proxy-enabled','0'); showToast('代理已停止'); }
-      else { const up=localStorage.getItem('proxy-upstream')||''; const ns=await proxyStart(up); localStorage.setItem('proxy-enabled','1'); showToast('代理已启动 '+ns.address); }
-      renderSettingsDrawer(); updateUsage();
-    });
-  } else if(settingsTab==='proxy'){
-    body.innerHTML=`
-      <div class="sync-preview hidden" id="st-error" style="background:hsl(var(--destructive) / 0.08); color:hsl(var(--destructive)); border-color:hsl(var(--destructive) / 0.2); margin-bottom:12px;">${prefillError?esc(prefillError):''}</div>
-      <div class="field"><label>代理状态 · 真服务（对标 CC Switch proxyApi 2s 轮询）</label><div class="sync-preview" id="proxy-status-box">加载中…</div></div>
-      <div class="field"><label>上游 · Upstream</label><input type="text" id="proxy-upstream" placeholder="https://api.openai.com" value="${localStorage.getItem('proxy-upstream')||''}"><div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:6px;">保存后若代理运行中会自动重启以生效；未运行则仅保存。</div></div>
-      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" id="proxy-start" style="flex:1;">启动代理</button><button class="btn btn-secondary" id="proxy-stop">停止</button><button class="btn btn-secondary" id="proxy-save-upstream">保存上游</button></div>
-      <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-secondary" id="proxy-test" style="flex:1;">测试代理（GET /）</button><button class="btn btn-secondary" id="proxy-copy-addr">复制地址</button></div>
-      <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:12px;">Rust axum 动态端口（优先 19840，占用则随机），127.0.0.1 监听，W2 仅回显请求，W3 接 hyper 转发 + 健康检查。</div>
-    `;
-    if(prefillError) document.getElementById('st-error').classList.remove('hidden');
-    const statusBox=document.getElementById('proxy-status-box');
-    const upstreamInput=document.getElementById('proxy-upstream');
-    let pollTimer=null;
-    async function refreshProxyStatus(){
-      const st=await proxyGetStatus();
-      if(!statusBox) return;
-      const isRunning=!!st.is_running;
-      statusBox.innerHTML=`状态：<b style="color:${isRunning?'#059669':'hsl(var(--muted-foreground))'}">${isRunning?'运行中 '+esc(st.address):'未运行'}</b> · 上游：<code style="font-size:11px; background:hsl(var(--muted)); padding:2px 6px; border-radius:4px;">${esc(st.upstream||'(未设)native')}</code><br>模式：axum 回显（W2）· 端口 ${st.port||'-'} · ${dbAvailable()?'Tauri 真服务':'浏览器预览'}`;
-      const startBtn=document.getElementById('proxy-start');
-      const stopBtn=document.getElementById('proxy-stop');
-      if(startBtn) startBtn.disabled=isRunning;
-      if(stopBtn) stopBtn.disabled=!isRunning;
-      updateUsage();
-    }
-    refreshProxyStatus();
-    pollTimer=setInterval(refreshProxyStatus, 2000);
-    // 清理：切换 tab 时停轮询（靠闭包，设置页关闭即丢）
-    const mo=new MutationObserver(()=>{ if(!document.body.contains(statusBox)) clearInterval(pollTimer); });
-    mo.observe(document.body, {childList:true, subtree:true});
-    document.getElementById('proxy-start').addEventListener('click', async()=>{
-      const upstream=upstreamInput.value.trim();
-      try{ const st=await proxyStart(upstream); await proxySetUpstream(upstream); localStorage.setItem('proxy-upstream', upstream); localStorage.setItem('proxy-enabled','1'); showToast('代理已启动 '+st.address); refreshProxyStatus(); }catch(e){ const eb=document.getElementById('st-error'); eb.textContent='启动失败: '+e.message; eb.classList.remove('hidden'); }
-    });
-    document.getElementById('proxy-stop').addEventListener('click', async()=>{
-      try{ await proxyStop(); localStorage.setItem('proxy-enabled','0'); showToast('代理已停止'); refreshProxyStatus(); }catch(e){ showToast('停止失败'); }
-    });
-    document.getElementById('proxy-save-upstream').addEventListener('click', async()=>{
-      const upstream=upstreamInput.value.trim();
-      try{ await proxySetUpstream(upstream); localStorage.setItem('proxy-upstream', upstream); showToast('上游已保存'); refreshProxyStatus(); }catch(e){ showToast('保存失败'); }
-    });
-    document.getElementById('proxy-test').addEventListener('click', async()=>{
-      const st=await proxyGetStatus();
-      if(!st.is_running){ showToast('代理未运行'); return; }
-      try{
-        const r=await fetch('http://'+st.address+'/', {method:'GET'});
-        const txt=await r.text();
-        showToast('代理测试 '+r.status+' '+txt.slice(0,60));
-        document.getElementById('st-error').textContent='测试成功 '+r.status+': '+txt.slice(0,120); document.getElementById('st-error').style.color='#059669'; document.getElementById('st-error').classList.remove('hidden');
-      }catch(e){
-        const eb=document.getElementById('st-error'); eb.textContent='测试失败: '+e.message; eb.style.color='hsl(var(--destructive))'; eb.classList.remove('hidden');
-      }
-    });
-    document.getElementById('proxy-copy-addr').addEventListener('click', async()=>{
-      const st=await proxyGetStatus();
-      if(!st.is_running){ showToast('代理未运行'); return; }
-      try{ await navigator.clipboard.writeText('http://'+st.address); showToast('已复制 '+st.address); }catch(e){ showToast(st.address); }
-    });
-  } else if(settingsTab==='icons'){
-    body.innerHTML=`
-      <div class="field"><label>图标库 · 对标 CC Switch</label><p style="font-size:11px;color:hsl(var(--muted-foreground));margin:4px 0 8px">CC Switch 使用 lucide-react 0.542.0（UI 图标）+ 100+ 抽取 Provider 图标（src/icons/extracted + metadata + IconPicker），本应用已对标接入 lucide 风格 + 阶段图标。</p></div>
-      <div class="field"><label>搜索图标</label><input type="text" id="icon-search" placeholder="输入图标名称…  lucide / stage" style="width:100%; min-height:36px; padding:8px 10px; border-radius:8px; border:1px solid hsl(var(--border))"></div>
-      <div id="icon-grid" style="display:grid; grid-template-columns:repeat(6,1fr); gap:8px; max-height:50vh; overflow-y:auto; padding-right:4px; margin-top:8px"></div>
-      <div style="font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px">提示：点击图标可复制名称，对标 CC Switch IconPicker 的搜索+网格+选中态。</div>
-    `;
-    const iconList=[
-      {name:'all', svg:iconFor('all'), label:'全部'},
-      {name:'idea', svg:iconFor('idea'), label:'构思中'},
-      {name:'building', svg:iconFor('building'), label:'开发中'},
-      {name:'testing', svg:iconFor('testing'), label:'测试中'},
-      {name:'live', svg:iconFor('live'), label:'已上线'},
-      {name:'paused', svg:iconFor('paused'), label:'已暂停'},
-      {name:'sun', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>', label:'Sun 浅色'},
-      {name:'moon', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>', label:'Moon 深色'},
-      {name:'monitor', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>', label:'Monitor 跟随系统'},
-      {name:'search', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg>', label:'Search'},
-      {name:'plus', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>', label:'Plus'},
-      {name:'settings', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.10a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>', label:'Settings'},
-    ];
-    const grid=document.getElementById('icon-grid');
-    const input=document.getElementById('icon-search');
-    function renderIcons(filter=''){
-      const q=filter.toLowerCase();
-      const filtered=iconList.filter(i=> !q || i.name.includes(q) || i.label.includes(q));
-      grid.innerHTML=filtered.map(i=>`
-        <button class="icon-cell" data-name="${i.name}" style="display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border-radius:8px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); cursor:pointer; transition: all .15s">
-          <span style="width:24px; height:24px; display:grid; place-items:center; color:hsl(var(--foreground))">${i.svg}</span>
-          <span style="font-size:10px; color:hsl(var(--muted-foreground)); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%">${i.label}</span>
-        </button>
-      `).join('');
-      grid.querySelectorAll('.icon-cell').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          navigator.clipboard && navigator.clipboard.writeText(btn.dataset.name);
-          showToast('已复制: '+btn.dataset.name);
-          btn.style.borderColor='hsl(var(--primary))';
-          btn.style.background='hsl(var(--primary) / 0.1)';
-          setTimeout(()=>{ btn.style.borderColor=''; btn.style.background=''; },600);
-        });
-      });
-      if(filtered.length===0) grid.innerHTML='<div style="grid-column:1/-1; text-align:center; padding:20px; color:hsl(var(--muted-foreground)); font-size:12px">未找到匹配的图标</div>';
-    }
-    renderIcons();
-    input.addEventListener('input',()=> renderIcons(input.value));
-  } else if(settingsTab==='usage'){
-    const total=state.projects.length;
-    const prompts=state.projects.reduce((s,p)=>s+(p.prompts||[]).length,0);
-    const live=state.projects.filter(p=>p.stage==='live').length;
-    const pausedCount=state.projects.filter(p=>p.paused).length;
-    const stageCounts=STAGES.map(s=>({key:s.key, label:s.label, count: state.projects.filter(p=>p.stage===s.key).length, color:s.color}));
-    const maxStage=Math.max(1, ...stageCounts.map(s=>s.count));
-    const tagMap={}; state.projects.forEach(p=>(p.tags||[]).forEach(t=> tagMap[t]=(tagMap[t]||0)+1));
-    const topTags=Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
-    const refreshOpt=localStorage.getItem('usage-refresh-ms')||'0';
-    body.innerHTML=`
-      <div class="field"><label>使用统计 · 对标 CC Switch UsageDashboard</label>
-        <div class="usage-bar" style="margin-top:8px">
-          <div class="usage-stat"><b>${total}</b><br><span>项目</span></div>
-          <div class="usage-stat"><b>${prompts}</b><br><span>Prompts</span></div>
-          <div class="usage-stat"><b>${live}</b><br><span>已上线</span></div>
-          <div class="usage-stat"><b>${pausedCount}</b><br><span>已暂停</span></div>
-        </div>
-      </div>
-      <div class="field"><label>阶段分布</label>
-        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px">
-          ${stageCounts.map(sc=>`
-            <div style="display:flex; align-items:center; gap:8px; font-size:12px">
-              <span style="width:60px; text-align:right; color:hsl(var(--muted-foreground))">${sc.label}</span>
-              <div style="flex:1; height:8px; background:hsl(var(--muted)); border-radius:9999px; overflow:hidden"><div style="width:${(sc.count/maxStage*100).toFixed(0)}%; height:100%; background:${sc.color}; border-radius:9999px"></div></div>
-              <span style="width:28px; font-weight:600">${sc.count}</span>
-            </div>`).join('')}
-        </div>
-      </div>
-      <div class="field"><label>热门标签 Top 6</label>
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px">
-          ${topTags.length? topTags.map(([tag,c])=>`<span class="tag" style="background:hsl(var(--primary) / 0.1); border-color:hsl(var(--primary) / 0.2); color:hsl(var(--primary))">${esc(tag)} · ${c}</span>`).join('') : '<span style="font-size:12px; color:hsl(var(--muted-foreground))">暂无标签</span>'}
-        </div>
-      </div>
-      <div class="field"><label>刷新间隔 · 对标 CC usageDashboardRefreshIntervalMs</label>
-        <select id="usage-interval" style="width:100%; min-height:36px; border-radius:8px; border:1px solid hsl(var(--border)); padding:8px 10px; font-size:13px">
-          <option value="0" ${refreshOpt==='0'?'selected':''}>手动</option>
-          <option value="5000" ${refreshOpt==='5000'?'selected':''}>5 秒</option>
-          <option value="10000" ${refreshOpt==='10000'?'selected':''}>10 秒</option>
-          <option value="30000" ${refreshOpt==='30000'?'selected':''}>30 秒</option>
-          <option value="60000" ${refreshOpt==='60000'?'selected':''}>60 秒</option>
-        </select>
-        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-top:6px">自动刷新看板与 usageProxy 点，W3 轻量实现；W4 接 CC Session/Cost 真数据。</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-secondary" id="usage-refresh" style="flex:1;">刷新统计</button></div>
-    `;
-    document.getElementById('usage-refresh').addEventListener('click',()=>{ updateUsage(); renderSettingsDrawer(); showToast('已刷新'); });
-    const sel=document.getElementById('usage-interval');
-    if(sel) sel.addEventListener('change',()=>{
-      localStorage.setItem('usage-refresh-ms', sel.value);
-      showToast('刷新间隔 '+ (sel.value==='0'?'手动':(parseInt(sel.value)/1000)+'s'));
-      setupUsageAutoRefresh();
-    });
-    function setupUsageAutoRefresh(){
-      clearInterval(window._usageTimer);
-      const ms=parseInt(localStorage.getItem('usage-refresh-ms')||'0',10);
-      if(ms>0) window._usageTimer=setInterval(()=>{ updateUsage(); if(settingsTab==='usage') renderSettingsDrawer(); }, ms);
-    }
-    setupUsageAutoRefresh();
   } else if(settingsTab==='about'){
     body.innerHTML=`
       <div class="field"><label>关于 Agent Workbench</label>
@@ -850,7 +648,7 @@ function renderSettingsDrawer(prefillError){
         </div>
       </div>
     `;
-    document.getElementById('about-github').addEventListener('click',()=>{ openExternal('https://github.com/Jungod1121/agent-workbench-app').catch(()=> window.open('https://github.com/Jungod1121/agent-workbench-app','_blank')); });
+    document.getElementById('about-github').addEventListener('click',()=>{ const w=window.open('https://github.com/Jungod1121/agent-workbench-app','_blank'); if(!w) showToast('请手动访问: https://github.com/Jungod1121/agent-workbench-app'); });
     document.getElementById('about-check').addEventListener('click',()=> showToast('已是最新（演示）'));
   } else if(settingsTab==='sync'){
     body.innerHTML=`
@@ -1002,19 +800,6 @@ function renderSettingsDrawer(prefillError){
 
 function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function stageInfo(key){ return STAGES.find(s=>s.key===key)||STAGES[0]; }
-// 补：图标库设置 Tab 里用到，原代码里被调用但从未定义（ReferenceError）
-function iconFor(key){
-  const paths = {
-    all:      '<circle cx="12" cy="12" r="8"/>',
-    idea:     '<path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.2 1.3 2.2h4.6c.2-1 .7-1.7 1.3-2.2A6 6 0 0 0 12 2z"/>',
-    building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/>',
-    testing:  '<path d="M9 2h6M10 2v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V2"/>',
-    live:     '<path d="M22 12a10 10 0 1 1-10-10"/><path d="M22 2 12 12"/><path d="M16 2h6v6"/>',
-    paused:   '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
-  };
-  const d = paths[key] || paths.all;
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-}
 function stageIndex(key){ return STAGES.findIndex(s=>s.key===key); }
 function esc(str){ const d=document.createElement('div'); d.textContent=str??''; return d.innerHTML; }
 function relTime(iso){
@@ -1035,9 +820,6 @@ function showToast(msg){
   clearTimeout(showToast._timer);
   showToast._timer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-let proxyStatusCache=null;
-async function refreshProxyStatusCache(){ try{ proxyStatusCache=await proxyGetStatus(); }catch(e){} }
-setInterval(refreshProxyStatusCache, 2000); refreshProxyStatusCache();
 function updateUsage(){
   const total=state.projects.length;
   const prompts=state.projects.reduce((s,p)=>s+(p.prompts||[]).length,0);
@@ -1045,18 +827,9 @@ function updateUsage(){
   const elT=document.getElementById('usageTotal');
   const elP=document.getElementById('usagePrompts');
   const elL=document.getElementById('usageLive');
-  const elPx=document.getElementById('usageProxy');
   if(elT) elT.textContent=total;
   if(elP) elP.textContent=prompts;
   if(elL) elL.textContent=live;
-  if(elPx){
-    const st=proxyStatusCache;
-    const enabled=st? !!st.is_running : localStorage.getItem('proxy-enabled')==='1';
-    const addr=st && st.is_running ? st.address : '';
-    elPx.textContent=enabled?'●':'○';
-    elPx.style.color=enabled?'#059669':'hsl(var(--muted-foreground))';
-    elPx.title=enabled ? (addr||'代理运行中') : '代理未运行';
-  }
 }
 function renderChips(){
   // 阶段筛选已由顶栏移至 toolbar 的 stage-pill（renderStagePill），chips 不再渲染
@@ -1200,9 +973,7 @@ function renderGrid(){
   const el=document.getElementById('gridArea');
   const list=filteredProjects();
   const toolbarCount=document.getElementById('toolbarCount');
-  const topbarMeta=document.getElementById('topbarMeta');
   const total=state.projects.length;
-  if(topbarMeta) topbarMeta.textContent=(state.filterStage==='all'?'全部':(stageInfo(state.filterStage).label||'全部'))+' · '+total+' 个项目';
   if(toolbarCount) toolbarCount.textContent=list.length+' / '+total;
   if(state.projects.length===0){
     el.innerHTML=`<div class="empty"><h3>${t('app.noProjects')}</h3><p>把你正在构思或搭建的第一个 Agent 项目加进来，或点右上“${t('app.import')}”拉取本机扫描结果。</p><button class="btn btn-primary" id="emptyAddBtn">${t('app.addProject')}</button></div>`;
@@ -1367,8 +1138,6 @@ function rowHtml(p){
 function render(){ 
   if(!state.loaded) return;
   try{
-    const titleEl=document.querySelector('.topbar-title');
-    if(titleEl) titleEl.textContent=t('app.title');
     const searchEl=document.getElementById('searchInput');
     if(searchEl) searchEl.placeholder=t('app.searchPlaceholder');
     const addLabel=document.getElementById('addProjectLabel');
@@ -1699,52 +1468,6 @@ const syncNowBtn=document.getElementById('syncNowBtn');
 if(syncNowBtn) syncNowBtn.addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 const settingsBtnEl=document.getElementById('settingsBtn');
 if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings());
-async function openExternal(url){
-  console.log('[openExternal] start', url, 'dbAvailable', dbAvailable(), 'internals', !!(window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke));
-  try{
-    const u=new URL(url);
-    if(!['http:','https:'].includes(u.protocol)) throw new Error('Unsupported scheme');
-  }catch(e){ console.error('[openExternal] Invalid URL', e); throw new Error('Invalid URL'); }
-  // 优先走 CC Switch 同款 Rust 桥（系统浏览器），不依赖 dbAvailable 判定
-  try{
-    console.log('[openExternal] tauri invoke open_external', url);
-    const r=await tauriInvoke('open_external', {url});
-    console.log('[openExternal] invoke ok', r);
-    return;
-  }catch(e){
-    console.warn('[openExternal] invoke fail, fallback window.open', e);
-    // 回退：浏览器环境或 invoke 不可用
-    try{
-      const w=window.open(url,'_blank');
-      console.log('[openExternal] window.open result', !!w);
-      if(w) return;
-      throw new Error('window.open blocked');
-    }catch(we){
-      console.error('[openExternal] window.open fail', we);
-      throw e; // 抛出原始 invoke 错误，便于上层 toast
-    }
-  }
-}
-const brandEl=document.getElementById('topbarBrand')||document.getElementById('topbarTitle');
-console.log('[brand] init found', !!brandEl, brandEl?brandEl.id:'null', 'tauri', !!(window.__TAURI__));
-if(brandEl){
-  const goLanding=async()=>{
-    const url='https://jungod1121.github.io/agent-workbench-app/';
-    console.log('[brand] click goLanding', url);
-    showToast('正在打开介绍页…');
-    try{ await openExternal(url); showToast('已在系统浏览器打开'); console.log('[brand] openExternal success'); }
-    catch(e){ console.error('[brand] openExternal fail', e); showToast('打开失败: '+(e&&e.message||e)); try{ const w=window.open(url,'_blank'); console.log('[brand] fallback window.open', !!w); if(!w) showToast('请手动访问: '+url); }catch(_){} }
-  };
-  brandEl.addEventListener('click', (e)=>{ console.log('[brand] click event'); e.preventDefault(); e.stopPropagation(); goLanding(); });
-  brandEl.setAttribute('role','link');
-  brandEl.setAttribute('tabindex','0');
-  brandEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); goLanding(); }});
-  // 确保可点击：移除可能阻挡的 drag
-  brandEl.style.pointerEvents='auto';
-  brandEl.style.webkitAppRegion='no-drag';
-} else {
-  console.warn('[brand] not found');
-}
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); if(state.loaded) render(); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
 (function initTauriEvents(){

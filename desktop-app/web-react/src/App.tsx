@@ -65,8 +65,6 @@ export default function App() {
 
   const nextSortIndex = useMemo(() => Math.max(0, ...(projects ?? []).map((p) => p.sort_index || 0)) + 1, [projects]);
 
-  const metaLabel = filterStage === 'all' ? t('stage.all') : t('stage.' + filterStage);
-
   const actions = useMemo(
     () => ({
       create: (p: Project) => {
@@ -128,13 +126,10 @@ export default function App() {
     <>
       <div className="drag-bar" data-tauri-drag-region />
       <div className="app-shell main-bg">
-        {/* 顶部悬浮岛 */}
+        {/* 顶部悬浮岛（fixed，不随滚动） */}
         <header className="topbar-island" data-tauri-drag-region>
           <span className="brand-title" data-tauri-no-drag>
             {t('app.title')}
-          </span>
-          <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginLeft: 10, whiteSpace: 'nowrap' }}>
-            {metaLabel} · {(projects ?? []).length} {t('usage.projects')}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
             <input
@@ -183,7 +178,7 @@ export default function App() {
               size="icon"
               data-tauri-no-drag
               aria-label={t('app.theme')}
-              title={t('app.theme') + ': ' + t('app.theme' + theme.charAt(0).toUpperCase() + theme.slice(1))}
+              title={t('app.theme')}
               onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
             >
               {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '🖥'}
