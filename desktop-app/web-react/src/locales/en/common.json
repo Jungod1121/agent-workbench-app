@@ -156,6 +156,11 @@
     "statusIdle": "Not set (local mode)",
     "statusOk": "Synced",
     "statusOffline": "Sync failed, kept locally",
-    "statusSyncing": "Syncing…"
+    "statusSyncing": "Syncing…",
+    "demoTitle": "Demo data",
+    "demoDesc": "Load 12 fictional demo projects (research/games/office etc., with multi-version Prompts). Current data is backed up first.",
+    "demoLoad": "Load demo data",
+    "demoConfirm": "Load demo data? Current {{n}} projects will be replaced (backed up first).",
+    "demoLoaded": "Loaded {{n}} demo projects"
   }
 }

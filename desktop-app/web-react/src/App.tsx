@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { signalReady, rep, tauriAvailable, openExternal } from '@/lib/tauri';
-import { useProjects } from '@/hooks/useProjects';
+import { useProjects, fetchDemoProjects } from '@/hooks/useProjects';
 import { useFilteredProjects, useStageChips } from '@/hooks/useFilteredProjects';
 import { usePagination } from '@/hooks/usePagination';
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
@@ -520,6 +520,17 @@ export default function App() {
               }
             };
             input.click();
+          }}
+          onLoadDemo={async () => {
+            if (!window.confirm(t('settings.demoConfirm'))) return;
+            try {
+              if (tauriAvailable()) await invoke('backup_now', { note: 'pre-demo-load' });
+              const demo = await fetchDemoProjects();
+              persistAndDirty(demo);
+              showToast(t('settings.demoLoaded', { n: demo.length }));
+            } catch (e) {
+              showToast(String(e));
+            }
           }}
           onClose={() => setSettingsOpen(false)}
         />

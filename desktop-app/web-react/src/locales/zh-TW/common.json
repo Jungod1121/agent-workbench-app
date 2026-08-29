@@ -156,6 +156,11 @@
     "statusIdle": "未設定（本地模式）",
     "statusOk": "已同步",
     "statusOffline": "同步失敗，已保存在本地",
-    "statusSyncing": "同步中…"
+    "statusSyncing": "同步中…",
+    "demoTitle": "演示資料",
+    "demoDesc": "載入 12 個虛構的演示專案（涵蓋科研/遊戲/辦公等，含多版本 Prompt）。載入前會自動備份目前資料。",
+    "demoLoad": "載入演示資料",
+    "demoConfirm": "載入演示資料？目前 {{n}} 個專案將被替換（已自動備份）。",
+    "demoLoaded": "已載入 {{n}} 個演示專案"
   }
 }

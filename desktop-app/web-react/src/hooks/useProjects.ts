@@ -24,7 +24,7 @@ const DEMO_FALLBACK: Project[] = [
   },
 ];
 
-async function fetchDemoProjects(): Promise<Project[]> {
+export async function fetchDemoProjects(): Promise<Project[]> {
   try {
     const r = await fetch('demo-projects.json', { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);

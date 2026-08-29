@@ -27,6 +27,7 @@ interface SettingsDrawerProps {
   onBackupDelete: (id: string) => Promise<boolean>;
   onExport: () => Promise<void>;
   onImport: () => Promise<void>;
+  onLoadDemo: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -174,6 +175,13 @@ export function SettingsDrawer(props: SettingsDrawerProps) {
                     </Button>
                   ))}
                 </div>
+              </div>
+              <div className="settings-card" style={{ padding: 16, borderRadius: 12, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t('settings.demoTitle')}</p>
+                <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', margin: '4px 0 12px' }}>{t('settings.demoDesc')}</p>
+                <Button variant="secondary" style={{ minHeight: 32, fontSize: 12 }} onClick={() => void props.onLoadDemo()}>
+                  {t('settings.demoLoad')}
+                </Button>
               </div>
             </div>
           )}
