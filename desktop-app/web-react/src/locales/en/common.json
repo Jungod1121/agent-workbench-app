@@ -11,7 +11,9 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "previewMode": "Browser preview mode (no Tauri)",
-    "dbConnected": "DB connected · {{n}} projects"
+    "dbConnected": "DB connected · {{n}} projects",
+    "update": "Check for updates",
+    "upToDate": "Already up to date (v2.0.1)"
   },
   "stage": {
     "all": "All",

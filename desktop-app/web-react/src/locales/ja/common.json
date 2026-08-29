@@ -11,7 +11,9 @@
     "themeDark": "ダーク",
     "themeSystem": "システムに従う",
     "previewMode": "ブラウザプレビュー（Tauri なし）",
-    "dbConnected": "DB 接続済み · {{n}} 件のプロジェクト"
+    "dbConnected": "DB 接続済み · {{n}} 件のプロジェクト",
+    "update": "更新を確認",
+    "upToDate": "最新バージョンです（v2.0.1）"
   },
   "stage": {
     "all": "すべて",

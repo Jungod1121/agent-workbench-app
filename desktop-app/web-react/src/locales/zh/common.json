@@ -11,7 +11,9 @@
     "themeDark": "深色",
     "themeSystem": "跟随系统",
     "previewMode": "浏览器预览模式（无 Tauri）",
-    "dbConnected": "DB 已连接 · {{n}} 个项目"
+    "dbConnected": "DB 已连接 · {{n}} 个项目",
+    "update": "检查更新",
+    "upToDate": "已是最新版本 v2.0.1"
   },
   "stage": {
     "all": "全部",
