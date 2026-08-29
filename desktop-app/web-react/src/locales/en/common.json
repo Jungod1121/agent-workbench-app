@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "Agent Workbench",
+    "new": "New",
+    "search": "Search projects…",
+    "import": "Import",
+    "settings": "Settings",
+    "lang": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "previewMode": "Browser preview mode (no Tauri)",
+    "dbConnected": "DB connected · {{n}} projects"
+  },
+  "stage": {
+    "all": "All",
+    "idea": "Idea",
+    "building": "Building",
+    "testing": "Testing",
+    "live": "Live",
+    "paused": "Paused"
+  },
+  "usage": {
+    "projects": "Projects",
+    "prompts": "Prompts",
+    "live": "Live",
+    "proxy": "Proxy"
+  },
+  "list": {
+    "count": "{{shown}} / {{total}}",
+    "promptsCount": "{{n}} Prompts",
+    "justNow": "just now",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago",
+    "noProjects": "No projects yet",
+    "noProjectsDesc": "Add the first Agent project you're ideating or building.",
+    "noMatch": "No matching projects",
+    "noMatchDesc": "Try a different filter or search term."
+  },
+  "ctx": {
+    "edit": "✎ Edit",
+    "duplicate": "⧉ Duplicate",
+    "copyName": "⎘ Copy name",
+    "delete": "🗑 Delete",
+    "copied": "Name copied"
+  },
+  "create": {
+    "title": "New Project",
+    "name": "Name",
+    "namePh": "e.g. Support Reply Agent",
+    "desc": "Description",
+    "descPh": "What does this Agent do…",
+    "stage": "Stage",
+    "category": "Category",
+    "icon": "Icon (optional)",
+    "iconPh": "e.g. zap / star, blank for initial",
+    "iconColor": "Icon color",
+    "tags": "Tags · comma separated",
+    "tagsPh": "support, GPT-4, internal",
+    "submit": "Create project",
+    "errName": "Please enter a name",
+    "created": "Project created",
+    "duplicated": "Project duplicated"
+  },
+  "detail": {
+    "title": "Project Detail",
+    "name": "Name",
+    "desc": "Description",
+    "stage": "Stage",
+    "category": "Category",
+    "icon": "Icon",
+    "iconColor": "Icon color",
+    "tags": "Tags · comma separated",
+    "paused": "Mark as paused",
+    "save": "Save changes",
+    "del": "Delete project",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "prompts": "Prompt versions",
+    "addPrompt": "+ Add Prompt",
+    "rollback": "Roll back to this",
+    "current": "current",
+    "rollbackConfirm": "Roll back to this version? A new version will be created.",
+    "rolledBack": "Rolled back as a new version",
+    "confirmDelete": "Delete this project?"
+  },
+  "prompt": {
+    "formTitle": "Add Prompt",
+    "title": "Title",
+    "titlePh": "What changed in this version…",
+    "content": "Content",
+    "contentPh": "Prompt body…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "diff": "Compare",
+    "vs": "vs",
+    "noDiff": "No differences",
+    "vPrefix": "v"
+  },
+  "category": {
+    "general": "General",
+    "work": "Work",
+    "personal": "Personal",
+    "research": "Research",
+    "product": "Product",
+    "finance": "Finance"
+  }
+}

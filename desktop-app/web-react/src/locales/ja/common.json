@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "Agent Workbench",
+    "new": "新規",
+    "search": "プロジェクトを検索…",
+    "import": "インポート",
+    "settings": "設定",
+    "lang": "言語",
+    "theme": "外観",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "themeSystem": "システムに従う",
+    "previewMode": "ブラウザプレビュー（Tauri なし）",
+    "dbConnected": "DB 接続済み · {{n}} 件のプロジェクト"
+  },
+  "stage": {
+    "all": "すべて",
+    "idea": "構想中",
+    "building": "開発中",
+    "testing": "テスト中",
+    "live": "公開済み",
+    "paused": "一時停止"
+  },
+  "usage": {
+    "projects": "プロジェクト",
+    "prompts": "Prompts",
+    "live": "公開済み",
+    "proxy": "プロキシ"
+  },
+  "list": {
+    "count": "{{shown}} / {{total}}",
+    "promptsCount": "{{n}} Prompts",
+    "justNow": "たった今",
+    "hoursAgo": "{{n}} 時間前",
+    "daysAgo": "{{n}} 日前",
+    "noProjects": "プロジェクトがありません",
+    "noProjectsDesc": "最初の Agent プロジェクトを追加しましょう。",
+    "noMatch": "一致するプロジェクトがありません",
+    "noMatchDesc": "フィルタや検索語を変えてみてください。"
+  },
+  "ctx": {
+    "edit": "✎ 編集",
+    "duplicate": "⧉ 複製",
+    "copyName": "⎘ 名前をコピー",
+    "delete": "🗑 削除",
+    "copied": "名前をコピーしました"
+  },
+  "create": {
+    "title": "新規プロジェクト",
+    "name": "プロジェクト名",
+    "namePh": "例：カスタマーサポート Agent",
+    "desc": "概要",
+    "descPh": "この Agent は何をするもの…",
+    "stage": "ステージ",
+    "category": "カテゴリ",
+    "icon": "アイコン（任意）",
+    "iconPh": "例：zap / star、空欄で頭文字",
+    "iconColor": "アイコンの色",
+    "tags": "タグ · カンマ区切り",
+    "tagsPh": "サポート, GPT-4, 内部ツール",
+    "submit": "作成",
+    "errName": "プロジェクト名を入力してください",
+    "created": "プロジェクトを作成しました",
+    "duplicated": "プロジェクトを複製しました"
+  },
+  "detail": {
+    "title": "プロジェクト詳細",
+    "name": "プロジェクト名",
+    "desc": "概要",
+    "stage": "ステージ",
+    "category": "カテゴリ",
+    "icon": "アイコン",
+    "iconColor": "アイコンの色",
+    "tags": "タグ · カンマ区切り",
+    "paused": "一時停止としてマーク",
+    "save": "変更を保存",
+    "del": "プロジェクトを削除",
+    "saved": "保存しました",
+    "deleted": "削除しました",
+    "prompts": "Prompt バージョン",
+    "addPrompt": "+ Prompt を追加",
+    "rollback": "この版へロールバック",
+    "current": "現在",
+    "rollbackConfirm": "このバージョンへロールバックしますか？新しいバージョンが作成されます。",
+    "rolledBack": "ロールバックして新バージョンを作成しました",
+    "confirmDelete": "このプロジェクトを削除しますか？"
+  },
+  "prompt": {
+    "formTitle": "Prompt を追加",
+    "title": "タイトル",
+    "titlePh": "このバージョンの変更点…",
+    "content": "本文",
+    "contentPh": "Prompt 本文…",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "diff": "比較",
+    "vs": "vs",
+    "noDiff": "差分なし",
+    "vPrefix": "v"
+  },
+  "category": {
+    "general": "一般",
+    "work": "仕事",
+    "personal": "個人",
+    "research": "研究",
+    "product": "プロダクト",
+    "finance": "ファイナンス"
+  }
+}

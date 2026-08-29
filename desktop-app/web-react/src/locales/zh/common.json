@@ -1,0 +1,109 @@
+{
+  "app": {
+    "title": "Agent Workbench",
+    "new": "新建",
+    "search": "搜索项目…",
+    "import": "导入",
+    "settings": "设置",
+    "lang": "语言",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "previewMode": "浏览器预览模式（无 Tauri）",
+    "dbConnected": "DB 已连接 · {{n}} 个项目"
+  },
+  "stage": {
+    "all": "全部",
+    "idea": "构思中",
+    "building": "开发中",
+    "testing": "测试中",
+    "live": "已上线",
+    "paused": "已暂停"
+  },
+  "usage": {
+    "projects": "项目",
+    "prompts": "Prompts",
+    "live": "已上线",
+    "proxy": "代理"
+  },
+  "list": {
+    "count": "{{shown}} / {{total}}",
+    "promptsCount": "{{n}} Prompts",
+    "justNow": "刚刚",
+    "hoursAgo": "{{n}} 小时前",
+    "daysAgo": "{{n}} 天前",
+    "noProjects": "还没有项目",
+    "noProjectsDesc": "把你正在构思或搭建的第一个 Agent 项目加进来。",
+    "noMatch": "没有匹配的项目",
+    "noMatchDesc": "试试换个筛选条件或搜索词。"
+  },
+  "ctx": {
+    "edit": "✎ 编辑",
+    "duplicate": "⧉ 复制项目",
+    "copyName": "⎘ 复制名称",
+    "delete": "🗑 删除",
+    "copied": "已复制名称"
+  },
+  "create": {
+    "title": "新建项目",
+    "name": "项目名称",
+    "namePh": "例如：客服自动回复 Agent",
+    "desc": "简介",
+    "descPh": "这个 Agent 是做什么的…",
+    "stage": "阶段",
+    "category": "分类",
+    "icon": "图标（可选）",
+    "iconPh": "如 zap / star，留空取首字母",
+    "iconColor": "图标颜色",
+    "tags": "标签 · 逗号分隔",
+    "tagsPh": "客服, GPT-4, 内部工具",
+    "submit": "创建项目",
+    "errName": "请填写项目名称",
+    "created": "项目已创建",
+    "duplicated": "已复制项目"
+  },
+  "detail": {
+    "title": "项目详情",
+    "name": "项目名称",
+    "desc": "简介",
+    "stage": "阶段",
+    "category": "分类",
+    "icon": "图标",
+    "iconColor": "图标颜色",
+    "tags": "标签 · 逗号分隔",
+    "paused": "标记为已暂停",
+    "save": "保存修改",
+    "del": "删除项目",
+    "saved": "已保存",
+    "deleted": "已删除",
+    "prompts": "Prompt 版本",
+    "addPrompt": "+ 添加 Prompt",
+    "rollback": "回滚到此版",
+    "current": "当前",
+    "rollbackConfirm": "确定回滚到此版本？会生成一个新版本。",
+    "rolledBack": "已回滚并生成新版本",
+    "confirmDelete": "确定删除该项目？"
+  },
+  "prompt": {
+    "formTitle": "添加 Prompt",
+    "title": "标题",
+    "titlePh": "这个版本改了什么…",
+    "content": "内容",
+    "contentPh": "Prompt 正文…",
+    "save": "保存",
+    "cancel": "取消",
+    "diff": "对比",
+    "vs": "vs",
+    "noDiff": "无差异",
+    "vPrefix": "v"
+  },
+  "category": {
+    "general": "通用",
+    "work": "工作",
+    "personal": "个人",
+    "research": "研究",
+    "product": "产品",
+    "finance": "财务"
+  }
+}

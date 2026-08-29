@@ -1,41 +1,128 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { signalReady, rep, tauriAvailable } from '@/lib/tauri';
-import { getProjects } from '@/lib/api/projects';
-import type { Project } from '@/lib/api/types';
-import { StageGauge, StageBadge } from '@/components/StageGauge';
-
-const SAMPLE = [
-  { id: '1', name: 'Agent Workbench', desc: '三端桌面 App · Cloudflare 自动同步', stage: 'idea' as const, letter: 'A' },
-  { id: '2', name: 'Summary Agent', desc: '会议纪要自动归档', stage: 'building' as const, letter: 'S' },
-  { id: '3', name: 'Landing Copilot', desc: '落地页文案与转化优化', stage: 'live' as const, letter: 'L' },
-];
-
-const PILLS = ['全部', '构思中', '开发中', '测试中', '已上线', '已暂停'];
+import { useProjects } from '@/hooks/useProjects';
+import { useFilteredProjects, useStageChips } from '@/hooks/useFilteredProjects';
+import { usePagination } from '@/hooks/usePagination';
+import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
+import { useTheme } from '@/hooks/useTheme';
+import { useLanguage } from '@/hooks/useLanguage';
+import { UsageBar } from '@/components/UsageBar';
+import { StagePillNav } from '@/components/StagePillNav';
+import { ContextMenu } from '@/components/ContextMenu';
+import { Button } from '@/components/ui/button';
+import { ProjectList } from '@/features/projects/ProjectList';
+import { CreateProjectDialog, uid } from '@/features/projects/CreateProjectDialog';
+import { ProjectDetailDrawer } from '@/features/projects/ProjectDetailDrawer';
+import type { Project, Prompt } from '@/lib/api/types';
+import { STAGES } from '@/lib/api/types';
 
 export default function App() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [filter, setFilter] = useState('全部');
+  const { t } = useTranslation();
+  const { projects, persist } = useProjects();
+  const { theme, setTheme } = useTheme();
+  const { lang, setLang, langs } = useLanguage();
+
+  const [filterStage, setFilterStage] = useState('all');
+  const [search, setSearch] = useState('');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [ctx, setCtx] = useState<{ x: number; y: number; id: string } | null>(null);
+  const [toast, setToast] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const chips = useStageChips();
+  const filtered = useFilteredProjects(projects, { filterStage, search });
+  const { page, totalPages, pageSize, paged, setPage, setPageSize } = usePagination(filtered, 10);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(''), 2200);
+  }, []);
 
   useEffect(() => {
     rep('[probe] react boot tauri=' + tauriAvailable());
-    if (tauriAvailable()) {
-      getProjects()
-        .then((p) => {
-          setProjects(p);
-          rep('[probe] react projects=' + p.length);
-        })
-        .catch((e) => {
-          rep('[probe] react get_projects ERROR ' + e);
-          setProjects([]);
-        });
-    } else {
-      setProjects([]);
-    }
-    // 首帧渲染完成后通知 Rust 显示窗口（阶段 1 事件驱动握手）
     signalReady();
   }, []);
 
-  const rows = SAMPLE;
+  const detail = useMemo(() => (projects ?? []).find((p) => p.id === detailId) ?? null, [projects, detailId]);
+
+  const counts = useMemo(() => {
+    const list = projects ?? [];
+    const c: Record<string, number> = { all: list.length, paused: list.filter((p) => p.paused).length };
+    for (const s of STAGES) c[s.key] = list.filter((p) => p.stage === s.key).length;
+    return c;
+  }, [projects]);
+
+  const usage = useMemo(() => {
+    const list = projects ?? [];
+    return {
+      total: list.length,
+      prompts: list.reduce((s, p) => s + (p.prompts || []).length, 0),
+      live: list.filter((p) => p.stage === 'live').length,
+    };
+  }, [projects]);
+
+  const nextSortIndex = useMemo(() => Math.max(0, ...(projects ?? []).map((p) => p.sort_index || 0)) + 1, [projects]);
+
+  const metaLabel = filterStage === 'all' ? t('stage.all') : t('stage.' + filterStage);
+
+  const actions = useMemo(
+    () => ({
+      create: (p: Project) => {
+        const next = [...(projects ?? []), p];
+        persist(next);
+        setCreateOpen(false);
+        showToast(t('create.created'));
+      },
+      save: (p: Project) => {
+        persist((projects ?? []).map((x) => (x.id === p.id ? p : x)));
+        showToast(t('detail.saved'));
+      },
+      delete: (id: string) => {
+        persist((projects ?? []).filter((x) => x.id !== id));
+        setDetailId((cur) => (cur === id ? null : cur));
+        showToast(t('detail.deleted'));
+      },
+      duplicate: (id: string) => {
+        const src = (projects ?? []).find((x) => x.id === id);
+        if (!src) return;
+        const now = new Date().toISOString();
+        const copy: Project = {
+          ...JSON.parse(JSON.stringify(src)),
+          id: uid('p'),
+          name: src.name + ' ←copy',
+          createdAt: now,
+          updatedAt: now,
+          sort_index: (src.sort_index || 0) + 0.5,
+          prompts: (src.prompts || []).map((pr) => ({ ...pr, id: uid('pr') })),
+        };
+        persist([...(projects ?? []), copy]);
+        showToast(t('create.duplicated'));
+      },
+      reorder: (ordered: Project[]) => {
+        const orderedIds = new Set(ordered.map((p) => p.id));
+        const rest = (projects ?? []).filter((p) => !orderedIds.has(p.id));
+        const next = [...ordered, ...rest].map((p, i) => ({ ...p, sort_index: i, updatedAt: p.updatedAt }));
+        persist(next);
+      },
+      promptsChange: (id: string, prompts: Prompt[]) => {
+        persist((projects ?? []).map((x) => (x.id === id ? { ...x, prompts, updatedAt: new Date().toISOString() } : x)));
+      },
+    }),
+    [projects, persist, showToast, t],
+  );
+
+  useGlobalShortcuts({
+    onNew: () => setCreateOpen(true),
+    onFocusSearch: () => searchRef.current?.focus(),
+    onSettings: () => showToast(t('app.settings') + ' (Phase 5)'),
+    onEscape: () => {
+      setCtx(null);
+      setDetailId(null);
+      setCreateOpen(false);
+    },
+  });
 
   return (
     <>
@@ -44,17 +131,21 @@ export default function App() {
         {/* 顶部悬浮岛 */}
         <header className="topbar-island" data-tauri-drag-region>
           <span className="brand-title" data-tauri-no-drag>
-            Agent Workbench
+            {t('app.title')}
           </span>
-          <span
-            style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginLeft: 10, whiteSpace: 'nowrap' }}
-          >
-            全部 · 23 个项目
+          <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginLeft: 10, whiteSpace: 'nowrap' }}>
+            {metaLabel} · {(projects ?? []).length} {t('usage.projects')}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
             <input
-              placeholder="搜索项目…"
-              aria-label="搜索"
+              ref={searchRef}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t('app.search')}
+              aria-label={t('app.search')}
               data-tauri-no-drag
               style={{
                 width: 260,
@@ -69,100 +160,223 @@ export default function App() {
                 outline: 'none',
               }}
             />
-            <button className="btn btn-primary" data-tauri-no-drag>
-              新建
-            </button>
-            <button className="btn btn-ghost" data-tauri-no-drag aria-label="导入" style={{ width: 36, height: 36, padding: 0 }}>
-              ↓
-            </button>
-            <button className="btn btn-ghost" data-tauri-no-drag aria-label="设置" style={{ width: 36, height: 36, padding: 0 }}>
+            <Button variant="primary" data-tauri-no-drag onClick={() => setCreateOpen(true)}>
+              {t('app.new')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              data-tauri-no-drag
+              aria-label={t('app.lang')}
+              title={t('app.lang')}
+              onClick={() => {
+                const idx = langs.findIndex((l) => l.code === lang);
+                const next = langs[(idx + 1) % langs.length];
+                setLang(next.code);
+                showToast(next.label);
+              }}
+            >
+              🌐
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              data-tauri-no-drag
+              aria-label={t('app.theme')}
+              title={t('app.theme') + ': ' + t('app.theme' + theme.charAt(0).toUpperCase() + theme.slice(1))}
+              onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
+            >
+              {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '🖥'}
+            </Button>
+            <Button variant="ghost" size="icon" data-tauri-no-drag aria-label={t('app.settings')} title={t('app.settings')}>
               ⚙
-            </button>
+            </Button>
           </div>
         </header>
 
         {/* 内容区 */}
         <main style={{ padding: '16px 24px 24px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-          {/* 统计看板（T0 磨砂） */}
-          <div className="usage-bar">
-            <div className="usage-stat"><b>23</b><br /><span>项目</span></div>
-            <div className="usage-stat"><b>0</b><br /><span>Prompts</span></div>
-            <div className="usage-stat"><b>0</b><br /><span>已上线</span></div>
-            <div className="usage-stat"><b>○</b><br /><span>代理</span></div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 12 }}>
-              {['#d97706', '#2563eb', '#7c3aed', '#059669'].map((c) => (
-                <span key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, flexShrink: 0 }} />
-              ))}
-              <em style={{ fontStyle: 'normal', fontSize: 10, color: 'hsl(var(--muted-foreground))', marginLeft: 4 }}>v0.2.0-react</em>
-            </div>
-          </div>
+          <UsageBar total={usage.total} prompts={usage.prompts} live={usage.live} />
 
-          {/* 阶段筛选（原顶栏阶段条） */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 12px' }}>
-            <div className="stage-pill">
-              {PILLS.map((p, i) => (
-                <button
-                  key={p}
-                  className={`stage-pill-item${filter === p ? ' active' : ''}`}
-                  onClick={() => setFilter(p)}
-                >
-                  {i > 0 && i < PILLS.length - 1 && (
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: ['#d97706', '#2563eb', '#7c3aed', '#059669'][i - 1] ?? 'hsl(var(--muted-foreground))',
-                        display: 'inline-block',
-                      }}
-                    />
-                  )}
-                  {p}
-                </button>
-              ))}
-            </div>
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>23 / 23</span>
+            <StagePillNav chips={chips} value={filterStage} onChange={(k) => { setFilterStage(k); setPage(1); }} counts={counts} />
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
+              {t('list.count', { shown: filtered.length, total: (projects ?? []).length })}
+            </span>
           </div>
 
-          {/* 列表骨架（阶段 3 接 react-query 真数据） */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {rows.map((r) => (
-              <div key={r.id} className="list-row" role="button" tabIndex={0}>
-                <span
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    display: 'grid',
-                    placeItems: 'center',
-                    flexShrink: 0,
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  {r.letter}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="list-name">{r.name}</div>
-                  <div className="list-desc">{r.desc}</div>
-                </div>
-                <StageGauge stage={r.stage} />
-                <StageBadge stage={r.stage} />
-                <div className="list-meta">
-                  <span>0 Prompts</span>
-                  <span>刚刚</span>
-                </div>
+          {projects !== null && projects.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '48px 20px',
+                color: 'hsl(var(--muted-foreground))',
+                border: '1px dashed hsl(var(--border))',
+                borderRadius: 12,
+                background: 'hsl(var(--muted) / 0.3)',
+              }}
+            >
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'hsl(var(--foreground))' }}>
+                {t('list.noProjects')}
+              </h3>
+              <p style={{ fontSize: 13, margin: '0 0 16px' }}>{t('list.noProjectsDesc')}</p>
+              <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                {t('app.new')}
+              </Button>
+            </div>
+          ) : filtered.length === 0 && projects !== null && projects.length > 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '48px 20px',
+                color: 'hsl(var(--muted-foreground))',
+                border: '1px dashed hsl(var(--border))',
+                borderRadius: 12,
+                background: 'hsl(var(--muted) / 0.3)',
+              }}
+            >
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'hsl(var(--foreground))' }}>
+                {t('list.noMatch')}
+              </h3>
+              <p style={{ fontSize: 13, margin: 0 }}>{t('list.noMatchDesc')}</p>
+            </div>
+          ) : (
+            <ProjectList
+              projects={paged}
+              search={search}
+              onOpen={(id) => setDetailId(id)}
+              onContextMenu={(e, id) => {
+                e.preventDefault();
+                setCtx({ x: e.clientX, y: e.clientY, id });
+              }}
+              onReorder={actions.reorder}
+            />
+          )}
+
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                marginTop: 12,
+                padding: '10px 12px',
+                background: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+            >
+              <div>
+                {page} / {totalPages}
               </div>
-            ))}
-          </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <Button variant="secondary" style={{ minHeight: 32, padding: '6px 12px' }} disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  ‹
+                </Button>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+                  style={{ minHeight: 32, borderRadius: 8, border: '1px solid hsl(var(--border))', padding: '6px 8px', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}
+                >
+                  {[10, 20, 50].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <Button variant="secondary" style={{ minHeight: 32, padding: '6px 12px' }} disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                  ›
+                </Button>
+              </div>
+            </div>
+          )}
 
           {projects !== null && (
             <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 16, textAlign: 'center' }}>
-              {tauriAvailable() ? `DB 已连接 · ${projects.length} 个项目` : '浏览器预览模式（无 Tauri）'}
+              {tauriAvailable() ? t('app.dbConnected', { n: projects.length }) : t('app.previewMode')}
             </p>
           )}
         </main>
       </div>
+
+      {/* 新建弹窗 */}
+      <CreateProjectDialog
+        open={createOpen}
+        nextSortIndex={nextSortIndex}
+        onCreate={actions.create}
+        onClose={() => setCreateOpen(false)}
+      />
+
+      {/* 详情抽屉 */}
+      {detail && (
+        <ProjectDetailDrawer
+          project={detail}
+          onSave={(p) => {
+            actions.save(p);
+            showToast(t('detail.saved'));
+          }}
+          onDelete={(id) => actions.delete(id)}
+          onPromptsChange={(prompts) => actions.promptsChange(detail.id, prompts)}
+          onClose={() => setDetailId(null)}
+        />
+      )}
+
+      {/* 右键菜单 */}
+      {ctx && (
+        <ContextMenu
+          x={ctx.x}
+          y={ctx.y}
+          onClose={() => setCtx(null)}
+          items={[
+            { key: 'edit', label: t('ctx.edit'), onSelect: () => setDetailId(ctx.id) },
+            { key: 'duplicate', label: t('ctx.duplicate'), onSelect: () => actions.duplicate(ctx.id) },
+            {
+              key: 'copy',
+              label: t('ctx.copyName'),
+              onSelect: () => {
+                const p = (projects ?? []).find((x) => x.id === ctx.id);
+                if (p) {
+                  void navigator.clipboard?.writeText(p.name);
+                  showToast(t('ctx.copied'));
+                }
+              },
+            },
+            {
+              key: 'delete',
+              label: t('ctx.delete'),
+              danger: true,
+              onSelect: () => {
+                if (window.confirm(t('detail.confirmDelete'))) actions.delete(ctx.id);
+              },
+            },
+          ]}
+        />
+      )}
+
+      {/* Toast */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          left: '50%',
+          transform: toast ? 'translateX(-50%) translateY(-4px)' : 'translateX(-50%)',
+          background: 'hsl(var(--foreground))',
+          color: 'hsl(var(--background))',
+          padding: '10px 16px',
+          borderRadius: 9999,
+          fontSize: 12,
+          fontWeight: 500,
+          zIndex: 100,
+          opacity: toast ? 1 : 0,
+          pointerEvents: 'none',
+          transition: 'opacity .2s, transform .2s',
+        }}
+      >
+        {toast}
+      </div>
+
     </>
   );
 }

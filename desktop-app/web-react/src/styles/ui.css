@@ -1,0 +1,186 @@
+/* ============================================================
+   ui.css — 弹窗 / 抽屉 / 表单 / 右键菜单 / Prompt 卡
+   ============================================================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--background));
+  display: none;
+  flex-direction: column;
+  z-index: 50;
+}
+.overlay.show { display: flex; }
+.drawer {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: hsl(var(--background));
+}
+.drawer-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  margin-top: 28px;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+}
+.drawer-head-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+}
+.drawer-head h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin: 0;
+}
+.btn-back {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.btn-back:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+.drawer-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: hsl(var(--muted-foreground));
+}
+.drawer-close:hover { background: hsl(var(--muted)); }
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+.field { margin-bottom: 12px; }
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 6px;
+}
+.field input[type='text'],
+.field input[type='password'],
+.field textarea,
+.field select {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--input));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  outline: none;
+  font-family: var(--font-sans);
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15);
+}
+.field textarea { resize: vertical; min-height: 80px; }
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* 弹窗（新建项目） */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 16px 16px;
+  z-index: 60;
+}
+.modal {
+  width: 520px;
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+  padding: 24px;
+}
+.modal h2 { font-size: 18px; font-weight: 600; margin: 0 0 16px; }
+
+/* 右键菜单 */
+.ctx-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--foreground));
+  background: transparent;
+  border: 0;
+  text-align: left;
+  width: 100%;
+}
+.ctx-item:hover { background: hsl(var(--muted)); }
+
+/* Prompt 卡 */
+.prompt-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.prompt-card pre {
+  background: hsl(var(--muted) / 0.5);
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow: auto;
+  margin: 0 0 8px;
+}
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.diff-col {
+  background: hsl(var(--muted) / 0.4);
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 12px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.diff-col h4 { margin: 0 0 8px; font-size: 11px; font-weight: 600; color: hsl(var(--muted-foreground)); }
+.diff-minus { color: hsl(0 84% 45%); }
+.diff-plus { color: hsl(142 71% 35%); }
+.diff-same { color: hsl(var(--muted-foreground)); }
+.dark .diff-minus { color: #ff6b6b; }
+.dark .diff-plus { color: #34d399; }
