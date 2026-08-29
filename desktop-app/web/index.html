@@ -32,7 +32,7 @@
   --border: 240 5% 24%; --input: 240 5% 24%; --ring: 210 100% 54%;
 }
 /* ===== 深色模式玻璃拟态（apple-style-design · T1 glass-dark）=====
-   范围：统计看板 usage-bar · 筛选 chips · 顶栏阶段条 stage-pill · 新建按钮
+   范围：筛选 chips · 顶栏阶段条 stage-pill · 新建按钮（统计看板已用 T0 磨砂）
    玻璃无色：面板只用白色 5–12% 低透明 + 极光背景供其折射；
    顶边受光/底边背光；仅功能层（卡片/控件），内容层保持实心 */
 .dark body{
@@ -44,7 +44,6 @@
   background-attachment: fixed;
 }
 .dark .main{background:transparent}
-.dark .usage-bar,
 .dark .chip,
 .dark .stage-pill,
 .dark #addProjectBtn{
@@ -64,8 +63,9 @@
 @media (prefers-reduced-transparency: reduce){
   .dark .usage-bar,.dark .chip,.dark .stage-pill,.dark #addProjectBtn{
     -webkit-backdrop-filter:none; backdrop-filter:none;
-    background-color:rgba(255,255,255,0.12);
   }
+  .dark .chip,.dark .stage-pill,.dark #addProjectBtn{background-color:rgba(255,255,255,0.12)}
+  .dark .usage-bar{background:rgba(22,22,23,0.95)}
 }
 *{box-sizing:border-box}
 html{font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5}
@@ -228,8 +228,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .prompt-card{background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:8px; padding:12px; margin-bottom:8px}
 .prompt-card pre{background:hsl(var(--muted) / 0.5); border:1px solid hsl(var(--border)); border-radius:6px; padding:8px; font-family:ui-monospace, Menlo, monospace; font-size:12px; white-space:pre-wrap; max-height:140px; overflow:auto; margin:0 0 8px}
 
-/* usage 板（18 轻量） */
-.usage-bar{display:flex; gap:12px; align-items:center; margin-bottom:16px; padding:12px 16px; background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+/* usage 板（18 轻量）· T0 磨砂 chrome（apple-style-design） */
+.usage-bar{display:flex; gap:12px; align-items:center; margin-bottom:16px; padding:12px 16px; background:rgba(245,245,247,0.8); -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px); border:1px solid rgba(0,0,0,0.08); border-radius:12px; box-shadow:none}
+.dark .usage-bar{background:rgba(22,22,23,0.8); border-color:rgba(255,255,255,0.08)}
 .usage-stat{flex:1; text-align:center}
 .usage-stat b{font-size:18px; font-weight:600}
 .usage-stat span{font-size:11px; color:hsl(var(--muted-foreground))}
