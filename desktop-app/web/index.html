@@ -469,7 +469,9 @@ function probeGauges(tag){
     const first=dots[0];
     const c=first?getComputedStyle(first).backgroundColor:'none';
     const x=first?first.getBoundingClientRect():null;
-    rep('[probe] gauges('+tag+') count='+dots.length+' firstBg='+c+' rect='+(x?[Math.round(x.x),Math.round(x.y),Math.round(x.width),Math.round(x.height)].join(','):'none'));
+    const attr=first?(first.getAttribute('style')||'(empty)').slice(0,120):'none';
+    const stagesJson=JSON.stringify(STAGES).slice(0,120);
+    rep('[probe] gauges('+tag+') count='+dots.length+' firstBg='+c+' rect='+(x?[Math.round(x.x),Math.round(x.y),Math.round(x.width),Math.round(x.height)].join(','):'none')+' styleAttr="'+attr+'" STAGES='+stagesJson);
   }catch(e){ rep('[probe] gauges('+tag+') ERROR '+e.message); }
 }
 function dbAvailable(){ 
