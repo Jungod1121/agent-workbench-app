@@ -294,3 +294,7 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- 窗口失活淡化 ---------- */
+.win-inactive .app-shell { opacity: 0.82; }
+.app-shell { transition: opacity 0.25s ease; }

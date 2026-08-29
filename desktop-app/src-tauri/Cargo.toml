@@ -1,6 +1,6 @@
 [package]
 name = "agent-workbench"
-version = "0.1.0"
+version = "2.0.0"
 description = "Agent Workbench - manage your AI agent projects and prompts, synced across devices"
 authors = ["Jungod"]
 edition = "2021"

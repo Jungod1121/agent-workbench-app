@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
 import { signalReady, rep, tauriAvailable, openExternal } from '@/lib/tauri';
 import { useProjects } from '@/hooks/useProjects';
 import { useFilteredProjects, useStageChips } from '@/hooks/useFilteredProjects';
@@ -7,6 +8,9 @@ import { usePagination } from '@/hooks/usePagination';
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts';
 import { useTheme } from '@/hooks/useTheme';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useSync } from '@/hooks/useSync';
+import { useWindowBlurDim } from '@/hooks/useWindowBlurDim';
+import { apiGet } from '@/lib/api/sync';
 import { UsageBar } from '@/components/UsageBar';
 import { StagePillNav } from '@/components/StagePillNav';
 import { ContextMenu } from '@/components/ContextMenu';
@@ -14,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { ProjectList } from '@/features/projects/ProjectList';
 import { CreateProjectDialog, uid } from '@/features/projects/CreateProjectDialog';
 import { ProjectDetailDrawer } from '@/features/projects/ProjectDetailDrawer';
+import { SettingsDrawer } from '@/features/settings/SettingsDrawer';
+import { ConflictDialog } from '@/features/sync/ConflictDialog';
 import type { Project, Prompt } from '@/lib/api/types';
 import { STAGES } from '@/lib/api/types';
 
@@ -22,11 +28,14 @@ export default function App() {
   const { projects, persist } = useProjects();
   const { theme, setTheme } = useTheme();
   const { lang, setLang, langs } = useLanguage();
+  const sync = useSync(projects, persist);
+  useWindowBlurDim();
 
   const [filterStage, setFilterStage] = useState('all');
   const [search, setSearch] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [ctx, setCtx] = useState<{ x: number; y: number; id: string } | null>(null);
   const [toast, setToast] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -65,20 +74,28 @@ export default function App() {
 
   const nextSortIndex = useMemo(() => Math.max(0, ...(projects ?? []).map((p) => p.sort_index || 0)) + 1, [projects]);
 
+  // 本地改动 → 标记同步 dirty
+  const persistAndDirty = useCallback(
+    (next: Project[]) => {
+      persist(next);
+      sync.markDirty();
+    },
+    [persist, sync],
+  );
+
   const actions = useMemo(
     () => ({
       create: (p: Project) => {
-        const next = [...(projects ?? []), p];
-        persist(next);
+        persistAndDirty([...(projects ?? []), p]);
         setCreateOpen(false);
         showToast(t('create.created'));
       },
       save: (p: Project) => {
-        persist((projects ?? []).map((x) => (x.id === p.id ? p : x)));
+        persistAndDirty((projects ?? []).map((x) => (x.id === p.id ? p : x)));
         showToast(t('detail.saved'));
       },
       delete: (id: string) => {
-        persist((projects ?? []).filter((x) => x.id !== id));
+        persistAndDirty((projects ?? []).filter((x) => x.id !== id));
         setDetailId((cur) => (cur === id ? null : cur));
         showToast(t('detail.deleted'));
       },
@@ -95,30 +112,31 @@ export default function App() {
           sort_index: (src.sort_index || 0) + 0.5,
           prompts: (src.prompts || []).map((pr) => ({ ...pr, id: uid('pr') })),
         };
-        persist([...(projects ?? []), copy]);
+        persistAndDirty([...(projects ?? []), copy]);
         showToast(t('create.duplicated'));
       },
       reorder: (ordered: Project[]) => {
         const orderedIds = new Set(ordered.map((p) => p.id));
         const rest = (projects ?? []).filter((p) => !orderedIds.has(p.id));
         const next = [...ordered, ...rest].map((p, i) => ({ ...p, sort_index: i, updatedAt: p.updatedAt }));
-        persist(next);
+        persistAndDirty(next);
       },
       promptsChange: (id: string, prompts: Prompt[]) => {
-        persist((projects ?? []).map((x) => (x.id === id ? { ...x, prompts, updatedAt: new Date().toISOString() } : x)));
+        persistAndDirty((projects ?? []).map((x) => (x.id === id ? { ...x, prompts, updatedAt: new Date().toISOString() } : x)));
       },
     }),
-    [projects, persist, showToast, t],
+    [projects, persistAndDirty, showToast, t],
   );
 
   useGlobalShortcuts({
     onNew: () => setCreateOpen(true),
     onFocusSearch: () => searchRef.current?.focus(),
-    onSettings: () => showToast(t('app.settings') + ' (Phase 5)'),
+    onSettings: () => setSettingsOpen(true),
     onEscape: () => {
       setCtx(null);
       setDetailId(null);
       setCreateOpen(false);
+      setSettingsOpen(false);
     },
   });
 
@@ -197,7 +215,7 @@ export default function App() {
             >
               {theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '🖥'}
             </Button>
-            <Button variant="ghost" size="icon" data-tauri-no-drag aria-label={t('app.settings')} title={t('app.settings')}>
+            <Button variant="ghost" size="icon" data-tauri-no-drag aria-label={t('app.settings')} title={t('app.settings')} onClick={() => setSettingsOpen(true)}>
               ⚙
             </Button>
           </div>
@@ -205,7 +223,7 @@ export default function App() {
 
         {/* 内容区 */}
         <main style={{ padding: '16px 24px 24px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-          <UsageBar total={usage.total} prompts={usage.prompts} live={usage.live} />
+          <UsageBar total={usage.total} prompts={usage.prompts} live={usage.live} syncStatus={sync.status} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 12px' }}>
             <StagePillNav chips={chips} value={filterStage} onChange={(k) => { setFilterStage(k); setPage(1); }} counts={counts} />
@@ -361,6 +379,138 @@ export default function App() {
               },
             },
           ]}
+        />
+      )}
+
+      {/* 同步冲突弹窗 */}
+      {sync.conflict && (
+        <ConflictDialog
+          remoteCount={sync.conflict.remoteCount}
+          localCount={sync.conflict.localCount}
+          remoteAt={sync.conflict.remoteAt}
+          onChoice={(c) => {
+            void sync.resolveConflict(c);
+            if (c === 'remote') showToast(t('sync.useRemote'));
+            else if (c === 'local') showToast(t('sync.keepLocal'));
+          }}
+        />
+      )}
+
+      {/* 设置抽屉 */}
+      {settingsOpen && (
+        <SettingsDrawer
+          theme={theme}
+          setTheme={setTheme}
+          syncSettings={sync.settings}
+          syncStatus={sync.status}
+          localCount={(projects ?? []).length}
+          onSyncSave={(s) => {
+            sync.save(s);
+            showToast(s ? t('sync.statusOk') : t('settings.disconnected'));
+          }}
+          onSyncTest={async (url, token) => {
+            try {
+              await apiGet(url, token);
+              return true;
+            } catch {
+              return false;
+            }
+          }}
+          onBackupNow={async () => {
+            if (!tauriAvailable()) return null;
+            try {
+              const id = await invoke<string>('backup_now', { note: 'manual' });
+              showToast(t('settings.backupCreated', { id }));
+              return id;
+            } catch (e) {
+              showToast(String(e));
+              return null;
+            }
+          }}
+          onBackupRestore={async (id) => {
+            if (!window.confirm(t('settings.restoreConfirm', { id }))) return false;
+            try {
+              await invoke('restore_backup', { id });
+              showToast(t('settings.restored', { id }));
+              return true;
+            } catch (e) {
+              showToast(String(e));
+              return false;
+            }
+          }}
+          onBackupDelete={async (id) => {
+            try {
+              await invoke('delete_backup', { id });
+              return true;
+            } catch (e) {
+              showToast(String(e));
+              return false;
+            }
+          }}
+          onExport={async () => {
+            const list = projects ?? [];
+            if (tauriAvailable()) {
+              try {
+                const picked = await invoke<string | null>('plugin:dialog|save', {
+                  options: { title: t('settings.export'), filters: [{ name: 'JSON', extensions: ['json'] }], defaultPath: 'workbench-export.json' },
+                });
+                const path = typeof picked === 'string' ? picked : null;
+                if (path) {
+                  await invoke('export_projects_to_file', { path, projects: list });
+                  showToast(path);
+                  return;
+                }
+              } catch (e) {
+                rep('[probe] export dialog fail ' + String(e));
+              }
+            }
+            const blob = new Blob([JSON.stringify({ projects: list }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'workbench-export-' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+          }}
+          onImport={async () => {
+            if (tauriAvailable()) {
+              try {
+                const picked = await invoke<string | string[] | null>('plugin:dialog|open', {
+                  options: { title: t('settings.import'), filters: [{ name: 'JSON', extensions: ['json'] }], multiple: false },
+                });
+                const path = typeof picked === 'string' ? picked : Array.isArray(picked) ? picked[0] : null;
+                if (path) {
+                  const imported = await invoke<Project[]>('import_projects_from_file', { path });
+                  if (Array.isArray(imported) && window.confirm(t('settings.importConfirm', { n: imported.length, cur: (projects ?? []).length }))) {
+                    persistAndDirty(imported);
+                    showToast(t('settings.imported', { n: imported.length }));
+                  }
+                  return;
+                }
+              } catch (e) {
+                rep('[probe] import dialog fail ' + String(e));
+              }
+            }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.onchange = async () => {
+              const file = input.files?.[0];
+              if (!file) return;
+              try {
+                const data = JSON.parse(await file.text()) as { projects?: Project[] } | Project[];
+                const imported = Array.isArray(data) ? data : data.projects;
+                if (!Array.isArray(imported)) throw new Error('bad format');
+                if (window.confirm(t('settings.importConfirm', { n: imported.length, cur: (projects ?? []).length }))) {
+                  persistAndDirty(imported);
+                  showToast(t('settings.imported', { n: imported.length }));
+                }
+              } catch (e) {
+                showToast(String(e));
+              }
+            };
+            input.click();
+          }}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
 
