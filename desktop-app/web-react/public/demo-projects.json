@@ -1,0 +1,260 @@
+{
+  "projects": [
+    {
+      "id": "demo_lit_review",
+      "name": "文献综述 Agent",
+      "description": "自动检索近三年顶刊论文，按主题聚类生成综述大纲与关键结论摘要。",
+      "stage": "building",
+      "paused": false,
+      "tags": ["科研", "文献管理", "NLP"],
+      "sort_index": 0,
+      "category": "research",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [
+        {
+          "id": "pr_lit_1",
+          "title": "v1 · 基础检索",
+          "content": "你是科研助手。检索关于 {{topic}} 的近三年论文，输出 10 篇关键文献，按年份排序，每篇给出 3 句话摘要。",
+          "version": 1,
+          "isCurrent": false,
+          "createdAt": "2026-08-10T09:00:00Z"
+        },
+        {
+          "id": "pr_lit_2",
+          "title": "v2 · 聚类与综述",
+          "content": "你是科研助手。检索近三年关于 {{topic}} 的论文，先按方法/主题聚类为 3-5 组，每组输出代表文献与共识/分歧，最后生成 200 字综述小结。",
+          "version": 2,
+          "isCurrent": false,
+          "createdAt": "2026-08-12T14:30:00Z"
+        },
+        {
+          "id": "pr_lit_3",
+          "title": "v3 · 含引文格式",
+          "content": "你是科研助手。检索近三年关于 {{topic}} 的论文，聚类为 3-5 组，每组给出代表文献与共识/分歧，综述小结 200 字，参考文献用 GB/T 7714 格式附于末尾。",
+          "version": 3,
+          "isCurrent": true,
+          "createdAt": "2026-08-15T10:00:00Z"
+        }
+      ],
+      "createdAt": "2026-08-10T08:00:00Z",
+      "updatedAt": "2026-08-15T10:00:00Z"
+    },
+    {
+      "id": "demo_lab_data",
+      "name": "实验数据整理 Agent",
+      "description": "把散乱的实验记录 CSV 清洗、补全缺失值并生成可视化摘要。",
+      "stage": "idea",
+      "paused": false,
+      "tags": ["科研", "数据清洗"],
+      "sort_index": 1,
+      "category": "research",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-08-18T11:00:00Z",
+      "updatedAt": "2026-08-18T11:00:00Z"
+    },
+    {
+      "id": "demo_brick_game",
+      "name": "打砖块小游戏",
+      "description": "纯 HTML/JS 的经典打砖块：鼠标控制挡板、三档球速、计分与关卡递增。",
+      "stage": "testing",
+      "paused": false,
+      "tags": ["游戏", "HTML", "JavaScript"],
+      "sort_index": 2,
+      "category": "personal",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [
+        {
+          "id": "pr_brick_1",
+          "title": "v1 · 核心循环",
+          "content": "用 Canvas 实现打砖块：一个挡板、一个球、三排砖块，碰撞反弹，砖块清零进入下一关。",
+          "version": 1,
+          "isCurrent": false,
+          "createdAt": "2026-08-05T15:00:00Z"
+        },
+        {
+          "id": "pr_brick_2",
+          "title": "v2 · 手感与音效",
+          "content": "在核心循环基础上：挡板改为鼠标平滑跟随，球速随关卡 +5%，砖块击碎播放 WebAudio 音效，顶部显示计分与生命。",
+          "version": 2,
+          "isCurrent": true,
+          "createdAt": "2026-08-08T20:00:00Z"
+        }
+      ],
+      "createdAt": "2026-08-05T14:00:00Z",
+      "updatedAt": "2026-08-08T20:00:00Z"
+    },
+    {
+      "id": "demo_text_adventure",
+      "name": "文字冒险游戏引擎",
+      "description": "YAML 驱动的文字冒险引擎：场景-选项-结局，支持分支存档。",
+      "stage": "live",
+      "paused": false,
+      "tags": ["游戏", "引擎"],
+      "sort_index": 3,
+      "category": "personal",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-07-20T09:00:00Z",
+      "updatedAt": "2026-07-30T09:00:00Z"
+    },
+    {
+      "id": "demo_meeting",
+      "name": "会议纪要 Agent",
+      "description": "录音转文字后自动生成结构化工单：决议、待办、负责人与截止时间。",
+      "stage": "live",
+      "paused": false,
+      "tags": ["办公", "效率"],
+      "sort_index": 4,
+      "category": "work",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [
+        {
+          "id": "pr_meet_1",
+          "title": "v1 · 摘要",
+          "content": "你是会议纪要助手。根据会议记录，输出三段：议题、讨论要点、结论。",
+          "version": 1,
+          "isCurrent": false,
+          "createdAt": "2026-07-01T10:00:00Z"
+        },
+        {
+          "id": "pr_meet_2",
+          "title": "v2 · 工单化",
+          "content": "你是会议纪要助手。根据会议记录，输出：①决议清单 ②待办事项表（负责人/截止时间）③遗留问题。待办用 Markdown 表格。",
+          "version": 2,
+          "isCurrent": true,
+          "createdAt": "2026-07-05T10:00:00Z"
+        }
+      ],
+      "createdAt": "2026-07-01T09:00:00Z",
+      "updatedAt": "2026-07-05T10:00:00Z"
+    },
+    {
+      "id": "demo_weekly",
+      "name": "周报生成 Agent",
+      "description": "汇总本周提交记录与任务看板，自动生成面向团队的周报。",
+      "stage": "idea",
+      "paused": false,
+      "tags": ["办公"],
+      "sort_index": 5,
+      "category": "work",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-08-20T09:00:00Z",
+      "updatedAt": "2026-08-20T09:00:00Z"
+    },
+    {
+      "id": "demo_support",
+      "name": "客服自动回复 Agent",
+      "description": "识别常见问题意图，先共情再解决，回复不超过 50 字并附下一步建议。",
+      "stage": "building",
+      "paused": false,
+      "tags": ["客服", "GPT"],
+      "sort_index": 6,
+      "category": "work",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [
+        {
+          "id": "pr_sup_1",
+          "title": "v1 · 初版",
+          "content": "你是资深客服，请简短回复用户。语气专业。不得泄露内部信息。",
+          "version": 1,
+          "isCurrent": false,
+          "createdAt": "2026-08-01T10:00:00Z"
+        },
+        {
+          "id": "pr_sup_2",
+          "title": "v2 · 共情优先",
+          "content": "你是资深客服，请先共情再解决。回复 ≤ 50 字，附一句下一步建议。语气专业。不得泄露内部信息。",
+          "version": 2,
+          "isCurrent": true,
+          "createdAt": "2026-08-03T10:00:00Z"
+        }
+      ],
+      "createdAt": "2026-08-01T09:00:00Z",
+      "updatedAt": "2026-08-03T10:00:00Z"
+    },
+    {
+      "id": "demo_codereview",
+      "name": "代码评审 Agent",
+      "description": "基于 PR diff 输出评审意见：正确性、可读性、潜在 bug 与改进建议。",
+      "stage": "live",
+      "paused": false,
+      "tags": ["编程", "Code Review"],
+      "sort_index": 7,
+      "category": "work",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-06-15T09:00:00Z",
+      "updatedAt": "2026-06-25T09:00:00Z"
+    },
+    {
+      "id": "demo_seo",
+      "name": "SEO 内容生成器",
+      "description": "按关键词生成带标题结构、内链建议与元描述的优化文章草稿。",
+      "stage": "testing",
+      "paused": false,
+      "tags": ["内容", "SEO"],
+      "sort_index": 8,
+      "category": "product",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-08-08T09:00:00Z",
+      "updatedAt": "2026-08-10T09:00:00Z"
+    },
+    {
+      "id": "demo_anomaly",
+      "name": "数据异常检测 Agent",
+      "description": "对时序指标做滑动窗口统计，标注离群点并给出可能原因推断。",
+      "stage": "idea",
+      "paused": false,
+      "tags": ["数据", "检测"],
+      "sort_index": 9,
+      "category": "research",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-08-22T09:00:00Z",
+      "updatedAt": "2026-08-22T09:00:00Z"
+    },
+    {
+      "id": "demo_fitness",
+      "name": "健身计划生成 Agent",
+      "description": "根据目标与可用器材生成周计划，动态调整强度。已暂停，等待迁移数据源。",
+      "stage": "idea",
+      "paused": true,
+      "tags": ["个人", "健身"],
+      "sort_index": 10,
+      "category": "personal",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-05-01T09:00:00Z",
+      "updatedAt": "2026-07-01T09:00:00Z"
+    },
+    {
+      "id": "demo_readme",
+      "name": "README 生成 Agent",
+      "description": "扫描仓库自动生成 README：功能、安装、用法示例与徽章。",
+      "stage": "building",
+      "paused": false,
+      "tags": ["编程", "文档"],
+      "sort_index": 11,
+      "category": "work",
+      "icon": null,
+      "icon_color": null,
+      "prompts": [],
+      "createdAt": "2026-08-25T09:00:00Z",
+      "updatedAt": "2026-08-26T09:00:00Z"
+    }
+  ]
+}
