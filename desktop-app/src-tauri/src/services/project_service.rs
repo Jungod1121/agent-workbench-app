@@ -5,11 +5,19 @@ use crate::database::{Database, Project};
 use std::path::Path;
 
 pub fn list_all(db: &Database) -> Result<Vec<Project>, String> {
+    if let Some((dbv, appv)) = db.too_new() {
+        return Err(format!(
+            "DB_TOO_NEW db_version={dbv} app_max={appv}（数据库版本过新，请用匹配版本的应用或恢复备份）"
+        ));
+    }
     let conn = db.lock_conn()?;
     project_dao::get_all(&conn)
 }
 
 pub fn save_all(db: &Database, projects: Vec<Project>) -> Result<(), String> {
+    if db.too_new().is_some() {
+        return Err("DB_TOO_NEW（数据库版本过新，禁止写入）".to_string());
+    }
     let mut conn = db.lock_conn()?;
     project_dao::save_all(&mut conn, projects)
 }

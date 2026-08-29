@@ -27,3 +27,14 @@ export function signalReady(): void {
 export function tauriAvailable(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
+
+/** 系统浏览器打开外部链接（open_external Rust 命令；浏览器环境 window.open 兜底） */
+export async function openExternal(url: string): Promise<void> {
+  const u = new URL(url);
+  if (!['http:', 'https:'].includes(u.protocol)) throw new Error('Unsupported scheme');
+  if (tauriAvailable()) {
+    await invoke('open_external', { url });
+    return;
+  }
+  window.open(url, '_blank');
+}

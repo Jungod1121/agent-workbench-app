@@ -2,6 +2,7 @@
 //! 分层边界：dao 只有 SQL；services 有业务逻辑；commands 只做参数解析
 
 pub mod dao;
+pub mod migrations;
 pub mod schema;
 
 use rusqlite::Connection;
@@ -73,6 +74,8 @@ pub struct BackupInfo {
 pub struct Database {
     conn: Mutex<Connection>,
     db_path: PathBuf,
+    /// DB 版本高于程序支持版本时置位（进入"版本过新"状态，数据只读提示）
+    too_new: Option<(i32, i32)>,
 }
 
 impl Database {
@@ -86,12 +89,12 @@ impl Database {
             .map_err(|e| format!("pragma failed: {e}"))?;
         // journal mode WAL for crash safety（A 相对 B 的优势，保留）
         let _ = conn.execute("PRAGMA journal_mode = WAL;", []);
-        let db = Self {
+        let mut db = Self {
             conn: Mutex::new(conn),
             db_path,
+            too_new: None,
         };
-        db.create_tables()?;
-        db.apply_migrations()?;
+        db.prepare_schema()?;
         if let Err(e) = db.seed_if_empty() {
             log::warn!("Seed failed: {e}");
         }
@@ -108,59 +111,43 @@ impl Database {
         &self.db_path
     }
 
-    fn create_tables(&self) -> Result<(), String> {
-        let conn = self.lock_conn()?;
-        conn.execute_batch(schema::TABLES_DDL)
-            .map_err(|e| format!("create tables failed: {e}"))?;
-        conn.execute(schema::META_TABLE_DDL, [])
-            .map_err(|e| format!("meta failed: {e}"))?;
-        let v: Option<String> = conn
-            .query_row(
-                "SELECT value FROM meta WHERE key='schema_version'",
-                [],
-                |r| r.get(0),
-            )
-            .optional()
-            .map_err(|e| format!("query version failed: {e}"))?;
-        if v.is_none() {
-            conn.execute(
-                "INSERT INTO meta (key, value) VALUES ('schema_version', ?1)",
-                [schema::SCHEMA_VERSION.to_string()],
-            )
-            .map_err(|e| format!("insert version failed: {e}"))?;
-        }
-        Ok(())
+    pub(crate) fn too_new(&self) -> Option<(i32, i32)> {
+        self.too_new
     }
 
-    fn apply_migrations(&self) -> Result<(), String> {
-        let conn = self.lock_conn()?;
-        let current: i32 = conn
-            .query_row(
-                "SELECT value FROM meta WHERE key='schema_version'",
-                [],
-                |r| r.get::<_, String>(0),
-            )
-            .optional()
-            .map_err(|e| format!("read version failed: {e}"))?
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(1);
-        if current < 2 {
-            // v1→v2: add category/icon/icon_color/meta
-            let _ = conn.execute("ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT 'general'", []);
-            let _ = conn.execute("ALTER TABLE projects ADD COLUMN icon TEXT", []);
-            let _ = conn.execute("ALTER TABLE projects ADD COLUMN icon_color TEXT", []);
-            let _ = conn.execute("ALTER TABLE projects ADD COLUMN meta TEXT NOT NULL DEFAULT '{}'", []);
-            conn.execute(
-                "UPDATE meta SET value=?1 WHERE key='schema_version'",
-                ["2"],
-            )
-            .map_err(|e| format!("update version failed: {e}"))?;
-            log::info!("Migrated DB v1→v2 (category/icon/meta)");
+    /// 建表 + 版本化迁移（PRAGMA user_version + SAVEPOINT + 迁移前自动备份）
+    fn prepare_schema(&mut self) -> Result<(), String> {
+        {
+            let conn = self.lock_conn()?;
+            conn.execute_batch(schema::TABLES_DDL)
+                .map_err(|e| format!("create tables failed: {e}"))?;
+            conn.execute(schema::META_TABLE_DDL, [])
+                .map_err(|e| format!("meta failed: {e}"))?;
         }
-        Ok(())
+        // 版本过新：不迁移、标记状态，数据可读由上层提示（不崩溃）
+        let check_result = {
+            let conn = self.lock_conn()?;
+            migrations::check_version(&conn)
+        };
+        match check_result {
+            Ok(_) => {}
+            Err(migrations::MigrateError::TooNew { db_version, app_max }) => {
+                self.too_new = Some((db_version, app_max));
+                log::warn!("DB version too new: db={db_version} app_max={app_max}");
+                return Ok(());
+            }
+            Err(migrations::MigrateError::Failed(e)) => return Err(e),
+        }
+        let mut conn = self.lock_conn()?;
+        let migrations_list = migrations::all();
+        migrations::run_migrations(&mut conn, &self.db_path, &migrations_list)
+            .map_err(|e| e.to_string())
     }
 
     fn seed_if_empty(&self) -> Result<bool, String> {
+        if self.too_new.is_some() {
+            return Ok(false); // 版本过新：不 seed、不写数据
+        }
         let count: i64 = {
             let conn = self.lock_conn()?;
             conn.query_row("SELECT COUNT(*) FROM projects", [], |r| r.get(0))

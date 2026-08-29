@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signalReady, rep, tauriAvailable } from '@/lib/tauri';
+import { signalReady, rep, tauriAvailable, openExternal } from '@/lib/tauri';
 import { useProjects } from '@/hooks/useProjects';
 import { useFilteredProjects, useStageChips } from '@/hooks/useFilteredProjects';
 import { usePagination } from '@/hooks/usePagination';
@@ -128,7 +128,21 @@ export default function App() {
       <div className="app-shell main-bg">
         {/* 顶部悬浮岛（fixed，不随滚动） */}
         <header className="topbar-island" data-tauri-drag-region>
-          <span className="brand-title" data-tauri-no-drag>
+          <span
+            className="brand-title"
+            data-tauri-no-drag
+            role="link"
+            tabIndex={0}
+            title={t('app.title')}
+            onClick={() => {
+              void openExternal('https://jungod1121.github.io/agent-workbench-app/').catch(() => {});
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                void openExternal('https://jungod1121.github.io/agent-workbench-app/').catch(() => {});
+              }
+            }}
+          >
             {t('app.title')}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>

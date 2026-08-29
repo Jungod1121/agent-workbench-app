@@ -1,7 +1,5 @@
 //! Schema 常量与 DDL（阶段 5 将演进为 user_version + SAVEPOINT 迁移列表）
 
-pub const SCHEMA_VERSION: i32 = 2;
-
 pub const TABLES_DDL: &str = r#"
 CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,

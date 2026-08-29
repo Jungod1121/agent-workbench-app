@@ -1468,6 +1468,30 @@ const syncNowBtn=document.getElementById('syncNowBtn');
 if(syncNowBtn) syncNowBtn.addEventListener('click',()=>{ if(!hasSyncSettings()){ openSyncSettings('尚未设置同步，请先在设置中填入 Worker 地址和密钥'); return; } pullFromServer(true); });
 const settingsBtnEl=document.getElementById('settingsBtn');
 if(settingsBtnEl) settingsBtnEl.addEventListener('click',()=>openSyncSettings());
+// 悬浮岛标题 → 系统浏览器打开产品介绍页（open_external 命令仍在 Rust 侧）
+async function openExternal(url){
+  try{
+    const u=new URL(url);
+    if(!['http:','https:'].includes(u.protocol)) throw new Error('Unsupported scheme');
+  }catch(e){ throw new Error('Invalid URL'); }
+  if(dbAvailable()){
+    await tauriInvoke('open_external', {url});
+    return;
+  }
+  window.open(url,'_blank');
+}
+const brandEl=document.getElementById('topbarBrand');
+if(brandEl){
+  const goLanding=async()=>{
+    const url='https://jungod1121.github.io/agent-workbench-app/';
+    try{ await openExternal(url); }
+    catch(e){ try{ const w=window.open(url,'_blank'); if(!w) showToast('请手动访问: '+url); }catch(_){} }
+  };
+  brandEl.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); goLanding(); });
+  brandEl.setAttribute('role','link');
+  brandEl.setAttribute('tabindex','0');
+  brandEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); goLanding(); }});
+}
 window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); if(state.loaded) render(); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
 (function initTauriEvents(){
@@ -1499,7 +1523,14 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
   settings=loadSettings();
   // ---- W1: DB 优先（对标 CC Switch Database::init + WAL）+ 断电不丢 ----
   let dbProjects=null;
-  try{ dbProjects=await dbGetProjects(); }catch(e){}
+  let dbTooNew=false;
+  try{ dbProjects=await dbGetProjects(); }
+  catch(e){ if(String(e&&e.message||e).indexOf('DB_TOO_NEW')>=0) dbTooNew=true; }
+  if(dbTooNew){
+    const el=document.getElementById('gridArea');
+    if(el) el.innerHTML='<div class="empty" style="margin-top:60px"><h3>数据库版本过新</h3><p>当前数据库由更高版本的应用创建，为避免损坏数据已停止读写。<br>请安装匹配版本的 Agent Workbench，或用备份文件恢复。</p><div style="font-size:11px;color:hsl(var(--muted-foreground))">备份目录：应用配置目录 backups/（设置 → 同步 → 备份列表）</div></div>';
+    state.loaded=true; render(); return;
+  }
   if(Array.isArray(dbProjects) && dbProjects.length){
     state.projects=dbProjects; cacheLocally(state.projects);
   } else {

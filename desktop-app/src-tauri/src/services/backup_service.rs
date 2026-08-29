@@ -4,7 +4,16 @@ use crate::database::dao::backup_dao;
 use crate::database::{BackupInfo, Database};
 
 pub fn snapshot(db: &Database, note: &str) -> Result<String, String> {
-    let id = format!("backup_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S_%3f"));
+    // 同毫秒连拍会撞 backups.id 主键，追加纳秒保证唯一
+    let nano = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
+    let id = format!(
+        "backup_{}_{:09}",
+        chrono::Utc::now().format("%Y%m%d_%H%M%S_%3f"),
+        nano
+    );
     let conn = db.lock_conn()?;
     backup_dao::snapshot_files(db.db_path(), &conn, &id, note)?;
     Ok(id)
@@ -83,6 +92,21 @@ mod tests {
         delete(&db, &id1).expect("delete ok");
         let backups = list(&db).expect("list ok");
         assert!(!backups.iter().any(|b| b.id == id1));
+    }
+
+    #[test]
+    fn retention_prunes_oldest() {
+        let db = test_db();
+        // 连拍 35 份：RETAIN_META=30，应只剩最新 30 份 meta 与文件
+        for i in 0..35 {
+            snapshot(&db, &format!("n{i}")).expect("snapshot ok");
+        }
+        let backups = list(&db).expect("list ok");
+        assert!(backups.len() <= backup_dao::RETAIN_META, "meta retained: {}", backups.len());
+        // 文件也应被 prune（<= RETAIN_FILES）
+        let dir = backup_dao::backups_dir(db.db_path());
+        let files = std::fs::read_dir(&dir).map(|rd| rd.count()).unwrap_or(0);
+        assert!(files <= backup_dao::RETAIN_FILES + 3, "files retained: {files}");
     }
 
     #[test]
