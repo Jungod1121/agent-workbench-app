@@ -65,13 +65,6 @@
   .dark .stage-pill,.dark #addProjectBtn{background-color:rgba(255,255,255,0.12)}
   .dark .usage-bar{background:rgba(22,22,23,0.95)}
 }
-/* WKWebView 合成层预建：磨砂/玻璃元素提前建立独立合成层，
-   避免窗口隐藏期首次渲染的合成层等到首次可见才进帧缓冲（阶段1修复） */
-.topbar,.usage-bar,.drawer-head,
-.dark .stage-pill,.dark #addProjectBtn{
-  will-change:backdrop-filter,transform;
-  transform:translateZ(0);
-}
 *{box-sizing:border-box}
 html{font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5}
 body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); font-size:14px}
@@ -446,12 +439,32 @@ function signalReady(){
     });
   }).catch(()=>{});
 }
-// 通用强制重绘：大范围 innerHTML 替换后调用，规避 WKWebView 合成层不刷新
+// 通用强制回流：大范围 innerHTML 替换后同步触发一次样式重算（同步 set+clear，不切换合成层）
 function forcePaint(el){
   if(!el) return;
   el.style.transform='translateZ(0)';
   void el.offsetHeight;
-  requestAnimationFrame(()=>{ el.style.transform=''; });
+  el.style.transform='';
+}
+// 抽屉布局探针：把 overlay/drawer/head/body 实际矩形与关键计算样式写入日志
+function probeDrawer(tag){
+  try{
+    const o=document.getElementById('overlay'), d=document.getElementById('drawer');
+    const h=d?d.querySelector('.drawer-head'):null, b=d?d.querySelector('.drawer-body'):null;
+    const r=e=>{ if(!e) return 'null'; const x=e.getBoundingClientRect(); return Math.round(x.x)+','+Math.round(x.y)+','+Math.round(x.width)+','+Math.round(x.height); };
+    const cs=e=>{ if(!e) return ''; const s=getComputedStyle(e); return ' ['+s.display+' pos='+s.position+' mt='+s.marginTop+' h='+s.height+']'; };
+    rep('[probe] drawer('+tag+') win='+innerWidth+'x'+innerHeight+' overlay='+r(o)+cs(o)+' drawer='+r(d)+cs(d)+' head='+r(h)+cs(h)+' body='+r(b)+cs(b));
+  }catch(e){ rep('[probe] drawer('+tag+') ERROR '+e.message); }
+}
+// 阶段条探针：首枚 gauge-dot 的计算背景色 + 矩形（区分 DOM 丢色 vs 绘制丢色）
+function probeGauges(tag){
+  try{
+    const dots=document.querySelectorAll('.gauge-dot');
+    const first=dots[0];
+    const c=first?getComputedStyle(first).backgroundColor:'none';
+    const x=first?first.getBoundingClientRect():null;
+    rep('[probe] gauges('+tag+') count='+dots.length+' firstBg='+c+' rect='+(x?[Math.round(x.x),Math.round(x.y),Math.round(x.width),Math.round(x.height)].join(','):'none'));
+  }catch(e){ rep('[probe] gauges('+tag+') ERROR '+e.message); }
 }
 function dbAvailable(){ 
   try{
@@ -1622,7 +1635,17 @@ function deleteProject(id){
   state.projects=state.projects.filter(p=>p.id!==id);
   saveData(); closeOverlay(); render(); showToast('项目已删除');
 }
-function openOverlay(){ const o=document.getElementById('overlay'); o.classList.add('show'); forcePaint(o); }
+function openOverlay(){ const o=document.getElementById('overlay'); o.classList.add('show'); forcePaint(o); probeDrawer('open'); }
+function closeOverlay(){
+  document.getElementById('overlay').classList.remove('show');
+  if(state.loaded){
+    requestAnimationFrame(()=>{
+      render();
+      probeDrawer('closed');
+      probeGauges('closed');
+    });
+  }
+}
 function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
 function updateSearchClear(){
   const inp=document.getElementById('searchInput');
