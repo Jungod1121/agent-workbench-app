@@ -79,6 +79,16 @@ fn report_frontend(msg: String) -> Result<(), String> {
     Ok(())
 }
 
+// 前端就绪握手：前端完成首帧渲染后直接调用（隐藏窗口下 WKWebView 不跑 rAF，
+// 不能等 rAF），此时 show 窗口；前端在 show 成功后再用双重 rAF 强制重绘一帧
+#[tauri::command]
+fn frontend_ready(window: tauri::WebviewWindow) -> Result<(), String> {
+    log::info!("frontend_ready received, showing window");
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ---- W2: Proxy minimal (对标 CC Switch proxyApi) ----
 #[tauri::command]
 fn get_proxy_status(state: State<'_, ProxyState>) -> Result<ProxyStatus, String> {
@@ -219,6 +229,7 @@ pub fn run() {
             set_window_theme,
             open_external,
             report_frontend,
+            frontend_ready,
             get_proxy_status,
             start_proxy,
             stop_proxy,
@@ -362,12 +373,21 @@ pub fn run() {
                 let _ = tray_builder.build(app)?;
             }
 
-            if let Some(w) = app.get_webview_window("main") {
-                let win = w.clone();
+            // 窗口显示改为事件驱动：等待前端 frontend_ready（双重 rAF 后调用）再 show，
+            // 避免 WKWebView 在窗口隐藏期插入的 DOM 不参与首次合成（阶段条/排版首帧错乱）
+            // 兜底：4 秒内前端未就绪（JS 异常等极端情况）则强制显示，避免白屏假死
+            {
+                let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    tokio::time::sleep(std::time::Duration::from_millis(120)).await;
-                    let _ = win.show();
-                    let _ = win.set_focus();
+                    tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+                    if let Some(w) = handle.get_webview_window("main") {
+                        let visible = w.is_visible().unwrap_or(true);
+                        if !visible {
+                            log::warn!("frontend_ready not received within 4s, fallback show");
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
                 });
             }
 

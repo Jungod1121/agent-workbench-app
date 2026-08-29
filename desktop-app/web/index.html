@@ -65,6 +65,13 @@
   .dark .stage-pill,.dark #addProjectBtn{background-color:rgba(255,255,255,0.12)}
   .dark .usage-bar{background:rgba(22,22,23,0.95)}
 }
+/* WKWebView 合成层预建：磨砂/玻璃元素提前建立独立合成层，
+   避免窗口隐藏期首次渲染的合成层等到首次可见才进帧缓冲（阶段1修复） */
+.topbar,.usage-bar,.drawer-head,
+.dark .stage-pill,.dark #addProjectBtn{
+  will-change:backdrop-filter,transform;
+  transform:translateZ(0);
+}
 *{box-sizing:border-box}
 html{font-family:var(--font-sans); -webkit-font-smoothing:antialiased; line-height:1.5}
 body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); font-size:14px}
@@ -427,6 +434,25 @@ function tauriInvoke(cmd, args){
   return Promise.reject(new Error('tauri not available'));
 }
 function rep(msg){ try{ if(dbAvailable()) tauriInvoke('report_frontend', {msg}).catch(()=>{}); }catch(e){} }
+// 就绪握手：隐藏窗口下 WKWebView 不跑 rAF，所以先直接通知 Rust show 窗口；
+// 窗口可见后（rAF 恢复）再用双重 rAF 强制重绘一帧，规避隐藏期合成的层不进帧缓冲
+function signalReady(){
+  tauriInvoke('frontend_ready').then(()=>{
+    rep('[probe] frontend_ready ok');
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        if(state.loaded) render();
+      });
+    });
+  }).catch(()=>{});
+}
+// 通用强制重绘：大范围 innerHTML 替换后调用，规避 WKWebView 合成层不刷新
+function forcePaint(el){
+  if(!el) return;
+  el.style.transform='translateZ(0)';
+  void el.offsetHeight;
+  requestAnimationFrame(()=>{ el.style.transform=''; });
+}
 function dbAvailable(){ 
   try{
     if(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) return true;
@@ -1332,6 +1358,7 @@ function render(){
     const importBtn=document.getElementById('importJsonBtn');
     if(importBtn){ importBtn.title=t('app.import'); importBtn.setAttribute('aria-label', t('app.import')); }
     renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
+    forcePaint(document.getElementById('gridArea'));
     const g=document.getElementById('gridArea');
     rep('[probe] render #'+(window._rc=(window._rc||0)+1)+' filter='+state.filterStage+' rows='+(g?g.querySelectorAll('.list-row').length:0)+' gauges='+(g?g.querySelectorAll('.gauge').length:0)+' pills='+(document.getElementById('stagePill')?document.getElementById('stagePill').children.length:0));
   }catch(e){ console.error('[render] failed', e); rep('[probe] render ERROR '+e.message); showToast('渲染出错: '+(e&&e.message||e)); }
@@ -1595,7 +1622,7 @@ function deleteProject(id){
   state.projects=state.projects.filter(p=>p.id!==id);
   saveData(); closeOverlay(); render(); showToast('项目已删除');
 }
-function openOverlay(){ document.getElementById('overlay').classList.add('show'); }
+function openOverlay(){ const o=document.getElementById('overlay'); o.classList.add('show'); forcePaint(o); }
 function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
 function updateSearchClear(){
   const inp=document.getElementById('searchInput');
@@ -1749,9 +1776,8 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
   rep('[probe] boot projects='+(state.projects||[]).length+' first='+JSON.stringify(state.projects[0]||{}).slice(0,160));
   render();
   setTimeout(()=>{ const g=document.getElementById('gridArea'); rep('[probe] t+3s rows='+(g?g.querySelectorAll('.list-row').length:0)+' gauges='+(g?g.querySelectorAll('.gauge').length:0)+' pills='+(document.getElementById('stagePill')?document.getElementById('stagePill').children.length:0)); }, 3000);
-  // 窗口 120ms 后才 show：隐藏期渲染的 innerHTML 在 WKWebView 可能不 paint，
-  // 窗口可见后再 render 一次强制重绘（解决启动阶段条不可见）
-  setTimeout(()=>{ if(state.loaded) render(); }, 600);
+  // 首帧渲染完成后通知 Rust 显示窗口（事件驱动，替代 120ms 定时器 + 600ms 重绘补丁）
+  signalReady();
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && state.loaded) render(); });
   if(hasSyncSettings()){ setSyncStatus('syncing'); await pullFromServer(false); } else { setSyncStatus('idle'); }
 })();
