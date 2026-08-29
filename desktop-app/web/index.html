@@ -1351,9 +1351,9 @@ function rowHtml(p){
           const idx=stageIndex(stKey);
           const isPaused=!!p.paused;
           const isCurrent=i===idx && idx>=0;
-          const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : st.color;
-          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : st.color;
-          return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+(isPaused?'hsl(var(--muted-foreground))33':st.color+'40')+'; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
+          const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<=idx ? st.color : st.color+'4d');
+          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<idx ? st.color : st.color+'4d');
+          return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+st.color+'40, 0 0 10px '+st.color+'59; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
         }).join('')}
       </div>
       <span class="gauge-label" style="color:${p.paused?'hsl(var(--muted-foreground))':s.color}; background:${p.paused?'hsl(var(--muted))':s.bg}; border:1px solid ${p.paused?'hsl(var(--border))':s.color+'1a'}; padding:2px 6px; border-radius:6px">${esc(t('stages.'+stKey))}${p.paused?' · '+esc(t('stages.paused')):''}</span>

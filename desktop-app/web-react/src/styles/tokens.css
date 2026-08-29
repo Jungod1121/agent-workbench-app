@@ -1,0 +1,84 @@
+/* ============================================================
+   tokens.css — 从旧版 web/index.html :root/.dark 原样迁移的设计令牌
+   阶段色 / G9 渐变 / 玻璃令牌一并保留（apple-style-design）
+   ============================================================ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 210 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 210 100% 56%;
+  --radius: 0.5rem;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'PingFang SC', 'Hiragino Sans GB', Inter, 'Noto Sans SC', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue',
+    'PingFang SC', Inter, sans-serif;
+
+  /* 阶段色（构思/开发/测试/上线） */
+  --stage-idea: #d97706;
+  --stage-building: #2563eb;
+  --stage-testing: #7c3aed;
+  --stage-live: #059669;
+  --stage-idea-bg: #fef3c7;
+  --stage-building-bg: #dbeafe;
+  --stage-testing-bg: #ede9fe;
+  --stage-live-bg: #d1fae5;
+
+  /* G9 极光渐变（顶栏标题/数字） */
+  --g9: linear-gradient(135deg, #2dd4bf 0%, #4f8df9 48%, #a78bfa 100%);
+}
+
+.dark {
+  --background: 240 5% 12%;
+  --foreground: 0 0% 98%;
+  --card: 240 5% 16%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 5% 16%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 210 100% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 18%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 18%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 5% 18%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5% 24%;
+  --input: 240 5% 24%;
+  --ring: 210 100% 54%;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+}
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
