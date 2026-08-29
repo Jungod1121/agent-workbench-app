@@ -10,7 +10,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { useSync } from '@/hooks/useSync';
 import { useWindowBlurDim } from '@/hooks/useWindowBlurDim';
 import { apiGet } from '@/lib/api/sync';
-import { UsageBar } from '@/components/UsageBar';
 import { StagePillNav } from '@/components/StagePillNav';
 import { ContextMenu } from '@/components/ContextMenu';
 import { Button } from '@/components/ui/button';
@@ -59,15 +58,6 @@ export default function App() {
     const c: Record<string, number> = { all: list.length, paused: list.filter((p) => p.paused).length };
     for (const s of STAGES) c[s.key] = list.filter((p) => p.stage === s.key).length;
     return c;
-  }, [projects]);
-
-  const usage = useMemo(() => {
-    const list = projects ?? [];
-    return {
-      total: list.length,
-      prompts: list.reduce((s, p) => s + (p.prompts || []).length, 0),
-      live: list.filter((p) => p.stage === 'live').length,
-    };
   }, [projects]);
 
   const nextSortIndex = useMemo(() => Math.max(0, ...(projects ?? []).map((p) => p.sort_index || 0)) + 1, [projects]);
@@ -207,13 +197,32 @@ export default function App() {
 
         {/* 内容区 */}
         <main style={{ padding: '16px 24px 24px', maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-          <UsageBar total={usage.total} prompts={usage.prompts} live={usage.live} syncStatus={sync.status} />
-
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 12px' }}>
             <StagePillNav chips={chips} value={filterStage} onChange={(k) => { setFilterStage(k); setPage(1); }} counts={counts} />
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: 11,
+                  color:
+                    sync.status === 'ok'
+                      ? '#059669'
+                      : sync.status === 'offline'
+                        ? '#d97706'
+                        : sync.status === 'syncing'
+                          ? 'hsl(var(--muted-foreground))'
+                          : 'hsl(var(--muted-foreground))',
+                }}
+                title={t('settings.sync')}
+              >
+                {sync.status === 'syncing' ? '⟳' : sync.status === 'offline' ? '○' : '●'}
+              </span>
               {t('list.count', { shown: filtered.length, total: (projects ?? []).length })}
-            </span>
+            </div>
           </div>
 
           {projects !== null && projects.length === 0 ? (
