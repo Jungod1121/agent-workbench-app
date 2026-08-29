@@ -99,6 +99,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
 .btn-secondary:hover{background:hsl(var(--muted) / 0.5)}
 .btn-ghost{background:transparent; border:0; color:hsl(var(--muted-foreground))}
 .btn-ghost:hover{background:hsl(var(--muted))}
+.btn-icon{background:transparent; border:0; color:hsl(var(--muted-foreground)); transition: all .15s ease}
+.btn-icon:hover{background:hsl(var(--muted)); color:hsl(var(--foreground))}
+.btn-icon:active{transform:scale(0.95)}
 
 /* 14 外密16 */
 .content{padding:16px 24px 24px; max-width:1200px; width:100%; margin:0 auto}
@@ -228,9 +231,9 @@ body{margin:0; background:hsl(var(--background)); color:hsl(var(--foreground)); 
           <input type="text" id="searchInput" placeholder="搜索项目…” aria-label="搜索">
           <button class="search-clear hidden" id="searchClear" aria-label="清除">×</button>
         </div>
-        <button class="btn btn-primary" id="addProjectBtn" title="新建项目" aria-label="新建项目" style="min-height:36px; padding:8px 14px; border-radius:8px; gap:6px; white-space:nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg><span id="addProjectLabel">+ 新建</span></button>
-        <button class="btn btn-secondary" id="importJsonBtn" title="导入本机项目" aria-label="导入本机项目" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-        <button class="btn btn-secondary" id="settingsBtn" title="设置" aria-label="设置" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.10a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="btn btn-primary" id="addProjectBtn" title="新建项目" aria-label="新建项目" style="min-height:36px; padding:8px 14px; border-radius:8px; gap:6px; white-space:nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg><span id="addProjectLabel">新建</span></button>
+        <button class="btn btn-icon" id="importJsonBtn" title="导入本机项目" aria-label="导入本机项目" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        <button class="btn btn-icon" id="settingsBtn" title="设置" aria-label="设置" style="width:36px; height:36px; padding:0; border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.10a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
     </div>
 
@@ -279,25 +282,25 @@ const I18N = {
   zh: {
     settings:{language:"界面语言", languageHint:"切换后立即预览界面语言，保存后永久生效。", theme:"外观主题", themeHint:"选择应用的外观主题，立即生效。", themeLight:"浅色", themeDark:"深色", themeSystem:"跟随系统", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
     common:{save:"保存", cancel:"取消", close:"关闭", settings:"设置", general:"通用", sync:"同步", proxy:"代理", icons:"图标库"},
-    app:{title:"Agent Workbench", addProject:"+ 新建", searchPlaceholder:"搜索项目…", import:"导入", all:"全部", noProjects:"还没有项目", noMatch:"没有匹配的项目"},
+    app:{title:"Agent Workbench", addProject:"新建", searchPlaceholder:"搜索项目…", import:"导入", all:"全部", noProjects:"还没有项目", noMatch:"没有匹配的项目"},
     stages:{idea:"构思中", building:"开发中", testing:"测试中", live:"已上线", paused:"已暂停", all:"全部"}
   },
   "zh-TW": {
     settings:{language:"介面語言", languageHint:"切換後立即預覽介面語言，保存後永久生效。", theme:"外觀主題", themeHint:"選擇應用的外觀主題，立即生效。", themeLight:"淺色", themeDark:"深色", themeSystem:"跟隨系統", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
     common:{save:"保存", cancel:"取消", close:"關閉", settings:"設定", general:"通用", sync:"同步", proxy:"代理", icons:"圖標庫"},
-    app:{title:"Agent Workbench", addProject:"+ 新建", searchPlaceholder:"搜尋專案…", import:"匯入", all:"全部", noProjects:"還沒有專案", noMatch:"沒有匹配的專案"},
+    app:{title:"Agent Workbench", addProject:"新建", searchPlaceholder:"搜尋專案…", import:"匯入", all:"全部", noProjects:"還沒有專案", noMatch:"沒有匹配的專案"},
     stages:{idea:"構思中", building:"開發中", testing:"測試中", live:"已上線", paused:"已暫停", all:"全部"}
   },
   en: {
     settings:{language:"Language", languageHint:"Switches instantly, saved permanently.", theme:"Appearance", themeHint:"Choose appearance, applies instantly.", themeLight:"Light", themeDark:"Dark", themeSystem:"System", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
     common:{save:"Save", cancel:"Cancel", close:"Close", settings:"Settings", general:"General", sync:"Sync", proxy:"Proxy", icons:"Icons"},
-    app:{title:"Agent Workbench", addProject:"+ New", searchPlaceholder:"Search projects…", import:"Import", all:"All", noProjects:"No projects yet", noMatch:"No matches"},
+    app:{title:"Agent Workbench", addProject:"New", searchPlaceholder:"Search projects…", import:"Import", all:"All", noProjects:"No projects yet", noMatch:"No matches"},
     stages:{idea:"Idea", building:"Building", testing:"Testing", live:"Live", paused:"Paused", all:"All"}
   },
   ja: {
     settings:{language:"表示言語", languageHint:"切り替えは即時プレビュー、保存で永続化。", theme:"外観", themeHint:"外観を選択、即時反映。", themeLight:"ライト", themeDark:"ダーク", themeSystem:"システム", languageOptionChinese:"简体中文", languageOptionTraditionalChinese:"繁體中文", languageOptionEnglish:"English", languageOptionJapanese:"日本語"},
     common:{save:"保存", cancel:"キャンセル", close:"閉じる", settings:"設定", general:"一般", sync:"同期", proxy:"プロキシ", icons:"アイコン"},
-    app:{title:"Agent Workbench", addProject:"+ 新規", searchPlaceholder:"プロジェクトを検索…", import:"インポート", all:"すべて", noProjects:"プロジェクトなし", noMatch:"一致なし"},
+    app:{title:"Agent Workbench", addProject:"新規", searchPlaceholder:"プロジェクトを検索…", import:"インポート", all:"すべて", noProjects:"プロジェクトなし", noMatch:"一致なし"},
     stages:{idea:"構想中", building:"開発中", testing:"テスト中", live:"公開済み", paused:"一時停止", all:"すべて"}
   }
 };
@@ -518,7 +521,7 @@ function renderSettingsDrawer(prefillError){
       </div>
     </div>
     <div class="drawer-body">
-      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:12px; margin-bottom:24px; border:1px solid hsl(var(--border))">
+      <div class="settings-tabs" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:4px; padding:4px; background:hsl(var(--muted)); border-radius:12px; margin-bottom:24px; border:1px solid hsl(var(--border))">
         <button class="settings-tab ${settingsTab==='general'?'active':''}" data-tab="general" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='general'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='general'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='general'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.general')}</button>
         <button class="settings-tab ${settingsTab==='sync'?'active':''}" data-tab="sync" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='sync'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='sync'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='sync'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.sync')}</button>
         <button class="settings-tab ${settingsTab==='proxy'?'active':''}" data-tab="proxy" style="padding:10px 6px; border-radius:8px; font-size:13px; font-weight:500; border:0; background:${settingsTab==='proxy'?'hsl(var(--primary))':'transparent'}; color:${settingsTab==='proxy'?'hsl(var(--primary-foreground))':'hsl(var(--muted-foreground))'}; box-shadow:${settingsTab==='proxy'?'0 1px 2px rgba(0,0,0,0.08)':''}; cursor:pointer">${t('common.proxy')}</button>
@@ -1219,7 +1222,8 @@ function hideCtxMenu(){ const m=document.getElementById('ctxMenu'); if(m) m.clas
 document.addEventListener('click', hideCtxMenu);
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') hideCtxMenu(); });
 function rowHtml(p){
-  const s=stageInfo(p.stage);
+  const stKey = STAGES.some(x=>x.key===p.stage) ? p.stage : 'idea';
+  const s=stageInfo(stKey);
   const promptCount=(p.prompts||[]).length;
   const tags=(p.tags||[]).slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   const iconBg = p.icon_color || s.bg;
@@ -1235,17 +1239,17 @@ function rowHtml(p){
       <div class="list-desc">${highlight(p.description||'暂无简介', state.search)} · ${tags}</div>
     </div>
     <div style="display:flex; gap:6px; align-items:center; flex-shrink:0">
-      <div class="gauge" title="${esc(stageInfo(p.stage).label)}${p.paused?' · 已暂停':''}">
+      <div class="gauge" title="${esc(s.label)}${p.paused?' · 已暂停':''}">
         ${STAGES.map((st,i)=>{
-          const idx=stageIndex(p.stage);
+          const idx=stageIndex(stKey);
           const isPaused=!!p.paused;
           const isCurrent=i===idx && idx>=0;
           const dotBg=isPaused ? 'hsl(var(--muted-foreground))' : st.color;
-          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : (i<idx ? st.color : st.color+'66');
+          const lineBg=isPaused ? 'hsl(var(--muted-foreground))' : st.color;
           return `<div class="gauge-dot" style="background:${dotBg}${isCurrent?'; box-shadow:0 0 0 3px '+(isPaused?'hsl(var(--muted-foreground))33':st.color+'40')+'; transform:scale(1.15)':''}"></div>${i<STAGES.length-1?`<div class="gauge-line" style="background:${lineBg}"></div>`:''}`
         }).join('')}
       </div>
-      <span class="gauge-label" style="color:${p.paused?'hsl(var(--muted-foreground))':s.color}; background:${p.paused?'hsl(var(--muted))':s.bg}; border:1px solid ${p.paused?'hsl(var(--border))':s.color+'1a'}; padding:2px 6px; border-radius:6px">${esc(t('stages.'+p.stage))}${p.paused?' · '+esc(t('stages.paused')):''}</span>
+      <span class="gauge-label" style="color:${p.paused?'hsl(var(--muted-foreground))':s.color}; background:${p.paused?'hsl(var(--muted))':s.bg}; border:1px solid ${p.paused?'hsl(var(--border))':s.color+'1a'}; padding:2px 6px; border-radius:6px">${esc(t('stages.'+stKey))}${p.paused?' · '+esc(t('stages.paused')):''}</span>
     </div>
     <div class="list-meta">
       <span>${promptCount} Prompts</span>
@@ -1255,17 +1259,19 @@ function rowHtml(p){
 }
 function render(){ 
   if(!state.loaded) return;
-  const titleEl=document.querySelector('.topbar-title');
-  if(titleEl) titleEl.textContent=t('app.title');
-  const searchEl=document.getElementById('searchInput');
-  if(searchEl) searchEl.placeholder=t('app.searchPlaceholder');
-  const addLabel=document.getElementById('addProjectLabel');
-  if(addLabel) addLabel.textContent=t('app.addProject');
-  const addBtn=document.getElementById('addProjectBtn');
-  if(addBtn) addBtn.title=t('app.addProject');
-  const importBtn=document.getElementById('importJsonBtn');
-  if(importBtn){ importBtn.title=t('app.import'); importBtn.setAttribute('aria-label', t('app.import')); }
-  renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
+  try{
+    const titleEl=document.querySelector('.topbar-title');
+    if(titleEl) titleEl.textContent=t('app.title');
+    const searchEl=document.getElementById('searchInput');
+    if(searchEl) searchEl.placeholder=t('app.searchPlaceholder');
+    const addLabel=document.getElementById('addProjectLabel');
+    if(addLabel) addLabel.textContent=t('app.addProject');
+    const addBtn=document.getElementById('addProjectBtn');
+    if(addBtn) addBtn.title=t('app.addProject');
+    const importBtn=document.getElementById('importJsonBtn');
+    if(importBtn){ importBtn.title=t('app.import'); importBtn.setAttribute('aria-label', t('app.import')); }
+    renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
+  }catch(e){ console.error('[render] failed', e); showToast('渲染出错: '+(e&&e.message||e)); }
 }
 
 const CATEGORIES=[{key:'general',label:'通用'},{key:'work',label:'工作'},{key:'personal',label:'个人'},{key:'research',label:'研究'},{key:'product',label:'产品'},{key:'finance',label:'财务'}];
@@ -1676,6 +1682,7 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
     }
   }
   state.loaded=true;
+  console.log('[boot] projects', (state.projects||[]).length, 'firstStage', (state.projects[0]||{}).stage, 'win', window.innerWidth+'x'+window.innerHeight, 'theme', document.documentElement.className, 'db', dbAvailable());
   render();
   if(hasSyncSettings()){ setSyncStatus('syncing'); await pullFromServer(false); } else { setSyncStatus('idle'); }
 })();

@@ -259,6 +259,7 @@ pub fn run() {
                         .targets([
                             Target::new(TargetKind::Stdout),
                             Target::new(TargetKind::Folder { path: log_dir, file_name: Some("agent-workbench".into()) }),
+                            Target::new(TargetKind::Webview),
                         ])
                         .rotation_strategy(RotationStrategy::KeepSome(3))
                         .max_file_size(10 * 1024 * 1024)
