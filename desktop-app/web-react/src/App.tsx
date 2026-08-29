@@ -185,7 +185,26 @@ export default function App() {
               data-tauri-no-drag
               aria-label={t('app.update')}
               title={t('app.update')}
-              onClick={() => showToast(t('app.upToDate'))}
+              onClick={async () => {
+                if (!tauriAvailable()) {
+                  showToast(t('app.upToDate'));
+                  return;
+                }
+                try {
+                  const res = await invoke<{ available: boolean; version?: string }>('check_for_updates');
+                  if (res.available && res.version) {
+                    if (window.confirm(t('app.updateAvailable', { version: res.version }))) {
+                      showToast(t('app.installing'));
+                      await invoke('install_update');
+                      showToast(t('app.updateDone'));
+                    }
+                  } else {
+                    showToast(t('app.upToDate'));
+                  }
+                } catch (e) {
+                  showToast(String(e));
+                }
+              }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 3v6h-6" /></svg>
             </Button>
@@ -396,7 +415,6 @@ export default function App() {
           setTheme={setTheme}
           syncSettings={sync.settings}
           syncStatus={sync.status}
-          localCount={(projects ?? []).length}
           onSyncSave={(s) => {
             sync.save(s);
             showToast(s ? t('sync.statusOk') : t('settings.disconnected'));

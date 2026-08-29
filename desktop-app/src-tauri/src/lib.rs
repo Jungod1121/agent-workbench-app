@@ -115,6 +115,8 @@ pub fn run() {
             commands::backup::restore_backup,
             commands::backup::delete_backup,
             commands::settings::set_window_theme,
+            commands::updater::check_for_updates,
+            commands::updater::install_update,
             commands::system::open_external,
             commands::system::report_frontend,
             commands::system::frontend_ready,

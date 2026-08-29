@@ -5,8 +5,6 @@ import { STAGES } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 import { PromptList } from './prompts/PromptList';
 
-const CATEGORIES = ['general', 'work', 'personal', 'research', 'product', 'finance'] as const;
-
 interface ProjectDetailDrawerProps {
   project: Project;
   onSave: (p: Project) => void;
@@ -21,9 +19,6 @@ export function ProjectDetailDrawer({ project: p, onSave, onDelete, onPromptsCha
   const [name, setName] = useState(p.name);
   const [desc, setDesc] = useState(p.description);
   const [stage, setStage] = useState(p.stage);
-  const [category, setCategory] = useState(p.category);
-  const [icon, setIcon] = useState(p.icon || '');
-  const [iconColor, setIconColor] = useState(p.icon_color || '#0A84FF');
   const [tags, setTags] = useState((p.tags || []).join(', '));
   const [paused, setPaused] = useState(!!p.paused);
 
@@ -31,9 +26,6 @@ export function ProjectDetailDrawer({ project: p, onSave, onDelete, onPromptsCha
     setName(p.name);
     setDesc(p.description);
     setStage(p.stage);
-    setCategory(p.category);
-    setIcon(p.icon || '');
-    setIconColor(p.icon_color || '#0A84FF');
     setTags((p.tags || []).join(', '));
     setPaused(!!p.paused);
   }, [p.id, p.name, p.description, p.stage, p.category, p.icon, p.icon_color, p.tags, p.paused]);
@@ -44,9 +36,9 @@ export function ProjectDetailDrawer({ project: p, onSave, onDelete, onPromptsCha
       name: name.trim() || p.name,
       description: desc.trim(),
       stage,
-      category,
-      icon: icon.trim() || null,
-      icon_color: iconColor || null,
+      category: p.category,
+      icon: p.icon,
+      icon_color: p.icon_color,
       tags: tags.split(',').map((s) => s.trim()).filter(Boolean),
       paused,
       updatedAt: new Date().toISOString(),
@@ -89,45 +81,15 @@ export function ProjectDetailDrawer({ project: p, onSave, onDelete, onPromptsCha
             <label>{t('detail.desc')}</label>
             <textarea rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} />
           </div>
-          <div className="field-grid-2" style={{ marginBottom: 12 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>{t('detail.stage')}</label>
-              <select value={stage} onChange={(e) => setStage(e.target.value as Project['stage'])}>
-                {STAGES.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {t('stage.' + s.key)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>{t('detail.category')}</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {t('category.' + c)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="field-grid-2" style={{ marginBottom: 12 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>{t('detail.icon')}</label>
-              <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)} />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>{t('detail.iconColor')}</label>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  type="color"
-                  value={iconColor}
-                  onChange={(e) => setIconColor(e.target.value)}
-                  style={{ width: 48, height: 36, padding: 2, flexShrink: 0, border: '1px solid hsl(var(--input))', borderRadius: 8, background: 'hsl(var(--background))' }}
-                />
-                <input type="text" value={iconColor} onChange={(e) => setIconColor(e.target.value)} style={{ flex: 1 }} />
-              </div>
-            </div>
+          <div className="field">
+            <label>{t('detail.stage')}</label>
+            <select value={stage} onChange={(e) => setStage(e.target.value as Project['stage'])}>
+              {STAGES.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {t('stage.' + s.key)}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="field">
             <label>{t('detail.tags')}</label>

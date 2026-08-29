@@ -13,7 +13,10 @@
     "previewMode": "Browser preview mode (no Tauri)",
     "dbConnected": "DB connected · {{n}} projects",
     "update": "Check for updates",
-    "upToDate": "Already up to date (v2.0.1)"
+    "upToDate": "Already up to date (v2.0.1)",
+    "updateAvailable": "New version {{version}} available. Install now?",
+    "installing": "Installing…",
+    "updateDone": "Update installed, restart to apply"
   },
   "stage": {
     "all": "All",

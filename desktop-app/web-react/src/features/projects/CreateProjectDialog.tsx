@@ -4,8 +4,6 @@ import type { Project, Stage } from '@/lib/api/types';
 import { STAGES } from '@/lib/api/types';
 import { Button } from '@/components/ui/button';
 
-const CATEGORIES = ['general', 'work', 'personal', 'research', 'product', 'finance'] as const;
-
 interface CreateProjectDialogProps {
   open: boolean;
   nextSortIndex: number;
@@ -23,9 +21,6 @@ export function CreateProjectDialog({ open, nextSortIndex, onCreate, onClose }: 
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [stage, setStage] = useState<Stage>('idea');
-  const [category, setCategory] = useState<string>('general');
-  const [icon, setIcon] = useState('');
-  const [iconColor, setIconColor] = useState('#0A84FF');
   const [tags, setTags] = useState('');
   const [err, setErr] = useState('');
 
@@ -34,9 +29,6 @@ export function CreateProjectDialog({ open, nextSortIndex, onCreate, onClose }: 
       setName('');
       setDesc('');
       setStage('idea');
-      setCategory('general');
-      setIcon('');
-      setIconColor('#0A84FF');
       setTags('');
       setErr('');
     }
@@ -57,9 +49,9 @@ export function CreateProjectDialog({ open, nextSortIndex, onCreate, onClose }: 
       description: desc.trim(),
       stage,
       paused: false,
-      category,
-      icon: icon.trim() || null,
-      icon_color: iconColor || null,
+      category: 'general',
+      icon: null,
+      icon_color: null,
       tags: tags.split(',').map((s) => s.trim()).filter(Boolean),
       sort_index: nextSortIndex,
       prompts: [],
@@ -86,45 +78,15 @@ export function CreateProjectDialog({ open, nextSortIndex, onCreate, onClose }: 
           <label>{t('create.desc')}</label>
           <textarea rows={3} value={desc} placeholder={t('create.descPh')} onChange={(e) => setDesc(e.target.value)} />
         </div>
-        <div className="field-grid-2" style={{ marginBottom: 12 }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>{t('create.stage')}</label>
-            <select value={stage} onChange={(e) => setStage(e.target.value as Stage)}>
-              {STAGES.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {t('stage.' + s.key)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>{t('create.category')}</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {t('category.' + c)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="field-grid-2" style={{ marginBottom: 12 }}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>{t('create.icon')}</label>
-            <input type="text" value={icon} placeholder={t('create.iconPh')} onChange={(e) => setIcon(e.target.value)} />
-          </div>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>{t('create.iconColor')}</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input
-                type="color"
-                value={iconColor}
-                onChange={(e) => setIconColor(e.target.value)}
-                style={{ width: 48, height: 36, padding: 2, flexShrink: 0, border: '1px solid hsl(var(--input))', borderRadius: 8, background: 'hsl(var(--background))' }}
-              />
-              <input type="text" value={iconColor} onChange={(e) => setIconColor(e.target.value)} style={{ flex: 1 }} />
-            </div>
-          </div>
+        <div className="field">
+          <label>{t('create.stage')}</label>
+          <select value={stage} onChange={(e) => setStage(e.target.value as Stage)}>
+            {STAGES.map((s) => (
+              <option key={s.key} value={s.key}>
+                {t('stage.' + s.key)}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label>{t('create.tags')}</label>

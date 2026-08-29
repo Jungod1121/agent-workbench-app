@@ -13,7 +13,10 @@
     "previewMode": "瀏覽器預覽模式（無 Tauri）",
     "dbConnected": "DB 已連接 · {{n}} 個專案",
     "update": "檢查更新",
-    "upToDate": "已是最新版本 v2.0.1"
+    "upToDate": "已是最新版本 v2.0.1",
+    "updateAvailable": "發現新版本 {{version}}，立即安裝？",
+    "installing": "正在安裝…",
+    "updateDone": "更新完成，重啟後生效"
   },
   "stage": {
     "all": "全部",

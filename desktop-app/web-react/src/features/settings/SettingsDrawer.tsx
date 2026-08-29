@@ -20,7 +20,6 @@ interface SettingsDrawerProps {
   setTheme: (t: Theme) => void;
   syncSettings: SyncSettings | null;
   syncStatus: SyncStatus;
-  localCount: number;
   onSyncSave: (s: SyncSettings | null) => void;
   onSyncTest: (url: string, token: string) => Promise<boolean>;
   onBackupNow: () => Promise<string | null>;
@@ -59,15 +58,6 @@ export function SettingsDrawer(props: SettingsDrawerProps) {
     void loadBackups().then(setBackups);
   };
   useEffect(refreshBackups, [tab]);
-
-  const statusText =
-    props.syncStatus === 'ok'
-      ? t('sync.statusOk')
-      : props.syncStatus === 'offline'
-        ? t('sync.statusOffline')
-        : props.syncStatus === 'syncing'
-          ? t('sync.statusSyncing')
-          : t('sync.statusIdle');
 
   const save = async () => {
     const u = url.trim();
@@ -184,12 +174,6 @@ export function SettingsDrawer(props: SettingsDrawerProps) {
                     </Button>
                   ))}
                 </div>
-              </div>
-              <div className="settings-card" style={{ padding: 16, borderRadius: 12, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))' }}>
-                <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{t('settings.backup')}</p>
-                <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', margin: '4px 0 0' }}>
-                  {t('settings.localOnly', { n: props.localCount })} · {statusText}
-                </p>
               </div>
             </div>
           )}

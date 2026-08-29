@@ -51,7 +51,7 @@ export function ProjectRow({
     { idea: 'var(--stage-idea)', building: 'var(--stage-building)', testing: 'var(--stage-testing)', live: 'var(--stage-live)' }[
       stageKey
     ] ?? 'hsl(var(--muted-foreground))';
-  const letter = (p.icon || p.name[0] || 'P').toUpperCase();
+  const letter = (p.name[0] || 'P').toUpperCase();
 
   const rel = (() => {
     const diff = Date.now() - new Date(p.updatedAt).getTime();
@@ -83,31 +83,12 @@ export function ProjectRow({
       >
         ⋮⋮
       </span>
-      <span
-        className="list-icon"
-        style={{ background: p.icon_color || stBg, color: p.icon_color ? '#fff' : stFg, borderColor: p.icon_color || stBg }}
-      >
+      <span className="list-icon" style={{ background: stBg, color: stFg, borderColor: stBg }}>
         {letter}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="list-name">
           {highlight(p.name, search)}
-          {p.category && p.category !== 'general' && (
-            <span
-              style={{
-                fontSize: 10,
-                padding: '2px 6px',
-                borderRadius: 9999,
-                marginLeft: 6,
-                background: 'hsl(var(--secondary))',
-                color: 'hsl(var(--muted-foreground))',
-                border: '1px solid hsl(var(--border))',
-                verticalAlign: '1px',
-              }}
-            >
-              {t('category.' + p.category, p.category)}
-            </span>
-          )}
         </div>
         <div className="list-desc">
           {highlight(p.description || '', search)}

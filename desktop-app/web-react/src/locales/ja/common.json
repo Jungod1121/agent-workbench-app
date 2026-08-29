@@ -13,7 +13,10 @@
     "previewMode": "ブラウザプレビュー（Tauri なし）",
     "dbConnected": "DB 接続済み · {{n}} 件のプロジェクト",
     "update": "更新を確認",
-    "upToDate": "最新バージョンです（v2.0.1）"
+    "upToDate": "最新バージョンです（v2.0.1）",
+    "updateAvailable": "新しいバージョン {{version}} が利用可能です。インストールしますか？",
+    "installing": "インストール中…",
+    "updateDone": "更新完了、再起動後に反映されます"
   },
   "stage": {
     "all": "すべて",
