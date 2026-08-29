@@ -396,6 +396,7 @@ function tauriInvoke(cmd, args){
   }catch(e){ console.warn('[tauriInvoke] try fail', e); }
   return Promise.reject(new Error('tauri not available'));
 }
+function rep(msg){ try{ if(dbAvailable()) tauriInvoke('report_frontend', {msg}).catch(()=>{}); }catch(e){} }
 function dbAvailable(){ 
   try{
     if(window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) return true;
@@ -1292,7 +1293,9 @@ function render(){
     const importBtn=document.getElementById('importJsonBtn');
     if(importBtn){ importBtn.title=t('app.import'); importBtn.setAttribute('aria-label', t('app.import')); }
     renderStagePill(); renderChips(); renderGrid(); updateUsage(); updateSearchClear(); 
-  }catch(e){ console.error('[render] failed', e); showToast('渲染出错: '+(e&&e.message||e)); }
+    const g=document.getElementById('gridArea');
+    rep('[probe] render #'+(window._rc=(window._rc||0)+1)+' filter='+state.filterStage+' rows='+(g?g.querySelectorAll('.list-row').length:0)+' gauges='+(g?g.querySelectorAll('.gauge').length:0)+' pills='+(document.getElementById('stagePill')?document.getElementById('stagePill').children.length:0));
+  }catch(e){ console.error('[render] failed', e); rep('[probe] render ERROR '+e.message); showToast('渲染出错: '+(e&&e.message||e)); }
 }
 
 const CATEGORIES=[{key:'general',label:'通用'},{key:'work',label:'工作'},{key:'personal',label:'个人'},{key:'research',label:'研究'},{key:'product',label:'产品'},{key:'finance',label:'财务'}];
@@ -1647,7 +1650,7 @@ if(brandEl){
 } else {
   console.warn('[brand] not found');
 }
-window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); });
+window.addEventListener('focus',()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); if(state.loaded) render(); });
 setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },60000);
 (function initTauriEvents(){
   try{
@@ -1704,7 +1707,13 @@ setInterval(()=>{ if(hasSyncSettings()&&state.loaded) pullFromServer(false); },6
   }
   state.loaded=true;
   console.log('[boot] projects', (state.projects||[]).length, 'firstStage', (state.projects[0]||{}).stage, 'win', window.innerWidth+'x'+window.innerHeight, 'theme', document.documentElement.className, 'db', dbAvailable());
+  rep('[probe] boot projects='+(state.projects||[]).length+' first='+JSON.stringify(state.projects[0]||{}).slice(0,160));
   render();
+  setTimeout(()=>{ const g=document.getElementById('gridArea'); rep('[probe] t+3s rows='+(g?g.querySelectorAll('.list-row').length:0)+' gauges='+(g?g.querySelectorAll('.gauge').length:0)+' pills='+(document.getElementById('stagePill')?document.getElementById('stagePill').children.length:0)); }, 3000);
+  // 窗口 120ms 后才 show：隐藏期渲染的 innerHTML 在 WKWebView 可能不 paint，
+  // 窗口可见后再 render 一次强制重绘（解决启动阶段条不可见）
+  setTimeout(()=>{ if(state.loaded) render(); }, 600);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && state.loaded) render(); });
   if(hasSyncSettings()){ setSyncStatus('syncing'); await pullFromServer(false); } else { setSyncStatus('idle'); }
 })();
 </script>

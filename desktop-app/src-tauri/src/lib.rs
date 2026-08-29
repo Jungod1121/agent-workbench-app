@@ -73,6 +73,12 @@ async fn open_external(app: tauri::AppHandle, url: String) -> Result<bool, Strin
     Ok(true)
 }
 
+#[tauri::command]
+fn report_frontend(msg: String) -> Result<(), String> {
+    log::info!("[frontend] {}", msg);
+    Ok(())
+}
+
 // ---- W2: Proxy minimal (对标 CC Switch proxyApi) ----
 #[tauri::command]
 fn get_proxy_status(state: State<'_, ProxyState>) -> Result<ProxyStatus, String> {
@@ -212,6 +218,7 @@ pub fn run() {
             delete_backup,
             set_window_theme,
             open_external,
+            report_frontend,
             get_proxy_status,
             start_proxy,
             stop_proxy,
