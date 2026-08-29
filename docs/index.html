@@ -36,16 +36,8 @@ a:hover{text-decoration:underline}
 :focus-visible{outline:2px solid var(--apx-blue-focus);outline-offset:2px}
 h1,h2,h3,h4,p{margin:0}
 
-/* ---------- 44px 黑顶导 ---------- */
-.topnav{position:sticky;top:0;z-index:1000;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:#000;color:#f5f5f7;font-size:12px}
-.topnav-brand{display:flex;align-items:center;gap:8px;font-weight:600;color:#f5f5f7}
-.topnav-brand .dot{width:14px;height:14px;border-radius:4px;background:var(--g9);display:inline-block}
-.topnav-links{display:flex;gap:6px}
-.topnav-links a{color:#f5f5f7;opacity:.82;padding:4px 10px;border-radius:8px;transition:opacity .2s}
-.topnav-links a:hover{opacity:1;text-decoration:none}
-
-/* ---------- 52px 磨砂子导航 ---------- */
-.subnav{position:sticky;top:44px;z-index:999;height:52px;display:flex;align-items:center;gap:24px;padding:0 24px;background:rgba(245,245,247,.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.08)}
+/* ---------- 磨砂子导航（唯一导航） ---------- */
+.subnav{position:sticky;top:0;z-index:999;height:52px;display:flex;align-items:center;gap:24px;padding:0 24px;background:rgba(245,245,247,.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.08)}
 .subnav-name{font-size:21px;font-weight:600;letter-spacing:-0.02em;white-space:nowrap}
 .subnav-links{margin-left:auto;display:flex;gap:24px;align-items:center}
 .subnav-links a{font-size:12px;color:#333}
@@ -185,7 +177,6 @@ h1,h2,h3,h4,p{margin:0}
   .bento-hero{grid-column:span 1}
   .nums{gap:28px}
   .cloud{flex-direction:column}
-  .topnav-links{display:none}
 }
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
@@ -194,14 +185,6 @@ h1,h2,h3,h4,p{margin:0}
 </head>
 <body>
 
-<nav class="topnav">
-  <div class="topnav-brand"><span class="dot"></span>Agent Workbench</div>
-  <div class="topnav-links">
-    <a href="https://github.com/Jungod1121/agent-workbench-app" target="_blank" rel="noreferrer">GitHub</a>
-    <a href="https://github.com/Jungod1121/agent-workbench-app/releases" target="_blank" rel="noreferrer">更新日志</a>
-  </div>
-</nav>
-
 <nav class="subnav">
   <span class="subnav-name">Agent Workbench</span>
   <div class="subnav-links">
@@ -209,6 +192,7 @@ h1,h2,h3,h4,p{margin:0}
     <a href="#features">功能</a>
     <a href="#sync">同步</a>
     <a href="#start">开始</a>
+    <a href="https://github.com/Jungod1121/agent-workbench-app" target="_blank" rel="noreferrer">GitHub</a>
     <a class="pill" href="https://github.com/Jungod1121/agent-workbench-app/releases" target="_blank" rel="noreferrer">下载</a>
   </div>
 </nav>
