@@ -48,8 +48,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CI 无私钥签名：跳过 updater 签名产物（本地 createUpdaterArtifacts 保留 true）
-          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":false}}'
+          # CI 无私钥：既跳过 updater 签名产物，也清空公钥避免 "public key found but no private key"
+          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":false},"plugins":{"updater":{"pubkey":""}}}'
         with:
           tagName: app-v__VERSION__
           releaseName: "Agent Workbench v__VERSION__"
