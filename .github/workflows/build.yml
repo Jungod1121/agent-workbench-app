@@ -44,12 +44,15 @@ jobs:
           npm install
           npm run build
 
+      - name: patch tauri config for CI (no signing)
+        run: |
+          jq 'del(.plugins.updater.pubkey) | .bundle.createUpdaterArtifacts = false' src-tauri/tauri.conf.json > /tmp/tauri.conf.json && mv /tmp/tauri.conf.json src-tauri/tauri.conf.json
+          cat src-tauri/tauri.conf.json
+
       - name: build & release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CI 无私钥：既跳过 updater 签名产物，也清空公钥避免 "public key found but no private key"
-          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":false},"plugins":{"updater":{"pubkey":""}}}'
         with:
           tagName: app-v__VERSION__
           releaseName: "Agent Workbench v__VERSION__"
