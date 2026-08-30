@@ -7,6 +7,9 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -45,8 +48,9 @@ jobs:
           npm run build
 
       - name: patch tauri config for CI (no signing)
+        shell: bash
         run: |
-          jq 'del(.plugins.updater.pubkey) | .bundle.createUpdaterArtifacts = false' src-tauri/tauri.conf.json > /tmp/tauri.conf.json && mv /tmp/tauri.conf.json src-tauri/tauri.conf.json
+          node -e "const fs=require('fs'); const p='src-tauri/tauri.conf.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); delete j.plugins.updater.pubkey; j.bundle.createUpdaterArtifacts=false; fs.writeFileSync(p, JSON.stringify(j,null,2)); console.log('patched', JSON.stringify({createUpdaterArtifacts:j.bundle.createUpdaterArtifacts, hasPubkey:!!j.plugins?.updater?.pubkey}))"
           cat src-tauri/tauri.conf.json
 
       - name: build & release
