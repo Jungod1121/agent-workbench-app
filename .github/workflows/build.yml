@@ -1,6 +1,6 @@
 name: build
 
-# 推送形如 v0.1.0 的 tag 时自动触发；也可以在 GitHub 网页上手动触发（workflow_dispatch）
+# 推送形如 v2.0.0 的 tag 时自动触发；也可以在 GitHub 网页上手动触发（workflow_dispatch）
 on:
   push:
     tags:
@@ -37,13 +37,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential
 
-      - name: install frontend deps
-        run: npm install
+      - name: build frontend (web-react)
+        run: |
+          cd web-react
+          npm install
+          npm run build
 
       - name: build & release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # CI 无私钥签名：跳过 updater 签名产物（本地 createUpdaterArtifacts 保留 true）
+          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":false}}'
         with:
           tagName: app-v__VERSION__
           releaseName: "Agent Workbench v__VERSION__"
