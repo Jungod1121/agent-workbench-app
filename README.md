@@ -1,29 +1,122 @@
 # Agent Workbench
 
-管理 AI Agent 项目和 Prompt 版本的个人工具，三端（Windows / macOS / Ubuntu）桌面 App + Cloudflare 自动同步。
+> **Manage every AI agent project, stage, and prompt version in one local-first desktop app — synced across your machines through a single Cloudflare Worker.**
 
-## 目录结构
+Agent Workbench is a personal workspace for people who build with AI agents every day. Track what you're building (`idea → building → testing → live`), keep a versioned history of every prompt, diff and roll back prompt changes, and sync everything across macOS / Windows / Ubuntu — with a sync backend small enough to read in one sitting.
+
+Written by [Jungod](https://github.com/Jungod1121) as dogfood for their own workflow: all 12 projects currently tracked in the app are real, active agent projects.
+
+> **立即给我的话：** 这是一个本人重度使用、三端可跑、带云同步的个人 Agent 项目管理工具 —— 完整技术叙事见下方 Architecture 章节。
+
+---
+
+## Why
+
+Heavy AI-agent users hit a wall the standard todo apps never solve: **a project isn't a task — it's a living prompt system.** You iterate a prompt, watch it drift, roll it back, ship it. That lifecycle needs:
+
+- a **stage pipeline** (`idea → building → testing → live`) instead of `done / not done`
+- **versioned prompts** you can diff against and roll back, not one editable blob
+- **sync across multiple machines** (desktop + laptop + dev box) that still works offline
+
+Agent Workbench exists to own that lifecycle.
+
+## Features
+
+| Area | What it does |
+|---|---|
+| **Projects** | CRUD with name / description / stage / category / tags / icon / pause flag; drag-to-sort; search + filter (all / 4 stages / paused); pagination (10/20/50); right-click menu (edit / duplicate / delete) |
+| **Stages** | Four-state pipeline `idea → building → testing → live`, each with its own color token, visible as a single glanceable pipeline strip |
+| **Prompts** | Version management per project: add versions, **line-level diff** between any two, one-click rollback, mark current |
+| **Backups** | Manual snapshots with restore; JSON import / export of the whole library |
+| **Sync** | Push/pull to a Cloudflare Worker; offline-first (writes queue locally, syncs on reconnect); conflict resolution dialog with three choices |
+| **App** | Tray icon (menu hides to tray on close; macOS Dock `Reopen` handled), deep-link scheme `agentworkbench://`, auto-updater, window state persistence |
+
+## Screenshots
+
+*Screenshots pending — see `assets/screenshots/`.*
+
+## Architecture
+
+The system is intentionally kept to two pieces, decoupled through a single HTTP contract.
 
 ```
-agent-workbench-app/
-├── cloudflare-worker/   同步后端：一个 Worker + 一个 KV 命名空间
-└── desktop-app/         三端桌面 App（Tauri）
+┌─────────────────────────────┐
+│   Desktop App (Tauri 2)     │
+│  ┌───────────────────────┐  │         GitHub Actions
+│  │ React + Vite frontend │  │  ───►  builds macOS .dmg
+│  │ (web-react/)          │  │          Windows .msi
+│  └──────────┬────────────┘  │          Ubuntu .deb
+│             │ invoke        │
+│  ┌──────────▼────────────┐  │
+│  │ Rust backend          │  │
+│  │ commands → services   │  │
+│  │        → database/dao │  │
+│  │ SQLite (WAL) +        │  │
+│  │ versioned migrations  │  │
+│  └──────────┬────────────┘  │
+└─────────────┼───────────────┘
+              │ GET/PUT /api/state + X-Sync-Token
+┌─────────────▼───────────────┐
+│  Cloudflare Worker (~50 LOC)│
+│  Single KV namespace        │
+└─────────────────────────────┘
 ```
 
-## 建议的部署顺序
+### Backend layering
 
-1. **先部署后端**：进 `cloudflare-worker/`，跟着里面的 README 一步步来，几分钟能搞定，最后会拿到一个 Worker 地址 + 你自己设的密钥。
-2. **本地跑通桌面 App**：进 `desktop-app/`，跟着 README 装好依赖、`npm run dev` 跑起来，首次打开填入第 1 步拿到的地址和密钥，确认能正常创建项目、刷新页面/重启数据还在。
-3. **推到 GitHub、打 tag**：触发 Actions 自动编译出三端安装包（也是在 `desktop-app/README.md` 里有详细说明）。
-4. **在另外两台设备上装好安装包**，同样填入第 1 步的地址和密钥，数据就自动同步过去了。
+The Rust side follows a strict three-layer split, so the hard parts (logic, persistence) stay testable and the UI layer stays thin:
 
-## 每台设备之后怎么用
+- **`commands/`** — thin parameter parsing; each Tauri command is a few lines
+- **`services/`** — business logic (project ops, backup orchestration)
+- **`database/`** — SQLite via `rusqlite` (WAL mode), plus a **versioned migration framework** (`v1` init → `v2` add category/icon → `v3` add sync-change tracking); schema evolves forward without data loss
 
-正常打开 App 用就行，不需要手动做任何同步操作：
-- 打开 App / 切回这个窗口 / 每隔 1 分钟，会自动去后端拉一次最新数据
-- 每次新建项目、编辑、加 Prompt，都会自动推送到后端（右上角状态点会显示"同步中 / 已同步 / 离线"）
-- 断网时正常使用，数据先存在本地缓存里，联网后会自动补上
+### Sync: minimal by design
 
-## 如果之后想换同步方案
+The Cloudflare backend is a single Worker file ([`cloudflare-worker/src/index.js`](cloudflare-worker/src/index.js)) — roughly 50 lines: `GET /api/state`, `PUT /api/state`, token check via `X-Sync-Token` header, one KV key for the whole dataset. The desktop app polls every 60s + on window focus, and its sync logic is a small explicit state machine (`idle / syncing / ok / offline`) with `dirty` tracking so offline edits queue up and flush on reconnect. If you outgrow it, the HTTP contract is the seam: swap the Worker for a Durable-Objects/WebSocket backend without touching the app.
 
-这套架构里，前端（桌面 App）和后端（Worker）是通过一个很简单的 HTTP 接口（`GET/PUT /api/state`）解耦的。以后如果想把后端换掉（比如换成自建服务器、换成别的云厂商），只需要保证新后端实现这两个接口的行为一致，桌面 App 那边基本不用改。
+## Tech Stack
+
+- **Shell**: Tauri 2 (Rust + embedded WebView) — macOS / Windows / Linux from one codebase
+- **Frontend**: React + Vite + TypeScript, Apple-design glass/frosted aesthetic, light/dark/system themes
+- **i18n**: zh / zh-TW / ja / en
+- **Persistence**: SQLite (WAL) with versioned migrations
+- **Backend**: Cloudflare Worker + KV
+- **Release**: GitHub Actions matrix build → three installers per tag, with auto-updater
+
+## Getting Started / Development
+
+> Full setup guide in [`desktop-app/README.md`](desktop-app/README.md); the `cloudflare-worker/` folder has its own deploy README.
+
+```bash
+# 1. Deploy the sync backend (5 min)
+cd cloudflare-worker   # follow its README → get Worker URL + your token
+
+# 2. Run the desktop app
+cd desktop-app
+npm install
+npm run dev
+```
+
+Load data instantly via the in-app **demo data** entry in Settings (a curated JSON dataset of 12 varied projects) — no backend needed to explore the UI.
+
+## Real-World Usage
+
+The app is dogfooded daily by its author. Current tracked state (2026-08):
+
+```
+12 projects tracked, spanning all 4 stages:
+  building  indoor-slam-drone · ai_income_lab · digital-craft · agent-workbench-app
+  live      记账 · 影像集
+  testing   量化 · hold-still · sun-print · val分析
+  idea      整理项目
+```
+
+## Roadmap / Known Limits
+
+- **Sync is last-writer-wins**, not field-level merge. Fine for single-user use across devices; a true merge would need Durable Objects + WebSockets.
+- Sync is **poll-based** (60s + focus), not real-time push.
+- Prompt history is per-project and capped by manual versioning — no auto-snapshot on every save (yet).
+
+## License
+
+MIT-style for the code, or private — ask the author.
