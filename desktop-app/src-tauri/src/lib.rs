@@ -237,7 +237,7 @@ pub fn run() {
 
                 #[cfg(target_os = "macos")]
                 {
-                    const ICON: &[u8] = include_bytes!("../icons/icon.png");
+                    const ICON: &[u8] = include_bytes!("../icons/tray.png");
                     if let Ok(img) = Image::from_bytes(ICON) {
                         tray_builder = tray_builder.icon(img).icon_as_template(true);
                     } else if let Some(icon) = app.default_window_icon().cloned() {
